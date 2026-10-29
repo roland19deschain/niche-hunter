@@ -1,10 +1,10 @@
 # NicheHunter
 
+<h3 align="center">From Reddit and TikTok observations to testable ideas for small digital products.</h3>
+
 <p align="center">
   <img src="./avatar.png" alt="NicheHunter — a research robot with a magnifying glass against a backdrop of charts" width="360">
 </p>
-
-**From Reddit and TikTok observations to testable ideas for small digital products.**
 
 NicheHunter is a planned research tool for finding promising niches before development begins. It is designed as a repeatable workflow: collect signals from selected sources, identify growing topics and unmet needs, compare them with existing solutions, and propose product hypotheses together with a way to reach the audience.
 
@@ -217,6 +217,7 @@ Current structure:
 ├── AGENTS.md      # Context and rules for future work
 ├── README.md      # Project concept and first-iteration plan
 ├── avatar.png     # Project avatar
+├── context.md     # Original project design context
 ├── LICENSE        # MIT
 └── .gitignore
 ```
@@ -224,6 +225,8 @@ Current structure:
 The working branch is `develop`. There are no installation, run, or test commands yet. They will be added here along with the implementation.
 
 Project working instructions: [AGENTS.md](./AGENTS.md).
+
+Original project design context: [context.md](./context.md).
 
 ## License
 

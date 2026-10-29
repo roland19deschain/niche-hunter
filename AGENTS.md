@@ -2,9 +2,9 @@
 
 ## Project status
 
-- As of October 29, 2026, the repository contains a detailed `README.md` with the concept and first-iteration plan, `avatar.png`, `LICENSE` (MIT), an Xcode/Swift `.gitignore`, and this file. There is no source code, skill, integrations, tests, or run commands yet.
+- As of October 29, 2026, the repository contains a detailed `README.md` with the concept and first-iteration plan, `avatar.png`, the original `context.md`, `LICENSE` (MIT), an Xcode/Swift `.gitignore`, and this file. There is no source code, skill, integrations, tests, or run commands yet.
 - The technology stack, runtime, and execution method have not been selected. The `.gitignore` template does not mean this project is an iOS app.
-- Original context: [context.md](/Users/AlexeyRoik/Desktop/context.md), prepared on October 29, 2026. This is design reference material; its examples, APIs, and metrics are not implemented features or data verified in this repository.
+- Original context: [context.md](./context.md), prepared on October 29, 2026. This is design reference material; its examples, APIs, and metrics are not implemented features or data verified in this repository.
 - The user's request defines the scope of the current work. The roadmap described in the context does not itself authorize development, service integrations, advertising experiments, or regular data collection.
 
 ## Goal
