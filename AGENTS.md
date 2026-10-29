@@ -1,77 +1,77 @@
 # NicheHunter
 
-## Состояние проекта
+## Project status
 
-- На 29.10.2026 репозиторий содержит подробный `README.md` с идеей и планом первой итерации, `avatar.png`, `LICENSE` (MIT), `.gitignore` для Xcode/Swift и этот файл. Исходного кода, skill, интеграций, тестов и команд запуска пока нет.
-- Стек, среда выполнения и способ запуска ещё не выбраны. Шаблон `.gitignore` не означает, что проект является iOS-приложением.
-- Исходный контекст: [context.md](/Users/AlexeyRoik/Desktop/context.md), подготовлен 29.10.2026. Это справочный материал для проектирования; примеры, API и метрики из него не являются реализованными возможностями или проверенными в этом репозитории данными.
-- Объём текущей работы задаёт запрос пользователя. Описанный в контексте roadmap сам по себе не запускает разработку, подключение сервисов, рекламные эксперименты или регулярный сбор данных.
+- As of October 29, 2026, the repository contains a detailed `README.md` with the concept and first-iteration plan, `avatar.png`, `LICENSE` (MIT), an Xcode/Swift `.gitignore`, and this file. There is no source code, skill, integrations, tests, or run commands yet.
+- The technology stack, runtime, and execution method have not been selected. The `.gitignore` template does not mean this project is an iOS app.
+- Original context: [context.md](/Users/AlexeyRoik/Desktop/context.md), prepared on October 29, 2026. This is design reference material; its examples, APIs, and metrics are not implemented features or data verified in this repository.
+- The user's request defines the scope of the current work. The roadmap described in the context does not itself authorize development, service integrations, advertising experiments, or regular data collection.
 
-## Цель
+## Goal
 
-Создать переиспользуемый процесс/skill для исследования рынка до выбора и разработки небольших iOS- или web-продуктов. Принцип Distribution First:
+Create a reusable process/skill for market research before selecting and developing small iOS or web products. Follow the Distribution First principle:
 
-`Канал + аудитория → проблемы и желания → проверка спроса и конкурентов → экономическая гипотеза → минимальный эксперимент → MVP`.
+`Channel + audience → problems and desires → demand and competitor validation → economic hypothesis → minimal experiment → MVP`.
 
-Результат исследования — проверяемые узкие продуктовые гипотезы с первоисточниками, подходящими каналами привлечения и планом проверки. Поддерживать поиск через существующий поисковый спрос и через discovery/контент, платные и органические каналы. Работа не ограничивается OutLoud.
+Research should produce testable, narrowly scoped product hypotheses with primary sources, suitable acquisition channels, and a validation plan. Support exploration through existing search demand and through discovery/content, using paid and organic channels. The work is not limited to OutLoud.
 
-Различать популярность темы, реальную потребность, готовность платить, жизнеспособность дистрибуции и подтверждённую экономику продукта. Открытые сигналы помогают выбрать гипотезы; прибыльность и product-market fit требуют реальных тестов.
+Distinguish topic popularity, actual need, willingness to pay, distribution viability, and validated product economics. Publicly available signals help select hypotheses; profitability and product-market fit require real tests.
 
-## Ориентир для реализации
+## Implementation direction
 
-Это проектная схема, а не существующие модули:
+This is a proposed design, not existing modules:
 
 `research orchestrator → source adapters → observations → topic clustering → trend analyzer → problem extractor → opportunity generator → report`.
 
-- Целевой охват первой итерации — Reddit и TikTok. Подключать адаптеры поэтапно, начиная с одного фактически доступного источника; затем добавить второй и совместный анализ. Недоступность одного из источников явно отражать в результате.
-- Для каждого адаптера явно описывать возможности: авторизация, API/импорт, поля и единицы, география, историческая глубина, пагинация, лимиты и допустимое хранение.
-- Отделять исходные наблюдения и разрешённые raw snapshots от производных метрик и LLM-выводов. Сохранять параметры запуска и provenance для воспроизводимости.
-- Skill, CLI, MCP и постоянно работающий сборщик — разные способы исполнения; выбирать их по задаче, не предполагать наличие фонового процесса.
+- The first iteration targets Reddit and TikTok. Add adapters in stages, starting with one source that is actually accessible; then add the second source and combined analysis. Explicitly report when either source is unavailable.
+- Explicitly describe each adapter's capabilities: authorization, API/import, fields and units, geography, historical depth, pagination, limits, and permitted storage.
+- Separate original observations and permitted raw snapshots from derived metrics and LLM conclusions. Preserve run parameters and provenance for reproducibility.
+- A skill, CLI, MCP, and continuously running collector are different execution methods; choose based on the task rather than assuming a background process exists.
 
-## Достоверность данных
+## Data reliability
 
-- Каждое существенное утверждение связывать с evidence: источник, URL/ID, исходный текст или краткое содержание, время публикации, время наблюдения метрик и время получения, способ извлечения, качество и ограничения.
-- Разделять `observed fact`, `estimate`, `inference`, `hypothesis` и `test needed`. Демонстрационные fixtures и синтетические сценарии явно обозначать.
-- Отсутствующие метрики хранить как `null`/`unknown` с причиной. Недоступность источника обозначать явно (`unconfigured`, `auth_required`, `not_supported`, `rate_limited`, `unavailable`); неполный сбор отражать в coverage.
-- Сопоставлять только совместимые измерения. Индекс популярности, просмотры, engagement и поисковый объём имеют разный смысл.
-- Дедуплицировать записи, репосты и кросс-посты; учитывать спам, малые выборки, сезонность, смещения платформ и единичные вирусные всплески. Высокая уверенность требует независимых наблюдений.
-- Не подменять неизвестные значения средними в рейтинге. Хранить score, confidence, evidence count и missing data отдельно; веса рейтинга — настраиваемая гипотеза.
-- Реальные CPA/CAC/ROAS/LTV не выводить из лайков, просмотров, дешёвых кликов или наличия рекламы конкурентов. Экономические сценарии маркировать как предположения с явными этапами воронки, расходами и периодом.
+- Link every material claim to evidence: source, URL/ID, original text or summary, publication time, metric observation time and retrieval time, extraction method, quality, and limitations.
+- Distinguish `observed fact`, `estimate`, `inference`, `hypothesis`, and `test needed`. Clearly label demonstration fixtures and synthetic scenarios.
+- Store missing metrics as `null`/`unknown` with a reason. Explicitly label source unavailability (`unconfigured`, `auth_required`, `not_supported`, `rate_limited`, `unavailable`); reflect incomplete collection in coverage.
+- Compare only compatible measurements. A popularity index, views, engagement, and search volume have different meanings.
+- Deduplicate records, reposts, and cross-posts; account for spam, small samples, seasonality, platform biases, and isolated viral spikes. High confidence requires independent observations.
+- Do not replace unknown values with averages in rankings. Store score, confidence, evidence count, and missing data separately; ranking weights are a configurable hypothesis.
+- Do not infer actual CPA/CAC/ROAS/LTV from likes, views, cheap clicks, or the presence of competitor ads. Label economic scenarios as assumptions with explicit funnel stages, costs, and time periods.
 
-## Даты и покрытие
+## Dates and coverage
 
-- Параметризовать источники, темы/категории, регион, язык, даты, часовую зону, лимиты и baseline. Не приписывать географию, если источник её не подтверждает.
-- Использовать явный интервал `[start_at, end_at)` и нормализацию в UTC, сохраняя часовую зону источника. Для TikTok ориентир по умолчанию — последние семь полных календарных дней в выбранной зоне.
-- Показывать запрошенное окно отдельно от фактического покрытия, пропусков и ограничений выборки. Для сравнения выбирать сопоставимый предыдущий непересекающийся интервал той же длительности.
-- Текущие счётчики старого контента не восстанавливают исторические значения. История требует доступного ряда или сохранённых наблюдений.
-- Не суммировать перекрывающиеся rolling-окна и не выдавать их за дневные объёмы. Показывать абсолютный и относительный рост; нулевая или малая база требует отдельной обработки.
+- Parameterize sources, topics/categories, region, language, dates, time zone, limits, and baseline. Do not assign geography unless the source supports it.
+- Use an explicit `[start_at, end_at)` interval and UTC normalization while preserving the source time zone. For TikTok, the default reference window is the last seven complete calendar days in the selected time zone.
+- Show the requested window separately from actual coverage, gaps, and sampling limitations. For comparison, choose a comparable preceding, non-overlapping interval of the same duration.
+- Current counters on old content do not reconstruct historical values. History requires an available time series or saved observations.
+- Do not sum overlapping rolling windows or present them as daily volumes. Show absolute and relative growth; a zero or small baseline requires separate handling.
 
-## Особенности источников
+## Source-specific considerations
 
-- Reddit: искать повторяющиеся проблемы, workaround, просьбы о решениях и недостатки альтернатив. Один популярный тред не подтверждает рост рынка; эвристики по ключевым фразам не заменяют анализ.
-- TikTok: различать поисковые запросы, рекомендованные keywords, тематические группы, hashtags, videos, sounds и comments. `typed_search` и `topic_group` не взаимозаменяемы.
-- В контексте рассмотрены TikTok Business Discovery, Creator Search Insights, TokConnect, Creative Center и Research API. Их актуальные возможности и доступы требуют проверки перед интеграцией.
-- Наличие trending keywords или поиска видео не подтверждает доступ к историческим объёмам пользовательских поисков. При отсутствии таких данных обозначать результат как `content_trends` или `keyword_recommendations`.
-- Показатели стороннего поставщика считать его заявлениями до проверки схемы, sample responses, единиц, свежести, покрытия и сопоставления с первичным источником. Фиксировать data quality, confidence и limitations.
+- Reddit: look for recurring problems, workarounds, requests for solutions, and shortcomings of alternatives. One popular thread does not establish market growth; keyword heuristics do not replace analysis.
+- TikTok: distinguish search queries, recommended keywords, topic groups, hashtags, videos, sounds, and comments. `typed_search` and `topic_group` are not interchangeable.
+- The context covers TikTok Business Discovery, Creator Search Insights, TokConnect, Creative Center, and Research API. Verify their current capabilities and access requirements before integration.
+- The availability of trending keywords or video search does not establish access to historical user search volumes. When those data are absent, label the result as `content_trends` or `keyword_recommendations`.
+- Treat third-party provider metrics as provider claims until the schema, sample responses, units, freshness, and coverage have been verified and compared against the primary source. Record data quality, confidence, and limitations.
 
-## Доступ к источникам
+## Source access
 
-- Перед интеграцией проверять актуальную официальную документацию, scopes, тарифы, лимиты, географию и условия использования/хранения. Ссылка на UI не доказывает наличие API.
-- Использовать разрешённые API, инструменты или ручной импорт CSV/JSON. Соблюдать авторизацию и ограничения платформ; при недоступности явно сообщать причину и доступный способ проверки.
-- Не сохранять секреты в репозитории и логах. Минимизировать персональные данные и копирование чужого контента; учитывать удаление и допустимые сроки хранения.
+- Before integration, verify current official documentation, scopes, pricing, limits, geography, and terms of use/storage. A UI link does not prove an API exists.
+- Use permitted APIs, tools, or manual CSV/JSON import. Respect authorization and platform restrictions; when access is unavailable, explicitly state the reason and an available verification method.
+- Do not store secrets in the repository or logs. Minimize personal data and copying of others' content; account for deletion and permitted retention periods.
 
-## Ожидаемый результат исследования
+## Expected research output
 
-- Основные артефакты: `report.md` и `results.json`; CSV и ссылки на разрешённые raw snapshots — при необходимости.
-- Отчёт включает параметры запуска, фактическое покрытие, ограничения, тренды (`emerging`, `sustained`, `declining`, `spike-only`), метрики/baseline, первоисточники, проблемы пользователей и альтернативы.
-- Для каждой продуктовой гипотезы указывать аудиторию, узкую задачу, value proposition, канал, монетизацию, минимальный MVP, риски и измеримый эксперимент с критериями успеха/остановки. Ориентир первого MVP исследования — 3–5 гипотез.
+- Main artifacts: `report.md` and `results.json`; CSV and links to permitted raw snapshots when needed.
+- The report includes run parameters, actual coverage, limitations, trends (`emerging`, `sustained`, `declining`, `spike-only`), metrics/baseline, primary sources, user problems, and alternatives.
+- For each product hypothesis, specify the audience, narrow task, value proposition, channel, monetization, minimal MVP, risks, and a measurable experiment with success/stop criteria. The initial research MVP should produce 3–5 hypotheses.
 
-## Работа в репозитории
+## Working in the repository
 
-- Общаться и вести проектные пояснения на русском; технические идентификаторы сохранять в исходном виде.
-- Делать небольшие изменения по текущей задаче, сохраняя чужую работу. По мере появления реализации обновлять здесь фактическую структуру и команды запуска/проверки.
-- Shell-команды выполнять через `rtk`; правила: `/Users/AlexeyRoik/.codex/RTK.md`.
-- Не запускать Xcode builds или SwiftPM package builds без явного запроса пользователя.
-- Сейчас команд сборки и тестов нет. Когда появится код, проверять детерминированную агрегацию, дедупликацию, границы дат, rolling windows и неполный/недоступный источник; fixtures не представлять как live-проверку интеграции.
+- Communicate and write project explanations in Russian; preserve technical identifiers in their original form.
+- Make small changes scoped to the current task while preserving others' work. As implementation is added, update the actual structure and run/verification commands here.
+- Run shell commands through `rtk`; rules: `/Users/AlexeyRoik/.codex/RTK.md`.
+- Do not run Xcode builds or SwiftPM package builds unless the user explicitly requests them.
+- There are currently no build or test commands. Once code is added, verify deterministic aggregation, deduplication, date boundaries, rolling windows, and incomplete/unavailable sources; do not present fixtures as live integration verification.
 
-Перед первой реализацией определить доступный источник и его coverage, среду/формат запуска, хранение секретов и допустимых snapshots. Технологический стек выбирать по этим условиям.
+Before the first implementation, determine an accessible source and its coverage, the runtime/execution format, secret storage, and permitted snapshots. Choose the technology stack based on these conditions.

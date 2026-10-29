@@ -1,230 +1,230 @@
 # NicheHunter
 
 <p align="center">
-  <img src="./avatar.png" alt="NicheHunter — робот-исследователь с лупой на фоне графиков" width="360">
+  <img src="./avatar.png" alt="NicheHunter — a research robot with a magnifying glass against a backdrop of charts" width="360">
 </p>
 
-**От наблюдений в Reddit и TikTok — к проверяемым идеям небольших цифровых продуктов.**
+**From Reddit and TikTok observations to testable ideas for small digital products.**
 
-NicheHunter — проект исследовательского инструмента для поиска перспективных ниш до начала разработки. Он задуман как повторяемый workflow: собрать сигналы из выбранных источников, найти растущие темы и незакрытые потребности, сопоставить их с существующими решениями и предложить продуктовые гипотезы вместе со способом привлечения аудитории.
+NicheHunter is a planned research tool for finding promising niches before development begins. It is designed as a repeatable workflow: collect signals from selected sources, identify growing topics and unmet needs, compare them with existing solutions, and propose product hypotheses together with a way to reach the audience.
 
-> **Статус на 29 октября 2026 года:** подготовка первой итерации. В репозитории находятся описание проекта, инструкции для работы и аватар. Сборщики данных, аналитика и команды запуска пока не реализованы. Ниже описано целевое поведение; README будет обновляться по мере реализации и проверки источников.
+> **Status as of October 29, 2026:** preparing the first iteration. The repository contains a project description, working instructions, and an avatar. Data collectors, analytics, and run commands have not been implemented yet. The sections below describe the intended behavior; this README will be updated as implementation progresses and sources are verified.
 
-## Зачем нужен проект
+## Why this project exists
 
-Небольшое приложение можно быстро разработать, но до этого нужно ответить на несколько вопросов:
+A small app can be built quickly, but several questions need answers first:
 
-- У кого есть конкретная проблема и как часто она возникает?
-- Какие решения люди уже используют и чем недовольны?
-- Наблюдается устойчивый спрос или короткий всплеск внимания?
-- Через какой канал можно донести продукт до этой аудитории?
-- Есть ли признаки готовности платить и что ещё нужно проверить?
-- Какой минимальный эксперимент стоит провести до полноценной разработки?
+- Who has a specific problem, and how often does it occur?
+- Which solutions do people already use, and what are they unhappy with?
+- Is there sustained demand or a brief spike in attention?
+- Which channel can bring the product to this audience?
+- Is there evidence of willingness to pay, and what still needs to be tested?
+- What minimal experiment should come before full development?
 
-NicheHunter должен сократить путь от разрозненных обсуждений и трендов до небольшого набора обоснованных гипотез. Основной фокус — узкие цифровые продукты, которые можно быстро создать и протестировать: iOS-приложения, web-инструменты и небольшие сервисы.
+NicheHunter should shorten the path from scattered discussions and trends to a small set of well-supported hypotheses. The main focus is narrowly scoped digital products that can be built and tested quickly: iOS apps, web tools, and small services.
 
-## Основная идея: Distribution First
+## Core idea: Distribution First
 
-Выбор продукта начинается с аудитории и канала, через который до неё можно добраться:
+Product selection starts with an audience and a channel through which it can be reached:
 
 ```text
-Канал и аудитория
-  → наблюдаемая проблема или желание
-  → проверка спроса и существующих решений
-  → продуктовая и экономическая гипотеза
-  → минимальный эксперимент
-  → MVP и измерение реального поведения пользователей
+Channel and audience
+  → observed problem or desire
+  → validation of demand and existing solutions
+  → product and economic hypothesis
+  → minimal experiment
+  → MVP and measurement of actual user behavior
 ```
 
-Исследование учитывает две модели привлечения:
+The research considers two acquisition models:
 
-| Модель | Как появляется интерес к продукту | Что важно для гипотезы |
+| Model | How interest in the product arises | What matters for the hypothesis |
 | --- | --- | --- |
-| Существующий спрос | Человек уже ищет решение конкретной задачи | Формулировка проблемы, намерение решить её, используемые альтернативы |
-| Discovery через контент | Человек замечает полезный или привлекательный результат в ленте | Наглядная демонстрация, понятная ценность, повод перейти к продукту |
+| Existing demand | Someone is already looking for a solution to a specific task | Problem wording, intent to solve it, alternatives in use |
+| Discovery through content | Someone notices a useful or appealing result in their feed | A clear demonstration, understandable value, a reason to visit the product |
 
-Поэтому идея должна включать и сам продукт, и предполагаемый способ его дистрибуции. Например, для одной задачи подходящим экспериментом может оказаться поиск людей, которые уже спрашивают о решении, а для другой — короткая демонстрация результата в TikTok.
+An idea should therefore include both the product itself and its proposed distribution method. For example, a suitable experiment for one task might involve finding people who are already asking for a solution, while another might call for a short demonstration of the result on TikTok.
 
-## Первая итерация: Reddit + TikTok
+## First iteration: Reddit + TikTok
 
-Целевой охват первой итерации — **оба источника**. Адаптеры будут подключаться поэтапно, после проверки фактического доступа к данным. Каждый источник должен работать отдельно; совместное исследование должно показывать совпадения, различия и пробелы в наблюдениях.
+The first iteration targets **both sources**. Adapters will be added in stages after actual data access has been verified. Each source must work independently; combined research should show overlaps, differences, and gaps in the observations.
 
-### Reddit: проблемы, обходные решения и неудовлетворённый спрос
+### Reddit: problems, workarounds, and unmet demand
 
-Планируется собирать релевантные публикации и доступные комментарии по темам, запросам и выбранным сообществам. Для наблюдений нужны ссылки, идентификаторы, даты и доступные показатели активности.
+The plan is to collect relevant posts and available comments by topic, query, and selected community. Observations need links, identifiers, dates, and available activity metrics.
 
-Что искать:
+What to look for:
 
-- Повторяющиеся вопросы «как сделать», «есть ли приложение», «какая есть альтернатива».
-- Ручные операции и неудобные обходные решения, которые люди повторяют регулярно.
-- Жалобы на цену, сложность, качество или ограничения существующих продуктов.
-- Описания конкретной аудитории, задачи и условий использования.
-- Прямые высказывания о покупке или готовности платить, если такие свидетельства есть.
+- Recurring questions such as “how do I do this,” “is there an app,” and “what alternatives are there.”
+- Manual tasks and awkward workarounds that people repeat regularly.
+- Complaints about the price, complexity, quality, or limitations of existing products.
+- Descriptions of a specific audience, task, and usage context.
+- Direct statements about purchases or willingness to pay, where such evidence exists.
 
-Результатом должны стать проверяемые формулировки проблем со ссылками на обсуждения. При анализе нужно учитывать повторы, рекламные публикации, особенности сообществ и размер выборки. Один популярный тред сам по себе не подтверждает устойчивый рыночный спрос.
+The output should be verifiable problem statements with links to discussions. Analysis must account for duplicates, promotional posts, community characteristics, and sample size. One popular thread alone does not establish sustained market demand.
 
-### TikTok: темы, поисковые сигналы и продуктовые демонстрации
+### TikTok: topics, search signals, and product demonstrations
 
-Планируется исследовать доступные темы и контент: поисковые рекомендации, тематические группы, хештеги, видео, демонстрации продуктов и комментарии. Конкретный набор данных будет зависеть от проверенного источника, региона и разрешений.
+The plan is to research available topics and content: search recommendations, topic groups, hashtags, videos, product demonstrations, and comments. The specific dataset will depend on the verified source, region, and permissions.
 
-Что искать:
+What to look for:
 
-- Повторяющиеся демонстрации полезного результата: «до/после», автоматизация, быстрое решение задачи.
-- Вопросы зрителей о том, каким инструментом получен результат и как его повторить.
-- Темы, которые сохраняют интерес у разных авторов и в нескольких временных срезах.
-- Поисковые потребности и недостаток подходящего контента там, где источник действительно предоставляет такие данные.
-- Креативные подходы, которые можно использовать в небольшом тесте продуктовой гипотезы.
+- Recurring demonstrations of useful results: “before/after,” automation, or a quick solution to a task.
+- Viewer questions about which tool produced a result and how to reproduce it.
+- Topics that sustain interest across different creators and multiple time periods.
+- Search needs and gaps in suitable content where the source actually provides such data.
+- Creative approaches that can be used in a small test of a product hypothesis.
 
-Поисковые запросы, рекомендованные keywords, тематические группы, хештеги и просмотры будут учитываться как разные типы сигналов. Сведения о буквальной поисковой фразе нельзя автоматически заменять названием темы, а просмотры роликов — числом поисков.
+Search queries, recommended keywords, topic groups, hashtags, and views will be treated as different signal types. Information about an exact search phrase must not be automatically replaced with a topic name, nor video views with search counts.
 
-Варианты доступа к данным TikTok, включая Business Discovery, Creator Search Insights, Creative Center и сторонних поставщиков, предстоит проверить до выбора интеграции. Наличие интерфейса с трендами не гарантирует доступного API или исторических поисковых объёмов. Если доступны только контентные сигналы, отчёт должен прямо это указывать.
+TikTok data access options, including Business Discovery, Creator Search Insights, Creative Center, and third-party providers, must be verified before an integration is selected. A trends interface does not guarantee an available API or historical search volumes. If only content signals are available, the report must state this explicitly.
 
-### Совместный анализ
+### Combined analysis
 
-Reddit и TikTok должны дополнять друг друга. Например, обсуждения могут раскрыть повторяющуюся ручную задачу, а видео — показать, насколько понятно и наглядно можно продемонстрировать её решение.
+Reddit and TikTok should complement each other. For example, discussions may reveal a recurring manual task, while videos may show how clearly and visually its solution can be demonstrated.
 
-Совпадение тем станет поводом для более глубокой проверки. При этом репосты, пересказы одного материала и связанные рекламные публикации нельзя считать независимыми подтверждениями. Отсутствие сигнала во втором источнике тоже будет отражаться в отчёте.
+Overlapping topics will warrant deeper investigation. However, reposts, retellings of the same material, and related promotional posts must not be counted as independent corroboration. The absence of a signal in the second source will also be reflected in the report.
 
-## Как будет проходить исследование
+## How the research will work
 
-1. **Задать область.** Выбрать источники, темы, языки, регион, временной диапазон, часовую зону и лимиты сбора.
-2. **Проверить доступность.** Определить, какие поля и периоды реально доступны, требуется ли авторизация или ручной импорт.
-3. **Собрать наблюдения.** Пройти доступные страницы результатов, сохранить provenance и разрешённые снимки данных.
-4. **Очистить и сгруппировать.** Убрать дубли, отметить спам и объединить близкие формулировки, сохраняя исходные тексты и ссылки.
-5. **Оценить динамику.** Сравнить сопоставимые периоды, размер базы, разнообразие источников и устойчивость темы, если данные это позволяют.
-6. **Выделить проблемы.** Описать аудиторию, задачу, используемые альтернативы и недостатки текущих решений.
-7. **Сформировать возможности.** Предложить 3–5 узких продуктовых гипотез с каналом привлечения, монетизацией и минимальным MVP.
-8. **Подготовить проверку.** Для каждой гипотезы предложить эксперимент и заранее определить, какой результат поддержит или опровергнет её.
+1. **Define the scope.** Select sources, topics, languages, region, date range, time zone, and collection limits.
+2. **Check availability.** Determine which fields and periods are actually available and whether authorization or manual import is required.
+3. **Collect observations.** Paginate through available results, preserving provenance and permitted data snapshots.
+4. **Clean and group.** Remove duplicates, flag spam, and group similar wording while preserving original texts and links.
+5. **Assess trends.** Compare comparable periods, baseline size, source diversity, and topic persistence where the data allow it.
+6. **Extract problems.** Describe the audience, task, alternatives in use, and shortcomings of current solutions.
+7. **Generate opportunities.** Propose 3–5 narrowly scoped product hypotheses with an acquisition channel, monetization, and a minimal MVP.
+8. **Prepare validation.** Propose an experiment for each hypothesis and define in advance which result would support or refute it.
 
-Проверка конкурентов, цен и коммерческого спроса будет отдельной частью обоснования гипотезы. Пока дополнительные источники не подключены, соответствующие вопросы останутся явно обозначенными пунктами дальнейшего исследования.
+Competitor, pricing, and commercial demand validation will be a separate part of the evidence supporting each hypothesis. Until additional sources are connected, these questions will remain explicitly listed as items for further research.
 
-### Пример будущего запроса
+### Example future request
 
-> Исследуй Reddit и TikTok за последние семь полных дней по теме productivity. Ищи повторяющиеся задачи, неудобные обходные решения и демонстрации полезных инструментов. Сравни с предыдущими семью днями там, где доступна история. Подготовь пять гипотез небольших продуктов со ссылками, ограничениями и планом проверки.
+> Research Reddit and TikTok over the last seven complete days on the topic of productivity. Look for recurring tasks, awkward workarounds, and demonstrations of useful tools. Compare with the previous seven days where history is available. Prepare five hypotheses for small products, with links, limitations, and a validation plan.
 
-Это пример целевого сценария, а не команда, которую уже можно выполнить.
+This is an example of the intended scenario, not a command that can already be executed.
 
-### Параметры исследования
+### Research parameters
 
-| Параметр | Назначение |
+| Parameter | Purpose |
 | --- | --- |
-| Источники | Reddit, TikTok или их совместный анализ |
-| Темы и фильтры | Запросы, категории, subreddits, hashtags — в зависимости от источника |
-| Период и часовая зона | Явные границы анализируемого окна; ориентир по умолчанию — семь полных локальных дней |
-| Период сравнения | Предыдущий сопоставимый непересекающийся интервал той же длительности |
-| Язык и регион | Фильтры только в пределах реально доступных данных; неподтверждённая география отмечается отдельно |
-| Лимиты | Максимум записей, ограничения выборки и минимальное количество свидетельств |
-| Формат результата | Markdown-отчёт и структурированный JSON; CSV при необходимости |
+| Sources | Reddit, TikTok, or combined analysis |
+| Topics and filters | Queries, categories, subreddits, hashtags — depending on the source |
+| Period and time zone | Explicit boundaries of the analysis window; the default reference is seven complete local days |
+| Comparison period | A preceding comparable, non-overlapping interval of the same duration |
+| Language and region | Filters limited to actually available data; unconfirmed geography is noted separately |
+| Limits | Maximum records, sampling limitations, and minimum evidence count |
+| Output format | Markdown report and structured JSON; CSV when needed |
 
-Запрошенный период будет показан отдельно от фактического покрытия. Если источник возвращает только текущую подборку, ограниченную историю или rolling-агрегат, это ограничение должно быть видно в результате.
+The requested period will be shown separately from actual coverage. If a source returns only a current selection, limited history, or a rolling aggregate, this limitation must be visible in the output.
 
-## Какой результат должен получить пользователь
+## What the user should receive
 
-### Отчёт `report.md`
+### Report: `report.md`
 
-В отчёте планируются:
+The report is planned to include:
 
-- Параметры исследования, время сбора, фактическое покрытие и ограничения источников.
-- Основные наблюдения и темы с классификацией: растущая, устойчивая, снижающаяся или единичный всплеск.
-- Метрики и база сравнения там, где они доступны и сопоставимы.
-- Пользовательские проблемы, аудитории, существующие решения и обнаруженные пробелы.
-- Ссылки на первоисточники для значимых выводов.
-- Короткий список продуктовых возможностей и следующие шаги по их проверке.
-- Недостающие данные и вопросы, на которые исследование пока не отвечает.
+- Research parameters, collection time, actual coverage, and source limitations.
+- Key observations and topics classified as emerging, sustained, declining, or an isolated spike.
+- Metrics and a comparison baseline where available and comparable.
+- User problems, audiences, existing solutions, and identified gaps.
+- Links to primary sources for material conclusions.
+- A shortlist of product opportunities and next steps for validation.
+- Missing data and questions the research cannot yet answer.
 
-### Карточка продуктовой гипотезы
+### Product hypothesis card
 
-| Поле | Содержание |
+| Field | Content |
 | --- | --- |
-| Аудитория и задача | Кто, в какой ситуации и что хочет сделать |
-| Наблюдаемая проблема | Что мешает и какими свидетельствами это подтверждено |
-| Альтернативы | Какие инструменты или ручные процессы уже используются |
-| Идея продукта | Узкий сценарий и понятное обещание ценности |
-| Минимальный MVP | Что достаточно реализовать для проверки ключевого предположения |
-| Дистрибуция | Предполагаемый канал и пример сообщения или демонстрации |
-| Монетизация | Гипотеза модели оплаты и основания для её проверки |
-| Эксперимент | Интервью, демонстрация, лендинг, прототип или другой подходящий тест |
-| Критерии решения | Какой измеримый результат позволит продолжить, изменить или остановить проверку |
-| Уверенность и пробелы | Сила свидетельств, риски и неизвестные значения |
+| Audience and task | Who wants to do what, and in which situation |
+| Observed problem | What gets in the way and which evidence supports it |
+| Alternatives | Which tools or manual processes are already in use |
+| Product idea | A narrow use case and a clear value proposition |
+| Minimal MVP | What is sufficient to implement to test the key assumption |
+| Distribution | Proposed channel and an example message or demonstration |
+| Monetization | A payment model hypothesis and grounds for testing it |
+| Experiment | An interview, demonstration, landing page, prototype, or another suitable test |
+| Decision criteria | Which measurable result allows validation to continue, change, or stop |
+| Confidence and gaps | Strength of evidence, risks, and unknown values |
 
-### Данные `results.json`
+### Data: `results.json`
 
-Структурированный результат нужен для повторного анализа и будущих интеграций. Он должен содержать параметры запуска, наблюдения и ссылки на них, рассчитанные показатели, тренды, проблемы, гипотезы, ошибки и пропуски данных.
+Structured output is needed for repeat analysis and future integrations. It should contain run parameters, observations and links to them, calculated metrics, trends, problems, hypotheses, errors, and data gaps.
 
-Разрешённые исходные снимки и производные выводы будут храниться отдельно. Это позволит понять, откуда появился вывод, и повторить расчёты на том же наборе наблюдений. Точная схема и расположение файлов будут определены при реализации.
+Permitted raw snapshots and derived conclusions will be stored separately. This will make it possible to trace the origin of a conclusion and repeat calculations on the same set of observations. The exact schema and file locations will be defined during implementation.
 
-## Принципы анализа
+## Analysis principles
 
-**Выводы должны быть проверяемыми.** Фактические наблюдения, оценки, интерпретации и продуктовые гипотезы будут обозначаться отдельно. Для чисел нужны источник, единица измерения, временное окно и методика.
+**Conclusions must be verifiable.** Factual observations, estimates, interpretations, and product hypotheses will be labeled separately. Numbers require a source, unit of measurement, time window, and methodology.
 
-**Неизвестное остаётся неизвестным.** Отсутствующие метрики будут представлены как `null` или `unknown` с объяснением. Недоступный источник, ошибка авторизации, ограничение выборки или отсутствие истории не должны превращаться в выдуманные данные.
+**Unknowns remain unknown.** Missing metrics will be represented as `null` or `unknown` with an explanation. An unavailable source, authorization error, sampling limitation, or lack of history must not turn into fabricated data.
 
-**Внимание и коммерческий спрос оцениваются отдельно.** Просмотры и комментарии показывают реакцию на контент. Готовность платить, реальная конверсия, CAC, LTV и окупаемость требуют дополнительных свидетельств и экспериментов.
+**Attention and commercial demand are assessed separately.** Views and comments show reactions to content. Willingness to pay, actual conversion, CAC, LTV, and return on investment require additional evidence and experiments.
 
-**Динамика требует сопоставимых данных.** Поздно полученный счётчик старого видео не показывает его значение в прошлом. Перекрывающиеся семидневные окна нельзя складывать в месячный объём, а большой процент роста от единичной базы требует осторожной интерпретации.
+**Trends require comparable data.** A counter retrieved later for an old video does not show its past value. Overlapping seven-day windows cannot be added together into a monthly volume, and a large growth percentage from a baseline of one requires careful interpretation.
 
-**Приоритет гипотезы должен быть объяснимым.** При отборе будут учитываться подтверждение проблемы, доступность аудитории, предполагаемая монетизация, недостатки альтернатив и сложность MVP. Оценка приоритета, уверенность и количество свидетельств будут храниться отдельно; недостаток данных не будет считаться средним результатом.
+**Hypothesis priority must be explainable.** Selection will consider evidence of the problem, audience accessibility, proposed monetization, shortcomings of alternatives, and MVP complexity. Priority score, confidence, and evidence count will be stored separately; missing data will not be treated as an average result.
 
-**Доступ к данным должен быть устойчивым и разрешённым.** Для каждого источника предстоит проверить актуальные API, права доступа, лимиты и условия хранения. При отсутствии программного доступа возможен явно обозначенный ручной импорт. Секреты не должны попадать в репозиторий или логи.
+**Data access must be sustainable and permitted.** Current APIs, access rights, limits, and storage terms must be verified for each source. If programmatic access is unavailable, explicitly labeled manual import may be used. Secrets must not enter the repository or logs.
 
-## Предлагаемая архитектура
+## Proposed architecture
 
-Ниже — схема будущего pipeline; соответствующие модули ещё не реализованы.
+The diagram below shows the future pipeline; the corresponding modules have not been implemented yet.
 
 ```mermaid
 flowchart TD
-    Request["Параметры исследования"] --> Reddit["Адаптер Reddit"]
-    Request --> TikTok["Адаптер TikTok"]
-    Reddit --> Observations["Нормализация, дедупликация и provenance"]
+    Request["Research parameters"] --> Reddit["Reddit adapter"]
+    Request --> TikTok["TikTok adapter"]
+    Reddit --> Observations["Normalization, deduplication, and provenance"]
     TikTok --> Observations
-    Observations --> Analysis["Группировка тем, динамика и проблемы"]
-    Analysis --> Opportunities["Продуктовые гипотезы и план проверки"]
-    Opportunities --> Report["Markdown-отчёт и JSON"]
+    Observations --> Analysis["Topic clustering, trends, and problems"]
+    Analysis --> Opportunities["Product hypotheses and validation plan"]
+    Opportunities --> Report["Markdown report and JSON"]
 ```
 
-Каждый адаптер будет описывать собственные возможности и ограничения. Общая аналитика должна работать с нормализованными наблюдениями, сохраняя смысл исходных метрик. Это позволит добавлять новые источники без подмены разных типов сигналов одним показателем популярности.
+Each adapter will describe its own capabilities and limitations. Shared analytics should work with normalized observations while preserving the meaning of the original metrics. This will allow new sources to be added without collapsing different signal types into a single popularity metric.
 
-Технологический стек, среда выполнения и интерфейс запуска пока не выбраны. Целевой формат — переиспользуемый исследовательский workflow, который можно оформить как skill с инструментами сбора и анализа. Решение о CLI, MCP и других способах запуска будет принято по требованиям интеграций.
+The technology stack, runtime, and execution interface have not been selected yet. The target format is a reusable research workflow that can be packaged as a skill with collection and analysis tools. Decisions about CLI, MCP, and other execution methods will follow integration requirements.
 
-## План первой итерации
+## First-iteration plan
 
-- [x] Зафиксировать идею проекта и основные требования к достоверности данных.
-- [x] Подготовить README, аватар и инструкции для работы в репозитории.
-- [ ] Проверить доступные источники Reddit и TikTok, их схемы, права и историческое покрытие.
-- [ ] Выбрать среду выполнения, способ запуска и схему нормализованных наблюдений.
-- [ ] Реализовать сбор и обработку одного источника, затем подключить второй.
-- [ ] Добавить дедупликацию, работу с датами и сравнение периодов там, где оно обоснованно.
-- [ ] Подготовить общий анализ проблем и 3–5 продуктовых гипотез с evidence.
-- [ ] Сформировать Markdown-отчёт и JSON с явными пропусками и ограничениями.
-- [ ] Проверить работу на fixtures и реальных данных, отдельно обозначив результаты каждого вида проверки.
+- [x] Document the project concept and core data reliability requirements.
+- [x] Prepare the README, avatar, and repository working instructions.
+- [ ] Verify available Reddit and TikTok sources, their schemas, permissions, and historical coverage.
+- [ ] Select a runtime, execution method, and normalized observation schema.
+- [ ] Implement collection and processing for one source, then connect the second.
+- [ ] Add deduplication, date handling, and period comparisons where justified.
+- [ ] Prepare a combined problem analysis and 3–5 product hypotheses with evidence.
+- [ ] Generate a Markdown report and JSON with explicit gaps and limitations.
+- [ ] Verify behavior using fixtures and real data, clearly distinguishing the results of each type of verification.
 
-Первая итерация считается готовой, когда можно провести исследование по обоим источникам, проследить значимые выводы до исходных наблюдений и получить понятный план проверки гипотез. Если один источник недоступен или покрывает лишь часть периода, исследование должно завершаться с явным описанием этого ограничения.
+The first iteration is complete when research can be conducted across both sources, material conclusions can be traced to original observations, and a clear hypothesis validation plan can be produced. If one source is unavailable or covers only part of the period, the research must finish with an explicit description of that limitation.
 
-Проверки должны охватывать границы дат, дедупликацию, малую и нулевую базу сравнения, перекрывающиеся окна, недоступные поля и частичный сбор. Демонстрационные данные будут явно отделены от реально полученных наблюдений.
+Checks must cover date boundaries, deduplication, small and zero comparison baselines, overlapping windows, unavailable fields, and partial collection. Demonstration data will be clearly separated from observations actually retrieved.
 
-## Дальнейшее развитие
+## Future development
 
-После первой итерации можно расширять перекрёстную проверку спроса: поисковые источники, App Store intelligence, отзывы и цены конкурентов, рекламные библиотеки. Следующие направления — накопление разрешённой истории наблюдений, анализ устойчивости тем и сравнение гипотез с результатами реальных экспериментов.
+After the first iteration, demand cross-validation can be expanded through search sources, App Store intelligence, competitor reviews and pricing, and ad libraries. Further directions include accumulating a permitted history of observations, analyzing topic persistence, and comparing hypotheses with real experiment results.
 
-Регулярный сбор, дополнительные интеграции и автоматизация станут отдельными этапами после проверки источников и основного workflow.
+Regular collection, additional integrations, and automation will be separate stages after the sources and core workflow have been verified.
 
-## Репозиторий и начало работы
+## Repository and getting started
 
-Текущая структура:
+Current structure:
 
 ```text
 .
-├── AGENTS.md      # Контекст и правила дальнейшей работы
-├── README.md      # Идея проекта и план первой итерации
-├── avatar.png     # Аватар проекта
+├── AGENTS.md      # Context and rules for future work
+├── README.md      # Project concept and first-iteration plan
+├── avatar.png     # Project avatar
 ├── LICENSE        # MIT
 └── .gitignore
 ```
 
-Рабочая ветка — `develop`. Команд установки, запуска и тестирования пока нет. Они появятся здесь вместе с реализацией.
+The working branch is `develop`. There are no installation, run, or test commands yet. They will be added here along with the implementation.
 
-Инструкции для работы с проектом: [AGENTS.md](./AGENTS.md).
+Project working instructions: [AGENTS.md](./AGENTS.md).
 
-## Лицензия
+## License
 
 [MIT](./LICENSE).
