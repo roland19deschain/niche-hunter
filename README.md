@@ -219,6 +219,8 @@ Current structure:
 ├── README.md      # Project concept and first-iteration plan
 ├── avatar.png     # Project avatar
 ├── context.md     # Original project design context
+├── docs/
+│   └── source-access.md  # Reddit and TikTok data access check (October 30, 2026)
 ├── LICENSE        # MIT
 └── .gitignore
 ```
