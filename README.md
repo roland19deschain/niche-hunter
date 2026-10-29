@@ -1,6 +1,7 @@
-# NicheHunter
-
-<h3 align="center">From Reddit and TikTok observations to testable ideas for small digital products.</h3>
+<h1 align="center">
+  NicheHunter<br>
+  <sub>From Reddit and TikTok observations to testable ideas for small digital products.</sub>
+</h1>
 
 <p align="center">
   <img src="./avatar.png" alt="NicheHunter — a research robot with a magnifying glass against a backdrop of charts" width="360">
