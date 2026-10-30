@@ -23,7 +23,7 @@ This is a proposed design, not existing modules:
 
 `research orchestrator → source adapters → observations → topic clustering → trend analyzer → problem extractor → opportunity generator → report`.
 
-- The first iteration targets Reddit and TikTok. Add adapters in stages, starting with one source that is actually accessible; then add the second source and combined analysis. Explicitly report when either source is unavailable.
+- The first iteration targets Reddit, TikTok, and ChatGPT through OpenAI Signals. Follow [the development plan](./docs/development-plan.md), add adapters in stages as access is validated, and explicitly report unavailable sources and actual coverage.
 - Explicitly describe each adapter's capabilities: authorization, API/import, fields and units, geography, historical depth, pagination, limits, and permitted storage.
 - Separate original observations and permitted raw snapshots from derived metrics and LLM conclusions. Preserve run parameters and provenance for reproducibility.
 - A skill, CLI, MCP, and continuously running collector are different execution methods; choose based on the task rather than assuming a background process exists.
@@ -69,6 +69,7 @@ This is a proposed design, not existing modules:
 ## Working in the repository
 
 - Communicate and write project explanations in Russian; preserve technical identifiers in their original form.
+- Maintain [docs/development-plan.md](./docs/development-plan.md) in English, including all future updates. Its provider roadmap describes future candidates separately from the MVP.
 - Make small changes scoped to the current task while preserving others' work. As implementation is added, update the actual structure and run/verification commands here.
 - Run shell commands through `rtk`; rules: `/Users/AlexeyRoik/.codex/RTK.md`.
 - Do not run Xcode builds or SwiftPM package builds unless the user explicitly requests them.
