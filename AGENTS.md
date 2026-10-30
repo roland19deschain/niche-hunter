@@ -2,10 +2,10 @@
 
 ## Project status
 
-- As of October 29, 2026, the repository contains a detailed `README.md` with the concept and first-iteration plan, `avatar.png`, the original `context.md`, `LICENSE` (MIT), an Xcode/Swift `.gitignore`, and this file. There is no source code, skill, integrations, tests, or run commands yet.
+- As of October 31, 2026, the repository contains `README.md`, `avatar.png`, `LICENSE` (MIT), an Xcode/Swift `.gitignore`, this file, and the canonical development plan. There is no source code, skill, integrations, tests, or run commands yet.
 - The technology stack, runtime, and execution method have not been selected. The `.gitignore` template does not mean this project is an iOS app.
-- Original context: [context.md](./context.md), prepared on October 29, 2026. This is design reference material; its examples, APIs, and metrics are not implemented features or data verified in this repository.
-- The user's request defines the scope of the current work. The roadmap described in the context does not itself authorize development, service integrations, advertising experiments, or regular data collection.
+- Canonical project context and handoff: [docs/development-plan.md](./docs/development-plan.md). It consolidates the earlier design and access investigations, distinguishing dated observations, documented capabilities, supplier claims, and open decisions. Start with its handoff snapshot and next-agent checklist.
+- The user selected a free pilot and has no provider accounts or credentials yet. The current request defines the authorized work; the plan itself does not authorize account creation, service integrations, advertising experiments, paid purchases, or regular data collection.
 
 ## Goal
 
@@ -50,7 +50,7 @@ This is a proposed design, not existing modules:
 
 - Reddit: look for recurring problems, workarounds, requests for solutions, and shortcomings of alternatives. One popular thread does not establish market growth; keyword heuristics do not replace analysis.
 - TikTok: distinguish search queries, recommended keywords, topic groups, hashtags, videos, sounds, and comments. `typed_search` and `topic_group` are not interchangeable.
-- The context covers TikTok Business Discovery, Creator Search Insights, TokConnect, Creative Center, and Research API. Verify their current capabilities and access requirements before integration.
+- The development plan records TikTok Business Discovery, Creator Search Insights, TokConnect, Creative Center, and Research API findings. Verify their current capabilities and access requirements before integration.
 - The availability of trending keywords or video search does not establish access to historical user search volumes. When those data are absent, label the result as `content_trends` or `keyword_recommendations`.
 - Treat third-party provider metrics as provider claims until the schema, sample responses, units, freshness, and coverage have been verified and compared against the primary source. Record data quality, confidence, and limitations.
 

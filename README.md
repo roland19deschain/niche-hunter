@@ -218,9 +218,8 @@ Current structure:
 ├── AGENTS.md      # Context and rules for future work
 ├── README.md      # Project concept and first-iteration plan
 ├── avatar.png     # Project avatar
-├── context.md     # Original project design context
 ├── docs/
-│   └── source-access.md  # Reddit and TikTok data access check (October 30, 2026)
+│   └── development-plan.md  # Canonical context, access findings, roadmap, and handoff
 ├── LICENSE        # MIT
 └── .gitignore
 ```
@@ -229,7 +228,7 @@ The working branch is `develop`. There are no installation, run, or test command
 
 Project working instructions: [AGENTS.md](./AGENTS.md).
 
-Original project design context: [context.md](./context.md).
+Current scope, source-access findings, implementation contracts, and next steps: [development plan](./docs/development-plan.md). It is the canonical handoff for the Reddit, TikTok, and ChatGPT MVP.
 
 ## License
 
