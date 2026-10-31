@@ -1,25 +1,25 @@
 # Niche Hunter — first-version development plan
 
-Date: **October 31, 2026**. Discussion time zone: `Europe/Minsk`.
+Updated: **November 1, 2026**. Discussion time zone: `Europe/Minsk`. Source investigations below retain their original verification dates.
 
 **Document language: English. Keep all future updates to this plan in English.**
 
-Status: access options have been researched and a **free pilot** has been selected. The user confirmed that no source accounts or access credentials are available yet; the current stage is information gathering. The skill, installation, account creation, and authorization setup have not been implemented. Purchasing subscriptions is outside this stage.
+Status: **v0.1 of the shared skill is implemented**, with a Python standard-library helper, public OpenAI Signals collection, permitted normalized imports, and evidence-linked report finalization. The user authorized this first implementation on November 1. The **free pilot** remains in force; no source accounts or credentials have been provisioned. Authenticated Reddit/TikTok collection and cross-client behavioral validation remain incomplete. Purchasing subscriptions is outside scope.
 
 ## 0. Handoff snapshot — read first
 
 This is the canonical project context and implementation plan. Earlier design notes and access investigations have been consolidated here; their historical versions remain in Git. An agent should be able to resume without the original chat, screenshots, meeting notes, or deleted documents.
 
-| Area | Current state as of October 31, 2026 |
+| Area | Current state as of November 1, 2026 |
 | --- | --- |
 | Repository | Work in `develop`; inspect `git status` and both staged and unstaged diffs before editing. Do not assume local branches or remotes are synchronized. |
-| Implemented artifacts | README, avatar, MIT license, Git ignore rules, agent instructions, and this plan. No skill, source adapters, runtime package, fixtures, or build/test/run commands exist. |
-| Runtime | Not selected. No continuously running collector, scheduler, hosted backend, or cloud storage has been provisioned. |
+| Implemented artifacts | Canonical `skills/niche-hunter/`: shared `SKILL.md`, references/catalog, Python helper, and Codex UI metadata. Project `.agents/skills/niche-hunter` and `.claude/skills/niche-hunter` symlink to it. Synthetic behavior tests and actual commands are documented. No authenticated social-source adapter is bundled. |
+| Runtime | Python 3.10+ standard library and IANA time-zone data; manual skill invocation with calling-agent analysis. No additional LLM API, continuously running collector, scheduler, hosted backend, or cloud storage. |
 | Accounts and credentials | None available for Reddit, TikTok for Business, TokConnect, or licensed monitoring services. No credentials are committed. |
-| OpenAI Signals | Public download and CSV parsing verified; no reusable adapter or dataset cache has been implemented. |
+| OpenAI Signals | Live v0.1 helper download and offline replay verified. One global monthly topic-share table is supported, with release hashing, permitted ZIP snapshot, adjacent-month comparisons, explicit monthly fallback and unsupported narrow-topic handling. |
 | TikTok | Public documentation, prices, and unauthenticated MCP/OAuth discovery checked. No authorized data response or metric accuracy validation yet. |
 | Reddit | Bounded Arctic Shift metadata retrieval verified. Suitable commercial access, completeness, and future reliability remain unresolved. |
-| Budget and scope | Free pilot only. Current work is planning; this document does not itself authorize account creation, paid purchases, advertising, deployment, or scheduled collection. |
+| Budget and scope | Free pilot only. Implementation is authorized; this document does not itself authorize account creation, paid purchases, advertising, deployment, or scheduled collection. Defaults: 100 normalized observations/provider, 10 external calls/run subject to confirmed free balance, at most two public Signals HTTP attempts. |
 
 Resume by reading this snapshot, source-specific constraints in section 3, implementation contracts in section 12, and the next-action checklist in section 14. Treat dated probes as historical observations, not a current access guarantee. Recheck changing schemas, prices, terms, and permissions when implementing an adapter.
 
@@ -72,7 +72,7 @@ Selection rules:
 5. An unknown provider name requires clarification and a list of supported options; it does not automatically create an adapter.
 6. Adding a platform extends the capability and source registry while preserving common selection, date-window, and reporting logic.
 
-Examples of intended interaction, **not working commands in the current repository**:
+Examples of skill requests (filesystem discovery is configured; fresh-session discovery and behavior still need validation in both clients):
 
 ```text
 /niche-hunter
@@ -328,20 +328,23 @@ Artifacts: a compact `report.md` and `results.json` containing parameters, prove
 
 ### Stage 1 — shared skill and minimal collection
 
-- Create the canonical `skills/niche-hunter/` folder with `SKILL.md` and only necessary `scripts/` and `references/`.
-- Enable discovery in Codex and Claude Code without duplicating source files, for example through supported links from skill directories.
-- Define shared provider, normalized observation, and coverage contracts.
-- Implement providers, dates/duration, topic, time zone, and limit inputs.
-- Connect OpenAI Signals and the validated TikTok path.
-- Connect Reddit only with suitable confirmed access; otherwise return an explicit status for the selected provider.
-- Choose runtime and integration details based on validated connections. Keep shared logic independent of a single LLM supplier's SDK.
+- [x] Create canonical `skills/niche-hunter/` with instructions, references, scripts, and Codex UI metadata.
+- [x] Add project discovery symlinks for Codex and Claude Code without duplicating logic; actual client discovery remains to test.
+- [x] Define v0.1 run, observation, coverage, permitted-import, and analysis contracts in `skills/niche-hunter/references/contracts.md`.
+- [x] Implement provider selection, duration/custom dates, topic, time zone, region/language filter disclosure, and record limits.
+- [x] Implement public OpenAI Signals collection, SHA-256 snapshot provenance, and offline replay.
+- [x] Add validated normalized Reddit/TikTok import processing and explicit selected-provider failure statuses.
+- [x] Select Python 3.10+ standard library with calling-agent tool orchestration and analysis; no model SDK dependency.
+- [ ] Validate an authorized TikTok tool/data path and map its real fields/charging semantics into the contract.
+- [ ] Establish suitable Reddit access and map its real fields/history into the contract.
 
 ### Stage 2 — analysis and concise reporting
 
-- Add deduplication, topic grouping, comparable time-window analysis, and problem extraction.
-- Separate facts, supplier estimates, interpretations, and product hypotheses.
-- Produce evidence-backed results and a minimal validation plan, rather than promises of profitability or low CAC.
-- Add caching and explicit free-quota limits.
+- [x] Implement source-ID deduplication and adjacent-calendar-month Signals share arithmetic. Semantic repost/topic grouping and problems are assigned to the calling agent, not an automated classifier.
+- [x] Define findings/hypothesis labels and validate evidence IDs and required analysis fields during offline finalization.
+- [x] Generate `report.md` and `results.json`, including source status, actual windows, limitations, provenance and analysis-pending state.
+- [x] Preserve public Signals ZIP for replay and bound helper attempts/imported records; instruct the caller to enforce free-credit limits before tool calls.
+- [ ] Validate useful multi-source problem extraction and product experiments from real permitted Reddit/TikTok evidence. Broad monthly aggregates alone must not force a hypothesis shortlist.
 
 ### Stage 3 — behavioral validation
 
@@ -418,9 +421,9 @@ These are an inventory for later evaluation, not verified integrations or approv
 
 Affiliate/creator partnerships and B2B partnerships remain possible distribution models. They require an identified partner/source and relevant conversion or sales-cycle evidence; they are not generic data providers with an assumed API.
 
-## 12. Implementation contracts to define before coding
+## 12. Implementation contracts and design requirements
 
-Everything in this section is a **design requirement**, not an existing schema, executable command, or implemented module. Keep the runtime decision open until the access pilot establishes which interfaces are usable.
+This section retains the design basis. The implemented v0.1 contract and CLI are specified in [the skill's runtime reference](../skills/niche-hunter/references/contracts.md); it is authoritative for actual field names and supported behavior. The minimal stack was selected from the verified public Signals interface: Python 3.10+ standard library, with client tools handling any authorized MCP collection. Broader requirements remain goals until explicitly checked off.
 
 ### Inputs and the resource catalog
 
@@ -432,11 +435,11 @@ Everything in this section is a **design requirement**, not an existing schema, 
 | `topic` / query terms | Optional; no topic means the supported category catalog. Preserve original terms alongside canonical topics. |
 | Region and language | Record separately; defaults for a market/language pilot have not been agreed. Do not infer a user's country from Reddit text, account personalization, or the time zone. |
 | Source filters | Optional categories, communities, hashtags, organic/ads mode, and other filters only when supported by that adapter |
-| Limits and baseline | Configurable maximum records/calls, minimum evidence, and comparison window. Final numeric defaults depend on verified quotas; $0 paid spending remains fixed for the pilot. |
+| Limits and baseline | v0.1 caps: 100 normalized observations/provider (CLI adjustable), 10 external tool calls total/run reduced to the verified free balance, at most two Signals HTTP attempts. Baseline uses the preceding local calendar interval; Signals instead reports its distinct adjacent-month comparison. $0 new paid spending remains fixed. |
 
 For a natural-language inclusive date range, convert the final local day to the next day's exclusive boundary. Default windows exclude today's incomplete day; an explicit request may include it, in which case flag that partial day. Reject invalid/reversed dates or nonpositive durations with an actionable explanation.
 
-Build a maintained resource catalog inside the skill's references/configuration. It should map platforms to categories, communities/query seeds, languages, regions, source URLs, capabilities, and limits. **No such catalog exists yet.** Seed queries are a discovery aid, not observed user demand. For a topic outside the catalog, discover relevant permitted resources or report the gap instead of fabricating coverage.
+The v0.1 catalog exists at `skills/niche-hunter/references/catalog.json`: nine broad discovery categories with English query seeds and candidate communities, provider URLs, unknown region, and exact broad Signals-topic aliases. Provider capabilities/limits live in `references/providers.md`. These seeds are not observed demand or a validated complete taxonomy; community relevance/access still needs checking through a permitted adapter. The helper does not automatically crawl these communities. For a topic outside the catalog, discover relevant permitted resources or report the gap instead of fabricating coverage.
 
 ### Pipeline and adapter responsibilities
 
@@ -454,7 +457,7 @@ Each adapter must expose authorization status, signal types, supported windows/h
 
 ### Minimum normalized record and result structure
 
-Define and version the concrete JSON schema before implementing the first adapter. At minimum, retain:
+The versioned v0.1 JSON shape is documented and validated by the helper rather than a third-party schema dependency. The broader minimum requirements are:
 
 | Record | Required information |
 | --- | --- |
@@ -521,15 +524,15 @@ These are examples for discovery and clearly labeled fixtures, **not validated w
 
 ## 14. Next-agent checklist and completion criteria
 
-No implementation stack, provider credentials, source catalog, numerical call limits, storage layout, or final JSON schema has been selected. Do not describe those as already implemented. Keep the plan updated as each decision or live validation is completed.
+The initial stack, canonical skill/discovery paths, bounded catalog, versioned contracts, local run layout, and conservative limits are implemented. Provider credentials and authenticated source usefulness remain unresolved. Keep the plan updated as each live validation is completed; do not infer authenticated integration readiness from the completed helper.
 
-When implementation is requested, the next useful sequence is:
+The next useful sequence after v0.1 is:
 
 1. Inspect the actual branch/worktree and read `AGENTS.md`; preserve unrelated changes. Use this plan as the current context, with its dated evidence and unresolved access conditions.
-2. Draft the minimal versioned run/observation/coverage contract and a bounded resource catalog. Use the already verified public Signals files for the first deterministic offline collection/normalization slice; it need not wait for every other provider's onboarding.
+2. Start fresh local Codex and Claude Code sessions in this repository and test discovery plus representative natural-language requests. Do not install duplicate global copies by default. Use the same canonical skill, portable script, catalog, and v0.1 contracts. Record model behavior separately from deterministic helper tests.
 3. Resolve TikTok onboarding and metric validation on the free allocation. User participation is required for account setup/consent; credentials are not currently available. Record actual tools, quotas, source terms, window semantics, and what was cross-checked.
 4. Resolve a permitted Reddit adapter or retain an explicit unavailable/terms-unconfirmed result. Do not hold all useful work indefinitely on Reddit access or silently treat an unresolved source as production-ready.
-5. Package the shared skill and validate the same representative requests in Codex and Claude Code. Add only resources that support concrete use cases.
+5. Run the first useful permitted multi-source research and evaluate problem evidence, alternatives, independent corroboration, and the proposed tests. Broader automation/ranking and more granular Signals tables should follow demonstrated need, not expand the initial slice silently.
 
 Minimum acceptance criteria:
 
@@ -542,3 +545,38 @@ Minimum acceptance criteria:
 - Fixtures and static checks are distinguished from authorized runtime tests, source accuracy verification, and production proof.
 - The skill can operate with one available source and declare the rest unavailable. Broader integration readiness remains incomplete until its required access and useful signal types are actually validated.
 - The canonical skill is usable in both target agents without duplicated research logic. README and this plan list real setup/run/verification commands only after those commands exist.
+
+## 15. v0.1 implementation handoff
+
+### Files and execution
+
+- `skills/niche-hunter/SKILL.md`: shared workflow, natural-language parameter extraction, selected-source routing, evidence/analysis rules, and concise delivery.
+- `references/catalog.json`: versioned bounded discovery seeds; `references/providers.md`: portable access constraints and verified versus unverified source semantics; `references/contracts.md`: concrete import/results/analysis contract and replay rules.
+- `scripts/research.py collect`: run validation, calendar date normalization, public Signals collection, permitted normalized imports, provider failure isolation, source-ID deduplication, and initial Markdown/JSON artifacts. No authenticated Reddit/TikTok requests are embedded.
+- `scripts/research.py finalize`: validates calling-agent analysis/evidence references and renders existing results without networking or recollecting. It does not verify the factual correctness of model-written conclusions.
+- `agents/openai.yaml`: Codex display metadata; shared frontmatter uses only standard name/description fields. Both project client directories symlink to `../../skills/niche-hunter`.
+- `tests/test_research.py`: synthetic helper scenarios; no third-party messages, credentials, or real supplier fixtures.
+
+Actual repository commands (prefix with `rtk proxy` on this workstation):
+
+```bash
+python3 skills/niche-hunter/scripts/research.py collect \
+  --timezone Europe/Minsk --out .nichehunter/runs/NEW_RUN
+python3 skills/niche-hunter/scripts/research.py collect \
+  --providers tiktok,reddit --days 14 --topic horoscopes \
+  --timezone Europe/Minsk --out .nichehunter/runs/ANOTHER_NEW_RUN
+python3 skills/niche-hunter/scripts/research.py finalize \
+  --run RUN_DIR --analysis RUN_DIR/analysis.json
+python3 -m unittest discover -s tests -v
+```
+
+Run directories must be fresh/empty and are ignored by Git. `collect` leaves semantic analysis pending; the calling agent writes the versioned analysis object and calls `finalize`. A concise, honest result may contain zero product hypotheses when no observed problem is supported. Normalized permitted imports remain subject to their original storage/retention terms. No secrets are handled by the helper; client authentication belongs in the client's secure facilities.
+
+### Verification on November 1, 2026
+
+- Synthetic checks cover seven-day/14-day/custom windows, DST and preceding intervals, invalid inputs, selected/unavailable source isolation, offline replay, monthly context and unsupported topics/filters, deduplication/exclusive boundaries/caps, source failure isolation, zero/missing baseline, preservation of rolling-window semantics, bounded retries, rights metadata, total external-call caps, and offline finalization with rejected invented evidence IDs.
+- A bounded **live execution of the new helper** downloaded the public Signals ZIP successfully. It parsed 189 table rows and retained 14 observations (seven categories for September and August 2026) with attribution and a snapshot hash. Reddit and TikTok were reported as `unconfigured`, with zero network calls to them. The public release was separately replayed offline; replay is not a second live provider test.
+- The filesystem discovery links resolve to one canonical directory. Current official [Codex](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills) and [Claude Code](https://code.claude.com/docs/en/skills#choose-where-skills-load) documentation supports project discovery and symlinked skills. Fresh-session loading and model behavior are **not yet verified** in either client.
+- Authenticated MCP schemas/responses, free credit balance/charging, supplier metric accuracy, source completeness, commercial Reddit rights and permissions, and useful multi-source hypotheses remain unverified. No accounts, purchases, background jobs, ad experiments, or global client configuration were created.
+
+The host skill-creator validator needs PyYAML separately; it is not a runtime dependency of Niche Hunter. Keep validation-tool dependencies in a temporary/tool environment rather than adding them to the research helper.

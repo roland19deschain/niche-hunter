@@ -1,0 +1,4 @@
+interface:
+  display_name: "Niche Hunter"
+  short_description: "Find evidence-backed niches for small digital products"
+  default_prompt: "Use $niche-hunter to research product opportunities from the last seven complete days."

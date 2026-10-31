@@ -7,9 +7,9 @@
   <img src="./avatar.png" alt="NicheHunter — a research robot with a magnifying glass against a backdrop of charts" width="360">
 </p>
 
-NicheHunter is a planned research tool for finding promising niches before development begins. It is designed as a repeatable workflow: collect signals from selected sources, identify growing topics and unmet needs, compare them with existing solutions, and propose product hypotheses together with a way to reach the audience.
+NicheHunter is a research skill for finding promising niches before development begins. It supports a repeatable workflow: collect available signals from selected sources, identify supported trends and unmet needs, compare them with existing solutions, and propose product hypotheses together with a way to reach the audience.
 
-> **Status as of October 29, 2026:** preparing the first iteration. The repository contains a project description, working instructions, and an avatar. Data collectors, analytics, and run commands have not been implemented yet. The sections below describe the intended behavior; this README will be updated as implementation progresses and sources are verified.
+> **Status as of November 1, 2026:** v0.1 of the shared Codex/Claude Code skill is implemented. Public OpenAI Signals collection, date handling, permitted normalized imports, evidence-linked analysis, and Markdown/JSON reporting work. Reddit and TikTok remain access-dependent: no authenticated connection has been validated. Signals provides broad monthly context, not weekly search logs. No subscriptions or additional model API are required for the available public-data path.
 
 ## Why this project exists
 
@@ -46,9 +46,9 @@ The research considers two acquisition models:
 
 An idea should therefore include both the product itself and its proposed distribution method. For example, a suitable experiment for one task might involve finding people who are already asking for a solution, while another might call for a short demonstration of the result on TikTok.
 
-## First iteration: Reddit + TikTok
+## First iteration: Reddit + TikTok + ChatGPT
 
-The first iteration targets **both sources**. Adapters will be added in stages after actual data access has been verified. Each source must work independently; combined research should show overlaps, differences, and gaps in the observations.
+The first iteration registers **all three providers**. The caller can select one or several; unavailable sources remain visible in the coverage table. Reddit/TikTok collection uses permitted tools connected to the calling agent or a normalized import. The Python helper automatically collects the public ChatGPT aggregate source.
 
 ### Reddit: problems, workarounds, and unmet demand
 
@@ -80,6 +80,12 @@ Search queries, recommended keywords, topic groups, hashtags, and views will be 
 
 TikTok data access options, including Business Discovery, Creator Search Insights, Creative Center, and third-party providers, must be verified before an integration is selected. A trends interface does not guarantee an available API or historical search volumes. If only content signals are available, the report must state this explicitly.
 
+### ChatGPT: public OpenAI Signals
+
+The helper downloads the public release and reads monthly global message shares by broad topic. It retains the source ZIP, hash, attribution, actual month, and a comparable preceding month where available. This is aggregate context: no private conversations, original prompts, weekly query volumes, or narrow-topic demand are exposed. For a weekly request, monthly data is labeled separately; unsupported narrow topics produce an explicit status.
+
+Source and license: [OpenAI Signals, CC BY 4.0](https://openai.com/signals/data-download/). Monthly share changes do not prove absolute usage growth or willingness to pay.
+
 ### Combined analysis
 
 Reddit and TikTok should complement each other. For example, discussions may reveal a recurring manual task, while videos may show how clearly and visually its solution can be demonstrated.
@@ -103,7 +109,7 @@ Competitor, pricing, and commercial demand validation will be a separate part of
 
 > Research Reddit and TikTok over the last seven complete days on the topic of productivity. Look for recurring tasks, awkward workarounds, and demonstrations of useful tools. Compare with the previous seven days where history is available. Prepare five hypotheses for small products, with links, limitations, and a validation plan.
 
-This is an example of the intended scenario, not a command that can already be executed.
+This scenario can now be requested through the skill. Its usefulness depends on permitted connected evidence; the skill will return fewer hypotheses or none when support is insufficient.
 
 ### Research parameters
 
@@ -123,7 +129,7 @@ The requested period will be shown separately from actual coverage. If a source 
 
 ### Report: `report.md`
 
-The report is planned to include:
+The skill's report includes the available parts of:
 
 - Research parameters, collection time, actual coverage, and source limitations.
 - Key observations and topics classified as emerging, sustained, declining, or an isolated spike.
@@ -152,7 +158,7 @@ The report is planned to include:
 
 Structured output is needed for repeat analysis and future integrations. It should contain run parameters, observations and links to them, calculated metrics, trends, problems, hypotheses, errors, and data gaps.
 
-Permitted raw snapshots and derived conclusions will be stored separately. This will make it possible to trace the origin of a conclusion and repeat calculations on the same set of observations. The exact schema and file locations will be defined during implementation.
+The versioned v0.1 contract separates normalized observations from calling-agent conclusions. A permitted public Signals snapshot is stored under the run's `raw/`; imported third-party originals are not copied automatically. See [runtime contracts](./skills/niche-hunter/references/contracts.md) for import, analysis, and replay details.
 
 ## Analysis principles
 
@@ -170,14 +176,16 @@ Permitted raw snapshots and derived conclusions will be stored separately. This 
 
 ## Proposed architecture
 
-The diagram below shows the future pipeline; the corresponding modules have not been implemented yet.
+The skill coordinates collection and analysis. The helper performs deterministic normalization and reporting; semantic analysis runs in the calling agent.
 
 ```mermaid
 flowchart TD
     Request["Research parameters"] --> Reddit["Reddit adapter"]
     Request --> TikTok["TikTok adapter"]
+    Request --> ChatGPT["OpenAI Signals: monthly context"]
     Reddit --> Observations["Normalization, deduplication, and provenance"]
     TikTok --> Observations
+    ChatGPT --> Observations
     Observations --> Analysis["Topic clustering, trends, and problems"]
     Analysis --> Opportunities["Product hypotheses and validation plan"]
     Opportunities --> Report["Markdown report and JSON"]
@@ -185,21 +193,22 @@ flowchart TD
 
 Each adapter will describe its own capabilities and limitations. Shared analytics should work with normalized observations while preserving the meaning of the original metrics. This will allow new sources to be added without collapsing different signal types into a single popularity metric.
 
-The technology stack, runtime, and execution interface have not been selected yet. The target format is a reusable research workflow that can be packaged as a skill with collection and analysis tools. Decisions about CLI, MCP, and other execution methods will follow integration requirements.
+The portable helper uses Python 3.10+ and its standard library. Connected MCP tools remain client-specific; the common skill has no dependency on one model supplier's SDK. There is no hosted backend or background collector.
 
 ## First-iteration plan
 
 - [x] Document the project concept and core data reliability requirements.
 - [x] Prepare the README, avatar, and repository working instructions.
-- [ ] Verify available Reddit and TikTok sources, their schemas, permissions, and historical coverage.
-- [ ] Select a runtime, execution method, and normalized observation schema.
-- [ ] Implement collection and processing for one source, then connect the second.
-- [ ] Add deduplication, date handling, and period comparisons where justified.
+- [ ] Validate authenticated Reddit/TikTok access, schemas, permissions, quotas, and historical coverage.
+- [x] Select a runtime, shared skill format, and versioned normalized observation contract.
+- [x] Implement public Signals collection and permitted import processing.
+- [x] Add source-ID deduplication, calendar date handling, and supported monthly share comparisons.
 - [ ] Prepare a combined problem analysis and 3–5 product hypotheses with evidence.
-- [ ] Generate a Markdown report and JSON with explicit gaps and limitations.
-- [ ] Verify behavior using fixtures and real data, clearly distinguishing the results of each type of verification.
+- [x] Generate a Markdown report and JSON with explicit gaps and limitations.
+- [x] Verify helper behavior using synthetic fixtures and the public Signals release, separately labeled.
+- [ ] Verify fresh-session discovery and representative model behavior in both Codex and Claude Code.
 
-The first iteration is complete when research can be conducted across both sources, material conclusions can be traced to original observations, and a clear hypothesis validation plan can be produced. If one source is unavailable or covers only part of the period, the research must finish with an explicit description of that limitation.
+The initial skill can already finish with one accessible source and explicit unavailable-provider statuses. Full integration readiness still requires suitable Reddit/TikTok access and evidence-backed product research. Material conclusions must trace to observations, with a clear hypothesis validation plan.
 
 Checks must cover date boundaries, deduplication, small and zero comparison baselines, overlapping windows, unavailable fields, and partial collection. Demonstration data will be clearly separated from observations actually retrieved.
 
@@ -220,11 +229,46 @@ Current structure:
 ├── avatar.png     # Project avatar
 ├── docs/
 │   └── development-plan.md  # Canonical context, access findings, roadmap, and handoff
+├── skills/niche-hunter/    # Shared SKILL.md, Python helper, references, UI metadata
+├── .agents/skills/niche-hunter -> ../../skills/niche-hunter
+├── .claude/skills/niche-hunter -> ../../skills/niche-hunter
+├── tests/test_research.py  # Synthetic behavioral checks
 ├── LICENSE        # MIT
 └── .gitignore
 ```
 
-The working branch is `develop`. There are no installation, run, or test commands yet. They will be added here along with the implementation.
+The working branch is `develop`. Both client directories point to one canonical skill. Project discovery locations and symlinks are documented by [OpenAI](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills) and [Claude Code](https://code.claude.com/docs/en/skills#choose-where-skills-load). Start a fresh local client session in this repository if the new skill is not listed. Runtime discovery in both clients has not yet been exercised; the filesystem links are verified. This is project-local setup, not global installation or cloud-session packaging.
+
+Examples in Codex:
+
+```text
+$niche-hunter
+$niche-hunter only TikTok for 14 days, topic: horoscopes
+$niche-hunter Reddit and ChatGPT for the last 7 days
+```
+
+Use `/niche-hunter` with the same request in Claude Code. The agent extracts parameters, checks available permitted connections, calls the helper and adds evidence-linked analysis. Default providers are all three; default period is seven complete days in the caller's time zone. Unsupported sources/windows are disclosed. The bounded [resource catalog](./skills/niche-hunter/references/catalog.json) supplies discovery seeds, not observed demand.
+
+Direct helper commands from the repository root (Python 3.10+ with IANA time-zone data):
+
+```bash
+python3 skills/niche-hunter/scripts/research.py collect \
+  --timezone Europe/Minsk --out .nichehunter/runs/first-run
+
+# Only Reddit; no requests to TikTok or Signals, even without configured Reddit access:
+python3 skills/niche-hunter/scripts/research.py collect \
+  --providers reddit --days 14 --timezone Europe/Minsk \
+  --out .nichehunter/runs/reddit-14d
+
+# After the calling agent writes analysis.json using the evidence IDs:
+python3 skills/niche-hunter/scripts/research.py finalize \
+  --run .nichehunter/runs/first-run \
+  --analysis .nichehunter/runs/first-run/analysis.json
+
+python3 -m unittest discover -s tests -v
+```
+
+Choose a fresh output directory for every collection. Local `.nichehunter/` runs are ignored by Git. `collect` alone produces evidence and a report with analysis pending; `finalize` adds the agent's checked analysis without recollecting. For offline replay use `--offline --signals-file PATH`; for permitted Reddit/TikTok data use `--import-file PATH` following the [contract](./skills/niche-hunter/references/contracts.md). This does not turn an unlicensed export into permitted data. The helper needs no external packages or API key. On this workstation, prefix shell commands with `rtk` as required by the repository instructions.
 
 Project working instructions: [AGENTS.md](./AGENTS.md).
 

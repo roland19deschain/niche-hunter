@@ -2,8 +2,8 @@
 
 ## Project status
 
-- As of October 31, 2026, the repository contains `README.md`, `avatar.png`, `LICENSE` (MIT), an Xcode/Swift `.gitignore`, this file, and the canonical development plan. There is no source code, skill, integrations, tests, or run commands yet.
-- The technology stack, runtime, and execution method have not been selected. The `.gitignore` template does not mean this project is an iOS app.
+- As of November 1, 2026, v0.1 is a shared skill at `skills/niche-hunter/`, discoverable through project links in `.agents/skills/` (Codex) and `.claude/skills/` (Claude Code). Keep one canonical copy. Client discovery and model behavior still need a fresh-session check in both clients.
+- Runtime: Python 3.10+ standard library with IANA time-zone data. The helper collects public OpenAI Signals, validates permitted normalized Reddit/TikTok imports, handles dates and source-ID deduplication, and renders reports with calling-agent analysis. No authenticated Reddit/TikTok collector or connection has been validated. The `.gitignore` template does not mean this project is an iOS app.
 - Canonical project context and handoff: [docs/development-plan.md](./docs/development-plan.md). It consolidates the earlier design and access investigations, distinguishing dated observations, documented capabilities, supplier claims, and open decisions. Start with its handoff snapshot and next-agent checklist.
 - The user selected a free pilot and has no provider accounts or credentials yet. The current request defines the authorized work; the plan itself does not authorize account creation, service integrations, advertising experiments, paid purchases, or regular data collection.
 
@@ -19,7 +19,7 @@ Distinguish topic popularity, actual need, willingness to pay, distribution viab
 
 ## Implementation direction
 
-This is a proposed design, not existing modules:
+The shared skill and helper implement the collection/reporting slice; semantic analysis is performed by the calling agent. The broader design is:
 
 `research orchestrator → source adapters → observations → topic clustering → trend analyzer → problem extractor → opportunity generator → report`.
 
@@ -62,7 +62,7 @@ This is a proposed design, not existing modules:
 
 ## Expected research output
 
-- Main artifacts: `report.md` and `results.json`; CSV and links to permitted raw snapshots when needed.
+- Main artifacts: `report.md` and `results.json`; analysis input `analysis.json`, public Signals ZIP under the run's `raw/`, and optional permitted normalized imports. Local runs belong in ignored `.nichehunter/runs/`; do not commit third-party exports by default.
 - The report includes run parameters, actual coverage, limitations, trends (`emerging`, `sustained`, `declining`, `spike-only`), metrics/baseline, primary sources, user problems, and alternatives.
 - For each product hypothesis, specify the audience, narrow task, value proposition, channel, monetization, minimal MVP, risks, and a measurable experiment with success/stop criteria. The initial research MVP should produce 3–5 hypotheses.
 
@@ -73,6 +73,7 @@ This is a proposed design, not existing modules:
 - Make small changes scoped to the current task while preserving others' work. As implementation is added, update the actual structure and run/verification commands here.
 - Run shell commands through `rtk`; rules: `/Users/AlexeyRoik/.codex/RTK.md`.
 - Do not run Xcode builds or SwiftPM package builds unless the user explicitly requests them.
-- There are currently no build or test commands. Once code is added, verify deterministic aggregation, deduplication, date boundaries, rolling windows, and incomplete/unavailable sources; do not present fixtures as live integration verification.
+- Verify with `rtk proxy python3 -m unittest discover -s tests -v`. Collect with `rtk proxy python3 skills/niche-hunter/scripts/research.py collect --timezone Europe/Minsk --out .nichehunter/runs/NEW_RUN`. Finalize calling-agent analysis with `rtk proxy python3 skills/niche-hunter/scripts/research.py finalize --run RUN_DIR --analysis RUN_DIR/analysis.json`. Use a fresh output directory. See the skill's references for the v0.1 import/analysis contracts.
+- Tests use synthetic fixtures; do not present them as authenticated integration or metric-accuracy verification. The helper uses no external Python packages. The host skill-creator validator separately requires PyYAML in its own environment.
 
-Before the first implementation, determine an accessible source and its coverage, the runtime/execution format, secret storage, and permitted snapshots. Choose the technology stack based on these conditions.
+Next integration work must establish permitted source access, metric/window semantics and free quotas. Keep credentials in client facilities; the helper never reads them. Follow the development plan's updated handoff checklist and preserve historical evidence dates.

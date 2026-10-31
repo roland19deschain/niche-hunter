@@ -1,0 +1,32 @@
+{
+  "version": "0.1.0",
+  "default_providers": ["reddit", "tiktok", "chatgpt"],
+  "scope": "Bounded discovery seeds; not observed demand, a complete taxonomy, or validated source access. Community names and relevance must be checked through a permitted adapter.",
+  "seed_language": "en",
+  "region": null,
+  "categories": [
+    {"id": "productivity", "seeds": ["manual repetitive task", "organize notes", "workflow automation"], "reddit": ["productivity", "Notion"], "tiktok": ["productivity tools", "workflow automation"]},
+    {"id": "work-and-business", "seeds": ["invoice spreadsheet", "small business admin", "client management"], "reddit": ["smallbusiness", "freelance"], "tiktok": ["small business tools", "freelancer workflow"]},
+    {"id": "learning", "seeds": ["study notes flashcards", "language practice", "learning tools"], "reddit": ["GetStudying", "languagelearning"], "tiktok": ["study tools", "language learning"]},
+    {"id": "media-and-creativity", "seeds": ["product photo", "subtitle translation", "video editing workflow"], "reddit": ["VideoEditing", "photography"], "tiktok": ["product photography", "subtitle tools"]},
+    {"id": "home-and-lifestyle", "seeds": ["meal planning", "home organization", "room layout"], "reddit": ["HomeImprovement", "MealPrepSunday"], "tiktok": ["room planning", "meal planning"]},
+    {"id": "money-and-admin", "seeds": ["expense tracking", "bank statement csv", "document organization"], "reddit": ["personalfinance", "ynab"], "tiktok": ["budget tracker", "organize documents"]},
+    {"id": "wellbeing", "seeds": ["habit tracking", "workout planning", "sleep routine"], "reddit": ["getdisciplined", "bodyweightfitness"], "tiktok": ["habit tracker", "workout planner"]},
+    {"id": "hobbies-and-interests", "seeds": ["hobby organizer", "horoscope journal", "travel planning"], "reddit": ["Hobbies", "astrology", "travel"], "tiktok": ["hobby tools", "horoscope", "travel planner"]},
+    {"id": "technical-tools", "seeds": ["data cleanup", "developer workflow", "file conversion"], "reddit": ["webdev", "SideProject"], "tiktok": ["developer tools", "data cleaning"]}
+  ],
+  "provider_urls": {
+    "reddit": "https://www.reddit.com/",
+    "tiktok": "https://www.tiktok.com/",
+    "chatgpt": "https://openai.com/signals/data-download/"
+  },
+  "signals_topics": {
+    "Multimedia": ["multimedia", "мультимедиа"],
+    "Other/Unknown": ["other/unknown"],
+    "Practical Guidance": ["practical guidance", "практические советы"],
+    "Seeking information": ["seeking information", "поиск информации"],
+    "Self-expression": ["self-expression", "самовыражение"],
+    "Technical help": ["technical help", "техническая помощь"],
+    "Writing": ["writing", "письмо", "написание текстов"]
+  }
+}
