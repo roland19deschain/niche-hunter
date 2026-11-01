@@ -62,10 +62,10 @@ class ResearchTests(unittest.TestCase):
         return run
 
     def test_default_complete_days_and_explicit_14_days(self):
-        run = self.run_params("--timezone", "Europe/Minsk")
+        run = self.run_params("--timezone", "UTC")
         self.assertEqual(run["providers"], ["reddit", "tiktok", "chatgpt"])
-        self.assertEqual(run["requested_window"]["start_at"], "2026-10-24T21:00:00Z")
-        self.assertEqual(run["requested_window"]["end_at"], "2026-10-31T21:00:00Z")
+        self.assertEqual(run["requested_window"]["start_at"], "2026-10-25T00:00:00Z")
+        self.assertEqual(run["requested_window"]["end_at"], "2026-11-01T00:00:00Z")
         self.assertFalse(run["includes_partial_day"])
         run = self.run_params("--days", "14")
         self.assertEqual(run["requested_window"]["start_at"], "2026-10-18T00:00:00Z")
@@ -81,8 +81,8 @@ class ResearchTests(unittest.TestCase):
         self.assertEqual(run["baseline_window"]["end_at"], current["start_at"])
 
     def test_custom_dates_and_partial_day(self):
-        run = self.run_params("--start", "2026-10-01", "--end", "2026-10-15", "--timezone", "Europe/Minsk")
-        self.assertEqual(run["requested_window"]["end_at"], "2026-10-14T21:00:00Z")
+        run = self.run_params("--start", "2026-10-01", "--end", "2026-10-15", "--timezone", "UTC")
+        self.assertEqual(run["requested_window"]["end_at"], "2026-10-15T00:00:00Z")
         partial = self.run_params("--start", "2026-10-31T12:00:00Z", "--end", "2026-11-01T10:00:00Z")
         self.assertTrue(partial["includes_partial_day"])
 

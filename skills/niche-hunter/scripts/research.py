@@ -534,8 +534,8 @@ def parser():
     command = commands.add_parser("collect", help="Collect public Signals and/or permitted normalized imports")
     command.add_argument("--providers", default=",".join(PROVIDERS))
     command.add_argument("--days", type=int)
-    command.add_argument("--start", help="Local ISO date or timestamp with offset")
-    command.add_argument("--end", help="Exclusive local ISO date or timestamp with offset")
+    command.add_argument("--start", help="ISO date in the selected time zone or timestamp with offset")
+    command.add_argument("--end", help="Exclusive ISO date in the selected time zone or timestamp with offset")
     command.add_argument("--timezone", help="Caller IANA zone; disclosed UTC fallback if omitted")
     for name in ("topic", "region", "language", "request", "as-of", "signals-file"):
         command.add_argument("--" + name)

@@ -1,6 +1,6 @@
 # Niche Hunter — first-version development plan
 
-Updated: **November 1, 2026**. Discussion time zone: `Europe/Minsk`. Source investigations below retain their original verification dates.
+Updated: **November 1, 2026**. Source investigations below retain their original verification dates.
 
 **Document language: English. Keep all future updates to this plan in English.**
 
@@ -557,14 +557,16 @@ Minimum acceptance criteria:
 - `agents/openai.yaml`: Codex display metadata; shared frontmatter uses only standard name/description fields. Both project client directories symlink to `../../skills/niche-hunter`.
 - `tests/test_research.py`: synthetic helper scenarios; no third-party messages, credentials, or real supplier fixtures.
 
+Portability requirement: keep the skill package in English and use neutral examples without personal paths, workstation-specific tooling, regional time-zone examples, country/language presets, or locale-specific topic aliases. Time zone, region and content language are caller/source parameters, not author-specific defaults. UTC remains the disclosed fallback when no caller time zone is available; `seed_language` describes the actual discovery-seed language, not a target-market filter. Time-zone correctness and DST tests remain necessary, separately from user-facing examples.
+
 Actual repository commands (prefix with `rtk proxy` on this workstation):
 
 ```bash
 python3 skills/niche-hunter/scripts/research.py collect \
-  --timezone Europe/Minsk --out .nichehunter/runs/NEW_RUN
+  --out .nichehunter/runs/NEW_RUN
 python3 skills/niche-hunter/scripts/research.py collect \
   --providers tiktok,reddit --days 14 --topic horoscopes \
-  --timezone Europe/Minsk --out .nichehunter/runs/ANOTHER_NEW_RUN
+  --out .nichehunter/runs/ANOTHER_NEW_RUN
 python3 skills/niche-hunter/scripts/research.py finalize \
   --run RUN_DIR --analysis RUN_DIR/analysis.json
 python3 -m unittest discover -s tests -v

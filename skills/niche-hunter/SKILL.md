@@ -29,18 +29,19 @@ From the repository root (adapt the script path if installed elsewhere):
 
 ```bash
 python3 skills/niche-hunter/scripts/research.py collect \
-  --timezone Europe/Minsk --out .nichehunter/runs/example
+  --out .nichehunter/runs/example
 ```
 
 Useful options:
 
 ```text
 --providers tiktok,reddit       # only these providers; no Signals request
---days 14                      # last 14 complete local days
+--days 14                      # last 14 complete days in the selected time zone
 --start 2026-10-01 --end 2026-10-15  # exclusive end; cannot combine with --days
---topic horoscopes --region US --language en
---import-file /absolute/path/permitted-evidence.json  # repeatable; one envelope/provider
---signals-file /absolute/path/signals.zip --offline  # replay a public release
+--topic horoscopes
+--region REGION --language LANGUAGE  # only caller-selected, source-supported filters
+--import-file EVIDENCE_JSON     # repeatable; one envelope/provider
+--signals-file SIGNALS_ZIP --offline  # replay a public release
 --offline                      # no helper network requests; imports still work
 --max-records 50 --request "original caller request"
 ```

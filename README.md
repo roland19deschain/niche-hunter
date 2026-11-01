@@ -253,11 +253,11 @@ Direct helper commands from the repository root (Python 3.10+ with IANA time-zon
 
 ```bash
 python3 skills/niche-hunter/scripts/research.py collect \
-  --timezone Europe/Minsk --out .nichehunter/runs/first-run
+  --out .nichehunter/runs/first-run
 
 # Only Reddit; no requests to TikTok or Signals, even without configured Reddit access:
 python3 skills/niche-hunter/scripts/research.py collect \
-  --providers reddit --days 14 --timezone Europe/Minsk \
+  --providers reddit --days 14 \
   --out .nichehunter/runs/reddit-14d
 
 # After the calling agent writes analysis.json using the evidence IDs:
@@ -268,7 +268,7 @@ python3 skills/niche-hunter/scripts/research.py finalize \
 python3 -m unittest discover -s tests -v
 ```
 
-Choose a fresh output directory for every collection. Local `.nichehunter/` runs are ignored by Git. `collect` alone produces evidence and a report with analysis pending; `finalize` adds the agent's checked analysis without recollecting. For offline replay use `--offline --signals-file PATH`; for permitted Reddit/TikTok data use `--import-file PATH` following the [contract](./skills/niche-hunter/references/contracts.md). This does not turn an unlicensed export into permitted data. The helper needs no external packages or API key. On this workstation, prefix shell commands with `rtk` as required by the repository instructions.
+Choose a fresh output directory for every collection. Local `.nichehunter/` runs are ignored by Git. `collect` alone produces evidence and a report with analysis pending; `finalize` adds the agent's checked analysis without recollecting. For offline replay use `--offline --signals-file PATH`; for permitted Reddit/TikTok data use `--import-file PATH` following the [contract](./skills/niche-hunter/references/contracts.md). This does not turn an unlicensed export into permitted data. The helper needs no external packages or API key. Supply `--timezone` from the caller's chosen zone when available; otherwise the helper explicitly reports its UTC fallback. Region and language filters are optional and have no market-specific defaults.
 
 Project working instructions: [AGENTS.md](./AGENTS.md).
 

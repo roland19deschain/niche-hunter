@@ -70,10 +70,11 @@ The shared skill and helper implement the collection/reporting slice; semantic a
 
 - Communicate and write project explanations in Russian; preserve technical identifiers in their original form.
 - Maintain [docs/development-plan.md](./docs/development-plan.md) in English, including all future updates. Its provider roadmap describes future candidates separately from the MVP.
+- Keep the portable skill package in English with neutral examples: no personal paths, workstation tools, regional time-zone examples, fixed country/language presets, or locale-specific topic aliases. Time zone, region, and requested language remain configurable inputs; UTC is the disclosed time-zone fallback. Seed-language metadata describes the catalog, not a default target market.
 - Make small changes scoped to the current task while preserving others' work. As implementation is added, update the actual structure and run/verification commands here.
 - Run shell commands through `rtk`; rules: `/Users/AlexeyRoik/.codex/RTK.md`.
 - Do not run Xcode builds or SwiftPM package builds unless the user explicitly requests them.
-- Verify with `rtk proxy python3 -m unittest discover -s tests -v`. Collect with `rtk proxy python3 skills/niche-hunter/scripts/research.py collect --timezone Europe/Minsk --out .nichehunter/runs/NEW_RUN`. Finalize calling-agent analysis with `rtk proxy python3 skills/niche-hunter/scripts/research.py finalize --run RUN_DIR --analysis RUN_DIR/analysis.json`. Use a fresh output directory. See the skill's references for the v0.1 import/analysis contracts.
+- Verify with `rtk proxy python3 -m unittest discover -s tests -v`. Collect with `rtk proxy python3 skills/niche-hunter/scripts/research.py collect --out .nichehunter/runs/NEW_RUN`. Finalize calling-agent analysis with `rtk proxy python3 skills/niche-hunter/scripts/research.py finalize --run RUN_DIR --analysis RUN_DIR/analysis.json`. Use a fresh output directory. See the skill's references for the v0.1 import/analysis contracts.
 - Tests use synthetic fixtures; do not present them as authenticated integration or metric-accuracy verification. The helper uses no external Python packages. The host skill-creator validator separately requires PyYAML in its own environment.
 
 Next integration work must establish permitted source access, metric/window semantics and free quotas. Keep credentials in client facilities; the helper never reads them. Follow the development plan's updated handoff checklist and preserve historical evidence dates.

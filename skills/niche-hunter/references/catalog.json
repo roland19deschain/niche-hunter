@@ -21,12 +21,12 @@
     "chatgpt": "https://openai.com/signals/data-download/"
   },
   "signals_topics": {
-    "Multimedia": ["multimedia", "мультимедиа"],
+    "Multimedia": ["multimedia"],
     "Other/Unknown": ["other/unknown"],
-    "Practical Guidance": ["practical guidance", "практические советы"],
-    "Seeking information": ["seeking information", "поиск информации"],
-    "Self-expression": ["self-expression", "самовыражение"],
-    "Technical help": ["technical help", "техническая помощь"],
-    "Writing": ["writing", "письмо", "написание текстов"]
+    "Practical Guidance": ["practical guidance"],
+    "Seeking information": ["seeking information"],
+    "Self-expression": ["self-expression"],
+    "Technical help": ["technical help"],
+    "Writing": ["writing"]
   }
 }
