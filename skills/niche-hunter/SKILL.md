@@ -10,6 +10,8 @@ Turn observations into testable product hypotheses using **Distribution First**:
 
 This is a shared skill for Codex and Claude Code. Use the calling agent's tools and reasoning; no separate LLM API is required. Respond in the caller's language. Resolve paths relative to this skill's directory, including when loaded through a symlink. Python 3.10+ with standard-library `zoneinfo` data is required for the helper.
 
+Installed plugin invocation is `$niche-hunter:niche-hunter` in Codex or `/niche-hunter:niche-hunter` in Claude Code. Standalone repository skills use the unprefixed name. Keep the caller's project as the working directory and resolve the helper script from the supplied skill location; store run outputs in the caller's project, outside the installed plugin/cache directory.
+
 ## Interpret the request
 
 - Default providers: `reddit,tiktok,chatgpt`. Explicit selection restricts **all** collection and reporting; never substitute another platform for an unavailable one. Clarify unknown providers using this list.

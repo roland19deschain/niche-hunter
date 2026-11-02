@@ -1,0 +1,11 @@
+{
+  "name": "niche-hunter",
+  "version": "0.1.0",
+  "description": "Evidence-based niche research and testable ideas for small digital products.",
+  "author": {"name": "roland19deschain"},
+  "homepage": "https://github.com/roland19deschain/niche-hunter",
+  "repository": "https://github.com/roland19deschain/niche-hunter",
+  "license": "MIT",
+  "icon": "./avatar.png",
+  "keywords": ["market-research", "niches", "product-discovery"]
+}

@@ -65,3 +65,8 @@ fastlane/test_output
 .nichehunter/
 __pycache__/
 *.py[cod]
+dist/
+.DS_Store
+Thumbs.db
+desktop.ini
+__MACOSX/

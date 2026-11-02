@@ -1,0 +1,12 @@
+{
+  "name": "niche-hunter",
+  "description": "Niche Hunter releases for evidence-based product discovery.",
+  "owner": {"name": "roland19deschain"},
+  "plugins": [
+    {
+      "name": "niche-hunter",
+      "source": "./",
+      "description": "Research niches and design evidence-backed product experiments."
+    }
+  ]
+}
