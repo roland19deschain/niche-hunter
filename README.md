@@ -1,5 +1,5 @@
 <h1 align="left">
-  NicheHunter<br>
+  Niche Hunter<br>
   <sub>From Reddit and TikTok observations to testable ideas for small digital products.</sub>
 </h1>
 
