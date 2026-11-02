@@ -9,7 +9,99 @@
 
 NicheHunter is a research skill for finding promising niches before development begins. It supports a repeatable workflow: collect available signals from selected sources, identify supported trends and unmet needs, compare them with existing solutions, and propose product hypotheses together with a way to reach the audience.
 
-> **Status as of November 1, 2026:** v0.1 of the shared Codex/Claude Code skill is implemented. Public OpenAI Signals collection, date handling, permitted normalized imports, evidence-linked analysis, and Markdown/JSON reporting work. Reddit and TikTok remain access-dependent: no authenticated connection has been validated. Signals provides broad monthly context, not weekly search logs. No subscriptions or additional model API are required for the available public-data path.
+> **Release v0.1.0 · November 2, 2026:** one shared skill is packaged for Codex and Claude Code. Public OpenAI Signals collection, date handling, permitted normalized imports, evidence-linked analysis, and Markdown/JSON reporting work. Reddit and TikTok remain access-dependent: no authenticated connection has been validated. Signals supplies broad monthly context, not weekly search logs. Python 3.10+ with IANA time-zone data is required; the public-data path needs no provider account or separate model API key.
+
+[Install for Codex](#install-for-codex) · [Install for Claude Code](#install-for-claude-code) · [Update](#update) · [Rollback](#rollback) · [Releases](https://github.com/roland19deschain/niche-hunter/releases) · [Changelog](./CHANGELOG.md)
+
+## Install for Codex
+
+Use a Codex client with `plugin add` and `plugin marketplace` support (`codex plugin --help`). Register the stable source, then install:
+
+```bash
+codex plugin marketplace add roland19deschain/niche-hunter --ref master
+codex plugin add niche-hunter@niche-hunter
+codex plugin list --marketplace niche-hunter
+```
+
+Start a new chat in your working project and request:
+
+```text
+$niche-hunter:niche-hunter research product opportunities for the last 7 days
+```
+
+In supported desktop clients the configured marketplace is also available in the plugin browser. This is GitHub marketplace distribution, not a listing in the official public plugin directory. See [OpenAI's plugin guide](https://developers.openai.com/plugins/build/plugins#add-a-marketplace-from-the-cli). If your client lacks these commands, use the [manual alternative](#manual-alternative).
+
+## Install for Claude Code
+
+Run in your terminal with a current Claude Code version:
+
+```bash
+claude plugin marketplace add roland19deschain/niche-hunter#master
+claude plugin install niche-hunter@niche-hunter
+claude plugin list
+```
+
+Or, inside Claude Code, use `/plugin install niche-hunter --marketplace roland19deschain/niche-hunter#master` and choose the installation scope in the plugin panel. Invoke the installed plugin skill as:
+
+```text
+/niche-hunter:niche-hunter research product opportunities for the last 7 days
+```
+
+Plugin skills have a namespace; `/niche-hunter` is the repository-local skill, while `/niche-hunter:niche-hunter` belongs to the installed plugin. See [Claude Code plugin installation](https://code.claude.com/docs/en/discover-plugins).
+
+## Update
+
+Stable installations follow `master`. We publish tested changes as numbered releases with a changelog; `develop` is for ongoing work. Installing a tag instead of `master` pins that version and does not track later releases.
+
+Codex:
+
+```bash
+codex plugin marketplace upgrade niche-hunter
+codex plugin add niche-hunter@niche-hunter
+codex plugin list --marketplace niche-hunter
+```
+
+Claude Code:
+
+```bash
+claude plugin marketplace update niche-hunter
+claude plugin update niche-hunter@niche-hunter
+claude plugin list
+```
+
+Start a new chat after an update. Claude Code also supports `/reload-plugins`. For background updates there, open `/plugin` → Marketplaces → Niche Hunter → Enable auto-update; third-party marketplaces default to off. Codex's explicit refresh commands above are the supported documented path here; automatic update behavior across clients is not guaranteed. [Claude Code update behavior](https://code.claude.com/docs/en/discover-plugins#keep-plugins-updated).
+
+Keep reports and imports in your working project, outside the installed plugin directory. Client-managed provider credentials are separate from plugin files; updating the plugin does not require copying them into the repository.
+
+## Rollback
+
+Choose a tag from [GitHub Releases](https://github.com/roland19deschain/niche-hunter/releases). The commands below pin `v0.1.0`; replace it with the desired published version. Removing this marketplace removes its plugin registration/cache and may clear plugin-managed settings/data, so keep research output outside those directories and retain any configuration you need to reapply. This release bundles no provider credentials or MCP servers.
+
+Codex:
+
+```bash
+codex plugin remove niche-hunter@niche-hunter
+codex plugin marketplace remove niche-hunter
+codex plugin marketplace add roland19deschain/niche-hunter --ref v0.1.0
+codex plugin add niche-hunter@niche-hunter
+```
+
+Claude Code:
+
+```bash
+claude plugin uninstall niche-hunter@niche-hunter
+claude plugin marketplace remove niche-hunter
+claude plugin marketplace add roland19deschain/niche-hunter#v0.1.0
+claude plugin install niche-hunter@niche-hunter
+```
+
+Start a new chat and verify the installed version with the client's plugin list. To resume stable updates, repeat the remove/add/install steps with `master` instead of the tag. Do not edit versioned plugin cache files directly.
+
+### Manual alternative
+
+For clients without plugin management, clone this repository, check out a published tag, and follow the client's standalone-skill installation instructions for `skills/niche-hunter/`. Codex scans `~/.agents/skills/`; Claude Code scans `~/.claude/skills/`. Both support symlinked skill directories. A copy is a fixed snapshot and must be replaced on update; a link to your clone changes when you check out another version. Use `$niche-hunter` / `/niche-hunter` for standalone installation. Avoid keeping both the standalone and plugin copies enabled.
+
+Release ZIPs include the plugin manifests, shared runtime, README, avatar, license and changelog. They exclude repository working instructions, research runs, credentials, tests, and build tools. Contributor documentation links in the packaged README point to the corresponding source tag. `SHA256SUMS` accompanies each ZIP. [Release procedure and verification](./docs/releasing.md).
 
 ## Why this project exists
 
@@ -229,6 +321,13 @@ Current structure:
 ├── avatar.png     # Project avatar
 ├── docs/
 │   └── development-plan.md  # Canonical context, access findings, roadmap, and handoff
+├── docs/releasing.md       # Maintainer release and rollback procedure
+├── plugin.json            # Portable plugin identity and release version
+├── .claude-plugin/        # Claude manifest and GitHub marketplace
+├── .agents/plugins/       # Codex GitHub marketplace
+├── .github/workflows/     # CI and tag-triggered GitHub Releases
+├── scripts/release.py     # Version checks, reproducible ZIP, checksums and notes
+├── CHANGELOG.md
 ├── skills/niche-hunter/    # Shared SKILL.md, Python helper, references, UI metadata
 ├── .agents/skills/niche-hunter -> ../../skills/niche-hunter
 ├── .claude/skills/niche-hunter -> ../../skills/niche-hunter
@@ -237,7 +336,7 @@ Current structure:
 └── .gitignore
 ```
 
-The working branch is `develop`. Both client directories point to one canonical skill. Project discovery locations and symlinks are documented by [OpenAI](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills) and [Claude Code](https://code.claude.com/docs/en/skills#choose-where-skills-load). Start a fresh local client session in this repository if the new skill is not listed. Runtime discovery in both clients has not yet been exercised; the filesystem links are verified. This is project-local setup, not global installation or cloud-session packaging.
+The working branch is `develop`; `master` is the stable distribution source. Both project skill links point to one canonical directory. Project discovery locations and symlinks are documented by [OpenAI](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills) and [Claude Code](https://code.claude.com/docs/en/skills#choose-where-skills-load). Repository-local invocation is useful for contributors; published plugin users should use the installation instructions above. Interactive research behavior is separate from packaging/CLI validation, and cloud surfaces may have different plugin-loading rules.
 
 Examples in Codex:
 

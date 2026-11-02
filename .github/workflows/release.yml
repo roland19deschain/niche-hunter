@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+      - name: Verify stable source and release version
+        run: |
+          git fetch origin master
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/master
+          python scripts/release.py check --tag "$GITHUB_REF_NAME"
+      - run: python -m unittest discover -s tests -v
+      - name: Build reproducible release assets
+        run: python scripts/release.py build --tag "$GITHUB_REF_NAME" --out dist
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            "dist/niche-hunter-$GITHUB_REF_NAME.zip" dist/SHA256SUMS \
+            --verify-tag --title "Niche Hunter $GITHUB_REF_NAME" \
+            --notes-file dist/release-notes.md

@@ -1,18 +1,18 @@
 # Niche Hunter — first-version development plan
 
-Updated: **November 1, 2026**. Source investigations below retain their original verification dates.
+Updated: **November 2, 2026**. Source investigations below retain their original verification dates.
 
 **Document language: English. Keep all future updates to this plan in English.**
 
-Status: **v0.1 of the shared skill is implemented**, with a Python standard-library helper, public OpenAI Signals collection, permitted normalized imports, and evidence-linked report finalization. The user authorized this first implementation on November 1. The **free pilot** remains in force; no source accounts or credentials have been provisioned. Authenticated Reddit/TikTok collection and cross-client behavioral validation remain incomplete. Purchasing subscriptions is outside scope.
+Status: **v0.1.0 of the shared skill is implemented and packaged for distribution**, with a Python standard-library helper, public OpenAI Signals collection, permitted normalized imports, and evidence-linked report finalization. On November 2 the user authorized stable-branch distribution, tagged GitHub Releases, and client install/update/rollback documentation. The **free pilot** remains in force; no provider accounts or credentials have been provisioned. Authenticated Reddit/TikTok collection and interactive research quality remain incomplete. Purchasing subscriptions is outside scope.
 
 ## 0. Handoff snapshot — read first
 
 This is the canonical project context and implementation plan. Earlier design notes and access investigations have been consolidated here; their historical versions remain in Git. An agent should be able to resume without the original chat, screenshots, meeting notes, or deleted documents.
 
-| Area | Current state as of November 1, 2026 |
+| Area | Current state as of November 2, 2026 |
 | --- | --- |
-| Repository | Work in `develop`; inspect `git status` and both staged and unstaged diffs before editing. Do not assume local branches or remotes are synchronized. |
+| Repository | Work and test in `develop`; promote tested releases to stable `master`. Inspect staged/unstaged changes before editing. Do not automatically synchronize unfinished development work. |
 | Implemented artifacts | Canonical `skills/niche-hunter/`: shared `SKILL.md`, references/catalog, Python helper, and Codex UI metadata. Project `.agents/skills/niche-hunter` and `.claude/skills/niche-hunter` symlink to it. Synthetic behavior tests and actual commands are documented. No authenticated social-source adapter is bundled. |
 | Runtime | Python 3.10+ standard library and IANA time-zone data; manual skill invocation with calling-agent analysis. No additional LLM API, continuously running collector, scheduler, hosted backend, or cloud storage. |
 | Accounts and credentials | None available for Reddit, TikTok for Business, TokConnect, or licensed monitoring services. No credentials are committed. |
@@ -20,6 +20,7 @@ This is the canonical project context and implementation plan. Earlier design no
 | TikTok | Public documentation, prices, and unauthenticated MCP/OAuth discovery checked. No authorized data response or metric accuracy validation yet. |
 | Reddit | Bounded Arctic Shift metadata retrieval verified. Suitable commercial access, completeness, and future reliability remain unresolved. |
 | Budget and scope | Free pilot only. Implementation is authorized; this document does not itself authorize account creation, paid purchases, advertising, deployment, or scheduled collection. Defaults: 100 normalized observations/provider, 10 external calls/run subject to confirmed free balance, at most two public Signals HTTP attempts. |
+| Distribution | Root portable plugin manifest, Claude manifest, two marketplace catalogs, `CHANGELOG.md`, deterministic ZIP/checksum builder, CI and tag-triggered release workflow. See section 16 and `docs/releasing.md` for versioning, pinning and actual verification status. |
 
 Resume by reading this snapshot, source-specific constraints in section 3, implementation contracts in section 12, and the next-action checklist in section 14. Treat dated probes as historical observations, not a current access guarantee. Recheck changing schemas, prices, terms, and permissions when implementing an adapter.
 
@@ -529,7 +530,7 @@ The initial stack, canonical skill/discovery paths, bounded catalog, versioned c
 The next useful sequence after v0.1 is:
 
 1. Inspect the actual branch/worktree and read `AGENTS.md`; preserve unrelated changes. Use this plan as the current context, with its dated evidence and unresolved access conditions.
-2. Start fresh local Codex and Claude Code sessions in this repository and test discovery plus representative natural-language requests. Do not install duplicate global copies by default. Use the same canonical skill, portable script, catalog, and v0.1 contracts. Record model behavior separately from deterministic helper tests.
+2. Test representative natural-language research in fresh Codex and Claude Code sessions using the packaged skill. Native plugin discovery/install and local synthetic version transitions were checked on November 2; semantic model behavior is still unverified. Avoid duplicate standalone/plugin copies. Record model behavior separately from deterministic helper and artifact tests.
 3. Resolve TikTok onboarding and metric validation on the free allocation. User participation is required for account setup/consent; credentials are not currently available. Record actual tools, quotas, source terms, window semantics, and what was cross-checked.
 4. Resolve a permitted Reddit adapter or retain an explicit unavailable/terms-unconfirmed result. Do not hold all useful work indefinitely on Reddit access or silently treat an unresolved source as production-ready.
 5. Run the first useful permitted multi-source research and evaluate problem evidence, alternatives, independent corroboration, and the proposed tests. Broader automation/ranking and more granular Signals tables should follow demonstrated need, not expand the initial slice silently.
@@ -582,3 +583,23 @@ Run directories must be fresh/empty and are ignored by Git. `collect` leaves sem
 - Authenticated MCP schemas/responses, free credit balance/charging, supplier metric accuracy, source completeness, commercial Reddit rights and permissions, and useful multi-source hypotheses remain unverified. No accounts, purchases, background jobs, ad experiments, or global client configuration were created.
 
 The host skill-creator validator needs PyYAML separately; it is not a runtime dependency of Niche Hunter. Keep validation-tool dependencies in a temporary/tool environment rather than adding them to the research helper.
+
+## 16. Public distribution and release workflow
+
+Agreed November 2, 2026: `develop` is for ongoing work and checks; `master` is the stable source for users. Each public release gets an immutable `vMAJOR.MINOR.PATCH` tag, a matching GitHub Release, and changelog notes. README contains separate Install for Codex, Install for Claude Code, Update and Rollback sections. Users can follow stable `master` or pin a published tag.
+
+### Implemented packaging
+
+- Root `plugin.json` is the portable plugin identity/version; `.claude-plugin/plugin.json` supplies Claude compatibility metadata. Both expose the single `skills/niche-hunter/` runtime. Plugin invocation is namespaced (`$niche-hunter:niche-hunter` / `/niche-hunter:niche-hunter`); repository-local invocation remains unprefixed.
+- `.agents/plugins/marketplace.json` and `.claude-plugin/marketplace.json` resolve source `./` at their own checked-out root. A tag therefore pins the runtime as well as the catalog; no nested remote source silently follows `master`.
+- `scripts/release.py check/build/notes` validates product version consistency, a matching changelog/tag, contained runtime files and portable content. It builds a deterministic ZIP with SHA-256 checksums and extracted release notes. Product versions are independent of the `0.1.0` research JSON contract.
+- `.github/workflows/ci.yml` tests releases and research helpers on Python 3.10/3.14. `.github/workflows/release.yml` requires the tag commit to be contained in stable `master`, verifies version/notes, reruns tests, builds assets and publishes a GitHub Release. Administrative branch protection/required checks are separate and have not been configured by these files.
+- `docs/releasing.md` documents promotion, release verification, failure handling, rollback and return to stable updates. Do not move existing tags or overwrite published assets. Keep reports/imports outside plugin caches; removing a marketplace can clear plugin-managed state.
+- Public directory submission is separate from direct GitHub marketplace distribution and has not been performed. No server, background updater, provider-account provisioning or new subscription is introduced. Claude users can enable auto-update for this third-party marketplace; Codex uses the documented explicit marketplace refresh/install path here.
+
+### Verification and limits
+
+- Nineteen deterministic tests pass: the original helper scenarios plus manifest/tag consistency, pinned-root containment, reproducible curated archives, and extracted install/update/rollback runs. Synthetic product versions are fixtures and are never published as actual releases.
+- Native Codex CLI `0.166.0-alpha.5.1` and Claude Code CLI `2.1.316` installed the packaged skill from a temporary local marketplace, updated the fixture from `0.1.0` to `0.1.1`, and rolled back to `0.1.0`. Claude enumerated exactly one skill and no MCP/hooks/agents. The temporary Codex registration was removed; Claude verification used a separate temporary configuration directory. No model queries or provider calls were made by those checks.
+- Claude's manifest validator passed. An ignored, untracked filesystem metadata file in the working tree is outside the curated ZIP and Git distribution; validate the extracted release package separately from the working folder's directory-listing advice.
+- GitHub-source installation, CI execution, public release publication, and downloaded-asset verification must be checked on the actual pushed release. A filesystem/package check is not evidence of those remote states. Interactive model research and authenticated provider access remain separate follow-up work.

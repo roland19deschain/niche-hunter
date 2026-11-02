@@ -1,0 +1,20 @@
+{
+  "name": "niche-hunter",
+  "interface": {
+    "displayName": "Niche Hunter"
+  },
+  "plugins": [
+    {
+      "name": "niche-hunter",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

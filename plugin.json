@@ -1,0 +1,25 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "niche-hunter",
+  "version": "0.1.0",
+  "description": "Evidence-based niche research and testable ideas for small digital products.",
+  "author": {"name": "roland19deschain"},
+  "homepage": "https://github.com/roland19deschain/niche-hunter",
+  "repository": "https://github.com/roland19deschain/niche-hunter",
+  "license": "MIT",
+  "keywords": ["market-research", "niches", "product-discovery"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Niche Hunter",
+        "shortDescription": "Research niches for small digital products",
+        "developerName": "roland19deschain",
+        "category": "Productivity",
+        "capabilities": ["Read", "Write"],
+        "websiteURL": "https://github.com/roland19deschain/niche-hunter",
+        "defaultPrompt": ["Use $niche-hunter:niche-hunter to research product opportunities for the last seven complete days."],
+        "logo": "./avatar.png"
+      }
+    }
+  }
+}
