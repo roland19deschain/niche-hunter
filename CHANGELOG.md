@@ -2,13 +2,20 @@
 
 ## [Unreleased]
 
-- Keep committed documentation and examples in English, remove maintainer-specific context and shell setup, and validate portable timezone examples without a single regional exception.
+## [0.2.0] - 2026-11-04
+
+TikTok search connection and distribution-first opportunity analysis.
+
 - Make channel → reachable market/need → product combinations the primary research decision, with discovery and existing-product refinement modes.
 - Add a focused analysis guide, separate demand/channel evidence, explicit channel-fit status, acquisition paths, counterevidence, and qualitative next actions.
 - Extend analysis finalization and reports with decision context and opportunity assessments while preserving saved v0.1 analysis compatibility; place decisions before the evidence appendix.
 - Bundle credential-free TokConnect MCP declarations for both clients and reuse the shared skill for explicit connection onboarding.
 - Add the first TikTok search adapter: bounded search topics, detail/related topics and autocomplete, MCP response normalization, safe call receipts, and explicit missing/failed/partial coverage. Live authenticated validation is pending.
 - Add setup/capture documentation and a privacy disclosure. Reddit access remains unchanged; no accounts, shared credentials, paid REST dependency or background collector are included.
+- Add Adjust and AppsFlyer as future benchmark-provider candidates without changing the default MVP provider set.
+- Replace maintainer-specific guidance with portable English documentation and generic regional-timezone checks.
+
+Limitations: TikTok requires the caller's TokConnect account, browser authorization, verified free allowance and permitted data storage. Authenticated responses and metric accuracy have not yet been validated. This adapter covers search topics and autocomplete; videos, comments, ads and Shop analytics are not included. OpenAI Signals remains broad monthly context. Research/import/analysis schema version stays `0.1.0`.
 
 ## [0.1.0] - 2026-11-02
 

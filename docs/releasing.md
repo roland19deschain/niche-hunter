@@ -8,7 +8,7 @@ The product release version is `plugin.json.version`. Mirror it in `.claude-plug
 
 Both marketplaces resolve the plugin at their own checked-out root (`./`). Do not replace that source with an unpinned remote `master` URL: it would let an old marketplace tag install a newer runtime and break rollback. Codex and Claude metadata differ, but `skills/niche-hunter/` is the only research implementation.
 
-The release ZIP is built from an explicit runtime allowlist and normalized ZIP metadata. It includes the manifests/marketplaces, shared skill, README, public avatar, license and changelog. Contributor-only README links resolve to the corresponding versioned source on GitHub. Research exports, machine instructions, repository tests, bytecode and credentials are excluded. Runtime components have no filesystem links outside the package root. `SHA256SUMS` covers the ZIP. It is a consistency check, not a detached signature.
+The release ZIP is built from an explicit runtime allowlist and normalized ZIP metadata. It includes the manifests/marketplaces, client-specific MCP connection declarations, shared skill, README, privacy disclosure, public avatar, license and changelog. Contributor-only README links resolve to the corresponding versioned source on GitHub. Research exports, machine instructions, repository tests, bytecode and credentials are excluded. Runtime components have no filesystem links outside the package root. `SHA256SUMS` covers the ZIP. It is a consistency check, not a detached signature.
 
 ## Prepare a release on develop
 
@@ -30,16 +30,16 @@ CI runs the release checks and helper/artifact tests on Python 3.10 and 3.14. It
 
 ## Promote and publish
 
-For the initial release use `v0.1.0`; substitute the new version below for later releases. Fetch remote state and ensure the local worktree is clean. A fast-forward promotion is appropriate when `master` is an ancestor of the tested `develop` commit; if histories differ, review/resolve the change instead of force-pushing.
+The commands below illustrate `v0.2.0`; substitute the agreed new version for later releases. Fetch remote state and ensure the local worktree is clean. A fast-forward promotion is appropriate when `master` is an ancestor of the tested `develop` commit; if histories differ, review/resolve the change instead of force-pushing.
 
 ```bash
 git fetch origin
 git switch master
 git merge --ff-only develop
 git push origin master
-python3 scripts/release.py check --tag v0.1.0
-git tag -a v0.1.0 -m "Niche Hunter v0.1.0"
-git push origin v0.1.0
+python3 scripts/release.py check --tag v0.2.0
+git tag -a v0.2.0 -m "Niche Hunter v0.2.0"
+git push origin v0.2.0
 git switch develop
 ```
 
