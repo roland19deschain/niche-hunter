@@ -10,6 +10,7 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from zoneinfo import available_timezones
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_VERSION = json.loads((ROOT / "plugin.json").read_text())["version"]
@@ -28,6 +29,17 @@ def fixture(root):
 
 
 class ReleaseTests(unittest.TestCase):
+    def test_packaged_examples_reject_named_regional_timezones(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture(root)
+            regional_zone = next(zone for zone in sorted(available_timezones())
+                                 if "/" in zone and not zone.startswith(("Etc/", "posix/", "right/")))
+            path = root / "skills/niche-hunter/SKILL.md"
+            path.write_text(path.read_text() + "\nExample timezone: " + regional_zone + "\n")
+            with self.assertRaises(ValueError):
+                release.validate(root)
+
     def test_rejects_mismatched_client_versions_and_tags(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

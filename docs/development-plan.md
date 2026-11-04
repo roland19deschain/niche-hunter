@@ -43,7 +43,7 @@ Agreed decisions:
 
 ### Product context and research boundaries
 
-The user is an experienced iOS developer/technical lead who can ship small applications and web-first products. Earlier discussions with Wowmaking supplied UA and paid-experiment experience, not confirmed accounts, partner integrations, advertising budgets, or authority to contact anyone. Initial scoping focused on the next product; the November 4 clarification also includes research to refine a caller-specified existing product. No specific product or commercial collaboration is selected by this plan.
+The skill serves product builders and marketers researching small digital products. Initial scoping focused on new-product discovery; the November 4 clarification also includes research to refine a caller-specified existing product. Record the caller's relevant product, audience, distribution constraints, and experiment budget for each run. This plan does not select a specific product or commercial partner or establish provider accounts, advertising budgets, or permission to contact anyone.
 
 Follow **Distribution First**: `channel + audience → observed problem/desire → demand and competitor checks → economic hypothesis → minimal experiment → MVP → payments/retention evidence`.
 
@@ -588,7 +588,7 @@ Minimum acceptance criteria:
 
 Portability requirement: keep the skill package in English and use neutral examples without personal paths, workstation-specific tooling, regional time-zone examples, country/language presets, or locale-specific topic aliases. Time zone, region and content language are caller/source parameters, not author-specific defaults. UTC remains the disclosed fallback when no caller time zone is available; `seed_language` describes the actual discovery-seed language, not a target-market filter. Time-zone correctness and DST tests remain necessary, separately from user-facing examples.
 
-Actual repository commands (prefix with `rtk proxy` on this workstation):
+Repository commands:
 
 ```bash
 python3 skills/niche-hunter/scripts/research.py collect \

@@ -141,7 +141,7 @@ class ResearchTests(unittest.TestCase):
             path = Path(directory) / "release.zip"
             path.write_bytes(release())
             args = self.args("--signals-file", str(path), "--offline", "--topic", "Writing",
-                             "--region", "US", "--language", "en")
+                             "--region", "CALLER_REGION", "--language", "CALLER_LANGUAGE")
             run = research.parameters(args, datetime(2026, 10, 15, 12, tzinfo=timezone.utc))
             with patch.object(research, "urlopen", side_effect=AssertionError("unexpected network")):
                 source = research.collect_signals(run, args, Path(directory))

@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Keep committed documentation and examples in English, remove maintainer-specific context and shell setup, and validate portable timezone examples without a single regional exception.
 - Make channel → reachable market/need → product combinations the primary research decision, with discovery and existing-product refinement modes.
 - Add a focused analysis guide, separate demand/channel evidence, explicit channel-fit status, acquisition paths, counterevidence, and qualitative next actions.
 - Extend analysis finalization and reports with decision context and opportunity assessments while preserving saved v0.1 analysis compatibility; place decisions before the evidence appendix.
