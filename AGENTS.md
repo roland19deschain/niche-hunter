@@ -9,7 +9,7 @@
 
 ## Goal
 
-Create a reusable process/skill for market research before selecting and developing small iOS or web products. Follow the Distribution First principle:
+Create a reusable process/skill for discovering niches for small digital products and refining existing products. The primary decision is `distribution channel → reachable market/audience and need → product or product change`. Follow the Distribution First principle:
 
 `Channel + audience → problems and desires → demand and competitor validation → economic hypothesis → minimal experiment → MVP`.
 
@@ -64,7 +64,7 @@ The shared skill and helper implement the collection/reporting slice; semantic a
 
 - Main artifacts: `report.md` and `results.json`; analysis input `analysis.json`, public Signals ZIP under the run's `raw/`, and optional permitted normalized imports. Local runs belong in ignored `.nichehunter/runs/`; do not commit third-party exports by default.
 - The report includes run parameters, actual coverage, limitations, trends (`emerging`, `sustained`, `declining`, `spike-only`), metrics/baseline, primary sources, user problems, and alternatives.
-- For each product hypothesis, specify the audience, narrow task, value proposition, channel, monetization, minimal MVP, risks, and a measurable experiment with success/stop criteria. The initial research MVP should produce 3–5 hypotheses.
+- For each product hypothesis, specify the audience, narrow task, value proposition, concrete channel entry point and acquisition path, monetization, minimal MVP, risks, and a measurable experiment with success/stop criteria. Keep demand evidence separate from channel evidence, label channel fit, and explain counterevidence and the next action. In refinement mode, connect recommendations to the caller's existing product. Aim for 3–5 hypotheses when supported; fewer or none is valid.
 
 ## Working in the repository
 

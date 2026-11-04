@@ -402,11 +402,12 @@ def render(result):
         lines.append(f"| {source['provider']} | {source['status']} | {period} | {source['counts']['accepted']} | {md(source['reason'])} |")
     lines += ["", "Coverage is source-specific; sampled records and monthly context do not prove requested-period completeness.",
               "The requested comparison interval is recorded in results.json; monthly comparisons below use their own baseline."]
+    evidence_lines = ["", "## Evidence appendix"]
     for source in result["sources"]:
         if source["unsupported_filters"]:
-            lines += ["", f"{source['provider']}: unsupported filters: {', '.join(source['unsupported_filters'])}."]
+            evidence_lines += ["", f"{source['provider']}: unsupported filters: {', '.join(source['unsupported_filters'])}."]
         if source["observations"]:
-            lines += ["", f"## {source['provider']} evidence", ""]
+            evidence_lines += ["", f"### {source['provider']} evidence", ""]
             for row in source["observations"][:20]:
                 measures = []
                 for metric in row["measurements"]:
@@ -414,17 +415,30 @@ def render(result):
                     display = f"{value * 100:.2f}%" if metric["unit"] == "fraction" and value is not None else str(value)
                     period = metric["window"]
                     measures.append(f"{md(metric['name'])}: {display} {md(metric['unit'])} [{period['start_at']}, {period['end_at']})")
-                lines.append(f"- [{md(row['title'])}]({row['url']}) — {md(row['summary'])} {'; '.join(measures)}. Evidence `{row['id']}` ({row['quality']}).")
+                evidence_lines.append(f"- [{md(row['title'])}]({row['url']}) — {md(row['summary'])} {'; '.join(measures)}. Evidence `{row['id']}` ({row['quality']}).")
             if len(source["observations"]) > 20:
-                lines.append("- Additional evidence is retained in results.json.")
+                evidence_lines.append("- Additional evidence is retained in results.json.")
         if source["comparisons"]:
-            lines += ["", "Monthly share changes (derived; not absolute usage growth):", ""]
+            evidence_lines += ["", "Monthly share changes (derived; not absolute usage growth):", ""]
             for item in source["comparisons"]:
-                lines.append(f"- {md(item['topic'])}: {item['percentage_point_change']} percentage points; relative share change {item['relative_change_pct']}%; classification {item['trend_classification']}.")
+                evidence_lines.append(f"- {md(item['topic'])}: {item['percentage_point_change']} percentage points; relative share change {item['relative_change_pct']}%; classification {item['trend_classification']}.")
         if source["provenance"].get("license"):
-            lines += ["", f"Source: [OpenAI Signals]({SIGNALS_PAGE}), CC BY 4.0. Derived comparisons by Niche Hunter. Mode: {source['provenance']['mode']}."]
+            evidence_lines += ["", f"Source: [OpenAI Signals]({SIGNALS_PAGE}), CC BY 4.0. Derived comparisons by Niche Hunter. Mode: {source['provenance']['mode']}."]
     analysis = result["analysis"]
     lines += ["", "## Analysis", "", f"Status: {analysis['status']}.", md(analysis.get("summary", "Calling agent analysis has not been added."))]
+    if "research_context" in analysis:
+        context = analysis["research_context"]
+        lines += ["", f"Mode: {context['mode']} · product: {md(context['product'] or 'unspecified')}",
+                  f"Caller constraints: {md('; '.join(context['constraints']) or 'unspecified')}",
+                  f"Caller-selected channels: {md('; '.join(context['target_channels']) or 'unspecified')}"]
+    assessed = [item for item in analysis.get("hypotheses", []) if "opportunity" in item]
+    if assessed:
+        lines += ["", "## Opportunity shortlist", "",
+                  "| Channel / entry point | Reachable market / need | Product / change | Channel fit | Next action |",
+                  "| --- | --- | --- | --- | --- |"]
+        for item in assessed:
+            opportunity = item["opportunity"]
+            lines.append(f"| {md(item['channel'])}: {md(opportunity['entry_point'])} | {md(opportunity['market'])} | {md(item['title'])} | {opportunity['channel_fit']} | {opportunity['priority']} |")
     for finding in analysis.get("findings", []):
         lines += ["", f"- {finding['kind']}: {md(finding['text'])} Evidence: {', '.join(finding['evidence_ids'])}; confidence: {finding['confidence']}; trend: {finding['trend_classification']}."]
     for item in analysis.get("hypotheses", []):
@@ -434,13 +448,21 @@ def render(result):
                     "success_criteria", "stop_criteria", "confidence", "missing_data"):
             lines.append(f"- {key}: {md(item[key])}")
         lines.append("- Evidence: " + ", ".join(item["evidence_ids"]))
+        if "opportunity" in item:
+            opportunity = item["opportunity"]
+            for key in ("market", "entry_point", "acquisition_path", "fit_reasoning", "channel_fit",
+                        "counterevidence", "priority", "priority_reason"):
+                lines.append(f"- {key}: {md(opportunity[key])}")
+            for key in ("demand_evidence_ids", "channel_evidence_ids"):
+                lines.append(f"- {key}: {md(', '.join(opportunity[key]) or 'none')}")
     lines += ["", "## Gaps and next checks", ""]
     for gap in analysis.get("gaps", ["Analysis and product validation are pending."]):
         lines.append("- " + md(gap))
     for source in result["sources"]:
         for limitation in source["limitations"]:
             lines.append(f"- {source['provider']}: {md(limitation)}")
-    lines += ["", "Unknowns are not zero. No automatic scoring, purchase-intent inference, or verified product economics.", ""]
+    lines += evidence_lines
+    lines += ["", "Unknowns are not zero. Channel fit is not validated acquisition. No automatic scoring, purchase-intent inference, or verified product economics.", ""]
     return "\n".join(lines)
 
 
@@ -500,6 +522,17 @@ def validate_analysis(analysis, result):
     require(analysis.get("schema_version") == VERSION, "Unsupported analysis schema_version")
     text_field(analysis, "summary")
     require(isinstance(analysis.get("gaps"), list) and all(isinstance(x, str) for x in analysis["gaps"]), "gaps must be text array")
+    if "research_context" in analysis:
+        context = analysis["research_context"]
+        require(isinstance(context, dict), "research_context must be an object")
+        require(context.get("mode") in {"discovery", "refinement"}, "Invalid research mode")
+        require("product" in context and (context["product"] is None or
+                isinstance(context["product"], str) and context["product"].strip()), "Product must be text or null")
+        if context["mode"] == "refinement":
+            text_field(context, "product")
+        for key in ("constraints", "target_channels"):
+            require(isinstance(context.get(key), list) and
+                    all(isinstance(value, str) and value.strip() for value in context[key]), f"{key} must be text array")
     known = {row["id"] for source in result["sources"] for row in source["observations"]}
     for group in ("findings", "hypotheses"):
         require(isinstance(analysis.get(group), list), f"{group} must be array")
@@ -516,6 +549,22 @@ def validate_analysis(analysis, result):
                             "product_format", "minimal_mvp", "channel", "distribution_hook", "monetization",
                             "risks", "experiment", "success_criteria", "stop_criteria", "missing_data"):
                     text_field(item, key)
+                if "research_context" in analysis:
+                    require("opportunity" in item, "New analyses require an opportunity assessment per hypothesis")
+                if "opportunity" in item:
+                    opportunity = item["opportunity"]
+                    require(isinstance(opportunity, dict), "opportunity must be an object")
+                    require(opportunity.get("channel_fit") in {"supported", "inferred", "untested"}, "Invalid channel fit")
+                    require(opportunity.get("priority") in {"test_next", "research_more", "defer"}, "Invalid opportunity priority")
+                    for key in ("market", "entry_point", "acquisition_path", "fit_reasoning", "counterevidence", "priority_reason"):
+                        text_field(opportunity, key)
+                    for key in ("demand_evidence_ids", "channel_evidence_ids"):
+                        evidence = opportunity.get(key)
+                        require(isinstance(evidence, list) and all(ref in refs for ref in evidence),
+                                "Opportunity evidence must reference this hypothesis's evidence IDs")
+                    require(bool(opportunity["demand_evidence_ids"]), "Opportunity needs demand evidence")
+                    require(bool(opportunity["channel_evidence_ids"]) == (opportunity["channel_fit"] != "untested"),
+                            "Supported/inferred channel fit needs evidence; untested fit needs an empty channel evidence array")
     return {**analysis, "status": "complete", "method": "calling_agent_analysis_not_independently_verified"}
 
 
