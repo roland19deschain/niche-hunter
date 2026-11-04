@@ -33,6 +33,8 @@ Setup reports authentication, supported tools, free allowance and storage rights
 
 The skill writes `report.md` and `results.json` in your working project. A 14-day request cannot extend an unavailable source window: the report discloses actual coverage. Authorize TokConnect in the client you will use; installation and another client's login do not establish this connection.
 
+**Known setup issue (November 5):** a Claude Code 2.1.316 login attempt failed before browser consent with `client_uri: Invalid URL`. If this occurs, keep the connection unauthenticated and check the [supplier's documented personal MCP-key option](https://tokconnect.com/connect/claude-code/). Key availability and free-plan entitlement must be checked in your own account. Enter credentials only in private client configuration; never paste them into chat or commit them. Do not change billing, patch the client or bypass OAuth validation to continue.
+
 The first adapter covers search topics, topic detail/related topics, and autocomplete. It does not yet normalize videos, comments, ads, or Shop sales. Read [the TikTok setup and capture reference](./skills/niche-hunter/references/tiktok.md) for supported methods and honest coverage fallbacks. Standalone skill copies need a separately configured MCP connection. See [Privacy](./PRIVACY.md) for data handling.
 
 ## Install for Codex
