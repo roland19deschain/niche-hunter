@@ -9,7 +9,7 @@
 
 Niche Hunter is a research skill for discovering niches for new digital products and refining existing products. Its decision chain is **distribution channel → reachable market and need → product or product change → validation experiment**. It collects available signals, analyzes needs and alternatives, and explains which combinations deserve testing and where evidence is still missing.
 
-> **Release 0.2.0 · November 4, 2026:** one shared skill for Codex and Claude Code now includes channel → market/need → product analysis, existing-product refinement, a TokConnect MCP connection and a TikTok search-response adapter. Public OpenAI Signals collection, evidence-linked analysis, and Markdown/JSON reporting remain available. Authenticated TikTok collection is not yet validated; it requires the caller's account, authorization, permitted storage and verified free allowance. Reddit still needs permitted external access. Python 3.10+ with IANA time-zone data is required; the public Signals path needs no provider account or separate model API key.
+> **Release 0.2.1 · November 5, 2026:** Claude Code first-run guidance and support for client-namespaced TokConnect tools. The shared skill includes channel → market/need → product analysis, existing-product refinement, public OpenAI Signals collection and TikTok search-response normalization. Authenticated TikTok collection still requires the caller's account, authorization, permitted storage and verified free allowance; its live responses and metric accuracy are not yet validated. Reddit still needs permitted external access. Python 3.10+ with IANA time-zone data is required; public Signals needs no provider account or separate model API key.
 
 [Install for Codex](#install-for-codex) · [Install for Claude Code](#install-for-claude-code) · [Update](#update) · [Rollback](#rollback) · [Releases](https://github.com/roland19deschain/niche-hunter/releases) · [Changelog](./CHANGELOG.md)
 
@@ -18,6 +18,20 @@ TikTok v1 covers search topics, topic detail/related topics and autocomplete. Se
 ### TikTok connection setup
 
 In 0.2.0 and later, ask: **"Use Niche Hunter to set up TikTok."** The skill guides browser sign-in to TokConnect and checks access, permitted use, and available free credits. The connection URL ships with the plugin; each user authorizes their own account. Passwords and tokens do not ship with the skill and must not be pasted into a chat.
+
+For a first run in Claude Code, update/install the plugin, open `/mcp`, select its bundled TokConnect server and sign in with your existing account. Then invoke:
+
+```text
+/niche-hunter:niche-hunter set up TikTok using my existing TokConnect account
+```
+
+Setup reports authentication, supported tools, free allowance and storage rights separately. Once ready, request a small run:
+
+```text
+/niche-hunter:niche-hunter research product opportunities using only TikTok for the last 7 days
+```
+
+The skill writes `report.md` and `results.json` in your working project. A 14-day request cannot extend an unavailable source window: the report discloses actual coverage. Authorize TokConnect in the client you will use; installation and another client's login do not establish this connection.
 
 The first adapter covers search topics, topic detail/related topics, and autocomplete. It does not yet normalize videos, comments, ads, or Shop sales. Read [the TikTok setup and capture reference](./skills/niche-hunter/references/tiktok.md) for supported methods and honest coverage fallbacks. Standalone skill copies need a separately configured MCP connection. See [Privacy](./PRIVACY.md) for data handling.
 

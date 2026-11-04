@@ -2,7 +2,16 @@
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-05
+
+Claude Code first-run readiness and release-tag consistency.
+
+- Accept client-namespaced TokConnect search tool names while retaining the original callable name in provenance and rejecting unsupported tools/methods.
+- Document existing-account browser authorization in Claude Code, setup readiness checks, and a small TikTok-only first run. Keep authentication, tool discovery, free allowance and permitted storage separate.
+- Clarify client-specific credentials, plugin versus standalone installation, and the 7-day/14-day coverage fallback.
 - Use release tags without a leading `v`; align the release workflow, package names, source links and install/rollback examples. Existing 0.1.0 and 0.2.0 tags retain their source commits under the new names.
+
+Limitations: live account access, actual tool responses, charging and metric accuracy still require the caller's authorized Claude Code run. No credentials, paid upgrade or new provider is included; the research JSON schema remains `0.1.0`.
 
 ## [0.2.0] - 2026-11-04
 

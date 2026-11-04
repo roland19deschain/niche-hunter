@@ -18,6 +18,8 @@ Installed plugin invocation is `$niche-hunter:niche-hunter` in Codex or `/niche-
 
 For an explicit setup/connect request or plugin onboarding, follow [references/tiktok.md](references/tiktok.md#one-time-setup). Help the caller authorize the bundled TokConnect server through the client's browser sign-in. Explain the current Free option and what data/quotas need checking. Do not run research, create accounts, or start paid plans as an implicit setup step. A normal research run reuses valid connections and reports missing access rather than starting login unexpectedly.
 
+If the caller already has a TokConnect account, reuse it. Complete authorization in the client that will run research; another client's login is not proof of access here. End setup with a short readiness summary and the exact next action, distinguishing authentication, tool availability, free allowance and storage rights. See the reference's Claude Code first-run steps; do not collect data just to make setup look successful.
+
 ## Interpret the request
 
 - Default mode: `discovery`. For a request to improve an existing product, use `refinement`: capture the caller-provided product, audience, constraints, and desired decision; propose relevant changes to that product. Ask only when missing product context would materially change the research. Record this context in analysis; it is not collected market evidence.

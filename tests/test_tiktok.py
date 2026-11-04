@@ -36,6 +36,21 @@ def capture(calls=None):
 
 
 class TikTokTests(unittest.TestCase):
+    def test_client_namespaces_preserve_observations_and_callable_provenance(self):
+        expected = tiktok.normalize(capture(), NOW)
+        for name in ("mcp__plugin_niche-hunter_tokconnect__demand_find_topics",
+                     "mcp__tokconnect__demand_find_topics"):
+            with self.subTest(name=name):
+                result = tiktok.normalize(capture([call(tool=name)]), NOW)
+                self.assertEqual(result["observations"], expected["observations"])
+                receipt = result["collection"]["calls"][0]
+                self.assertEqual(receipt["tool"], "demand_find_topics")
+                self.assertEqual(receipt["callable_tool"], name)
+        for name in ("mcp__tokconnect__product_top_selling", "other__demand_find_topics",
+                     "mcp__tokconnect__demand_find_topics/extra"):
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                tiktok.normalize(capture([call(tool=name)]), NOW)
+
     def test_supported_mcp_wrappers_preserve_missing_zero_and_unknown_semantics(self):
         data = {"topics": [topic(searchVolume=None)], "hasMore": False}
         wrappers = [data, {"data": data, "meta": {"request_id": "test"}},

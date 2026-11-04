@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import json
 import math
+import re
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import quote
@@ -106,14 +107,19 @@ def normalize(capture, now=None):
     rows, series, failures = {}, {}, []
     for call in calls:
         require(isinstance(call, dict), "Captured calls must be objects")
-        tool, arguments = call.get("tool"), call.get("arguments")
-        require(tool in METHODS and isinstance(arguments, dict), "Unsupported search tool or missing arguments")
+        callable_tool, arguments = call.get("tool"), call.get("arguments")
+        tool = callable_tool
+        if isinstance(tool, str) and re.fullmatch(r"mcp__[A-Za-z0-9_-]+__[A-Za-z0-9_]+", tool):
+            tool = tool.rsplit("__", 1)[1]
+        require(isinstance(tool, str) and tool in METHODS and isinstance(arguments, dict), "Unsupported search tool or missing arguments")
         method = arguments.get("method")
         require(method in METHODS[tool], "Unsupported search tool method")
         retrieved = call.get("retrieved_at")
         require(isinstance(retrieved, str) and timestamp(retrieved) <= now, "Need actual non-future tool retrieval time")
         # No headers, arbitrary input fields, raw errors, or response bodies enter the output receipt.
         receipt = {"tool": tool, "method": method, "retrieved_at": retrieved, "status": "partial"}
+        if callable_tool != tool:
+            receipt["callable_tool"] = callable_tool
         receipt["arguments"] = {key: value for key, value in arguments.items()
                                 if key in {"method", "keyword", "id", "limit", "channel", "category", "language"}
                                 and type(value) in (str, int)}
