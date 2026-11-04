@@ -75,7 +75,9 @@ def validate(root=ROOT, tag=None):
         require(path.resolve().is_relative_to(skill.resolve()), "Runtime file escapes the skill")
         if path.suffix in {".py", ".md", ".json", ".yaml"}:
             text = path.read_text(encoding="utf-8")
-            require(not re.search(r"[\u0400-\u04ff]|/Users/|/home/|Europe/Minsk|\bRTK\b", text),
+            require(not re.search(r"[\u0400-\u04ff]|/Users/|/home/|"
+                                  r"\b(?:Africa|America|Antarctica|Arctic|Asia|Atlantic|Australia|Europe|Indian|Pacific)/"
+                                  r"[A-Za-z_+-]+(?:/[A-Za-z_+-]+)?", text),
                     "Runtime content must remain portable: " + str(path.relative_to(root)))
     for filename in PACKAGE_FILES:
         require((root / filename).is_file(), "Missing package file: " + filename)

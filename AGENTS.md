@@ -13,7 +13,7 @@ Create a reusable process/skill for discovering niches for small digital product
 
 `Channel + audience → problems and desires → demand and competitor validation → economic hypothesis → minimal experiment → MVP`.
 
-Research should produce testable, narrowly scoped product hypotheses with primary sources, suitable acquisition channels, and a validation plan. Support exploration through existing search demand and through discovery/content, using paid and organic channels. The work is not limited to OutLoud.
+Research should produce testable, narrowly scoped product hypotheses with primary sources, suitable acquisition channels, and a validation plan. Support exploration through existing search demand and through discovery/content, using paid and organic channels. The caller selects the target product and audience.
 
 Distinguish topic popularity, actual need, willingness to pay, distribution viability, and validated product economics. Publicly available signals help select hypotheses; profitability and product-market fit require real tests.
 
@@ -68,16 +68,16 @@ The shared skill and helper implement the collection/reporting slice; semantic a
 
 ## Working in the repository
 
-- Communicate and write project explanations in Russian; preserve technical identifiers in their original form.
+- Write committed documentation, skill content, code, and examples in English. Match the caller's language in conversation and generated research reports; preserve technical identifiers in their original form.
 - Maintain [docs/development-plan.md](./docs/development-plan.md) in English, including all future updates. Its provider roadmap describes future candidates separately from the MVP.
 - Keep the portable skill package in English with neutral examples: no personal paths, workstation tools, regional time-zone examples, fixed country/language presets, or locale-specific topic aliases. Time zone, region, and requested language remain configurable inputs; UTC is the disclosed time-zone fallback. Seed-language metadata describes the catalog, not a default target market.
 - Make small changes scoped to the current task while preserving others' work. As implementation is added, update the actual structure and run/verification commands here.
 - Work in `develop`. Promote a tested commit to stable `master` for release; do not synchronize unfinished work automatically. Keep plugin versions in both client manifests equal, record changes in `CHANGELOG.md`, and tag releases as `vMAJOR.MINOR.PATCH`. Follow [docs/releasing.md](./docs/releasing.md). Release versions are independent of the research JSON schema version.
-- Run shell commands through `rtk`; rules: `/Users/AlexeyRoik/.codex/RTK.md`.
+- Repository commands use standard Python and Git tooling. Apply any additional shell policy from the calling environment without requiring a maintainer-specific tool or configuration file.
 - Do not run Xcode builds or SwiftPM package builds unless the user explicitly requests them.
-- Verify with `rtk proxy python3 -m unittest discover -s tests -v`. Collect with `rtk proxy python3 skills/niche-hunter/scripts/research.py collect --out .nichehunter/runs/NEW_RUN`. Finalize calling-agent analysis with `rtk proxy python3 skills/niche-hunter/scripts/research.py finalize --run RUN_DIR --analysis RUN_DIR/analysis.json`. Use a fresh output directory. See the skill's references for the v0.1 import/analysis contracts.
+- Verify with `python3 -m unittest discover -s tests -v`. Collect with `python3 skills/niche-hunter/scripts/research.py collect --out .nichehunter/runs/NEW_RUN`. Finalize calling-agent analysis with `python3 skills/niche-hunter/scripts/research.py finalize --run RUN_DIR --analysis RUN_DIR/analysis.json`. Use a fresh output directory. See the skill's references for the v0.1 import/analysis contracts.
 - Tests use synthetic fixtures; do not present them as authenticated integration or metric-accuracy verification. The helper uses no external Python packages. The host skill-creator validator separately requires PyYAML in its own environment.
-- TikTok capture normalization: `rtk proxy python3 skills/niche-hunter/scripts/tiktok.py --input CAPTURE_JSON --out NEW_IMPORT_JSON`, then pass that file to `research.py collect --import-file`. Rights, verified free allowance, actual retrieval/measurement times, and semantic topic selection belong to the caller; normalization does not establish permission or metric accuracy. No-account/unknown-rights failures are supported without fabricated credentials.
-- Release checks: `rtk proxy python3 scripts/release.py check` and `rtk proxy python3 scripts/release.py build --out dist`. CI tests Python 3.10/3.14; tag-triggered Release checks the tag/version and stable ancestry, reruns tests, then publishes GitHub notes/ZIP/checksums. Branch protection is a separate GitHub setting. Verify actual publication and downloaded assets, not just a successful tag push.
+- TikTok capture normalization: `python3 skills/niche-hunter/scripts/tiktok.py --input CAPTURE_JSON --out NEW_IMPORT_JSON`, then pass that file to `research.py collect --import-file`. Rights, verified free allowance, actual retrieval/measurement times, and semantic topic selection belong to the caller; normalization does not establish permission or metric accuracy. No-account/unknown-rights failures are supported without fabricated credentials.
+- Release checks: `python3 scripts/release.py check` and `python3 scripts/release.py build --out dist`. CI tests Python 3.10/3.14; tag-triggered Release checks the tag/version and stable ancestry, reruns tests, then publishes GitHub notes/ZIP/checksums. Branch protection is a separate GitHub setting. Verify actual publication and downloaded assets, not just a successful tag push.
 
 Next integration work must establish permitted source access, metric/window semantics and free quotas. Keep credentials in client facilities; the helper never reads them. Follow the development plan's updated handoff checklist and preserve historical evidence dates.
