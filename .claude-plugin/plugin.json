@@ -6,6 +6,8 @@
   "homepage": "https://github.com/roland19deschain/niche-hunter",
   "repository": "https://github.com/roland19deschain/niche-hunter",
   "license": "MIT",
+  "privacyPolicyUrl": "https://github.com/roland19deschain/niche-hunter/blob/master/PRIVACY.md",
+  "mcpServers": "./.claude-plugin/mcp.json",
   "icon": "./avatar.png",
   "keywords": ["market-research", "niches", "product-discovery"]
 }

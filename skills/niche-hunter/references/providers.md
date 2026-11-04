@@ -1,6 +1,6 @@
 # Provider routes — v0.1
 
-Access findings last checked October 31–November 1, 2026. Recheck current terms and schemas when using a route. This file is portable with the skill; repository development history lives in `docs/development-plan.md` and is not required at runtime.
+TikTok public schemas/OAuth/pricing rechecked November 4, 2026; other access findings date to October 31–November 1. Recheck current terms and schemas when using a route. This file is portable with the skill; repository development history lives in `docs/development-plan.md` and is not required at runtime.
 
 ## ChatGPT / OpenAI Signals
 
@@ -16,13 +16,13 @@ Implemented helper route: public HTTPS ZIP, no account/key or separate model API
 
 ## TikTok
 
-No authenticated connection is bundled. Discover existing authorized MCP/tools in the calling client. No tool names are hardcoded because they have not been authenticated or verified in this project.
+Implemented first route: bundled TokConnect MCP connection plus `scripts/tiktok.py`, an offline search-response normalizer. Follow [tiktok.md](tiktok.md) for setup, supported methods, bounded collection, and the capture contract. A plugin declaration is not an authorized account: the caller still signs in and verifies rights/free allowance. No authenticated response has been validated in this project yet.
 
-**TokConnect candidate:** [connections](https://tokconnect.com/connect/), MCP `https://mcp.tokconnect.com/mcp`, [pricing](https://app.tokconnect.com/pricing), [supplier CSI claims](https://tokconnect.com/guides/creator-search-insights-api/). Unauthenticated MCP returned 401 and OAuth metadata. Recent supplier docs advertised 50 one-time free credits and MCP on Free; balance, cost/call, terms, and metric semantics are unverified. Do not purchase REST access or start a paid plan. Onboarding/consent is a separate user action when needed.
+**TokConnect:** [connections](https://tokconnect.com/connect/), MCP `https://mcp.tokconnect.com/mcp`, [pricing](https://app.tokconnect.com/pricing), [supplier demand schema](https://tokconnect.com/docs/api/demand/). Public OAuth metadata advertises DCR/PKCE and `mcp` scope. November 4 pricing advertises 50 initial free credits, one credit per lookup, MCP on Free, and REST on every paid plan (a change from the earlier Pro-only REST finding). Actual account balance, charging, rights and metric accuracy remain unverified. Do not purchase REST access or start a paid plan. Onboarding/consent is an explicit setup action when needed.
 
 Before collecting, inspect live tools and access rights. If usage terms remain unresolved, return `usage_terms_unconfirmed` and do not collect/export data. If authorized and permitted, use at most the smaller of the free balance or remaining 10-call run budget. Record actual calls even on failure. Do not retry authentication, entitlement, or credit failures. Honor `Retry-After`; stop instead of waiting beyond the run budget. Export only permitted summaries/fields into the import contract.
 
-Supplier fields to investigate: `queryId`, `queryText`, `searchVolume`, `popularity`, `videoCount`, `trend7d`, `trendScore7d`, categories. These names are leads, not a validated schema. Claimed `searchVolume` is global last-seven-day volume until demonstrated otherwise. Distinguish literal `typed_search` from generated `topic_group`; use `unknown` if ambiguous. Keep `provider_claim_unverified` for unvalidated supplier measurement semantics, even after an HTTP success. Do not treat `trend7d` as additive daily counts without proof.
+The adapter maps publicly documented compact `topics`/`topic` fields (`queryId`, `queryText`, `searchVolume`, `popularity`, `videoCount`, `trend7d`, category) and autocomplete `suggestions[].text`. Live schemas must still match before calls. Claimed `searchVolume` is seven-day topic popularity; it is not independently verified literal-query volume. CSI entity type remains `unknown` without proof; autocomplete is `recommended_keyword`. Keep `provider_claim_unverified` even after HTTP success. Undated `trend7d` readings remain provenance, not additive daily counts or a computed growth rate. Missing bounds are unknown, not inferred from retrieval time.
 
 **Official alternatives:** [Business Discovery](https://business-api.tiktok.com/portal/docs/get-trending-search-keywords/v1.3), [Keyword Ideas](https://business-api.tiktok.com/portal/docs/discover-new-keywords/v1.3), [hashtags](https://business-api.tiktok.com/portal/docs/get-popular-hashtags/v1.3). Require current app/account consent, scopes and entitlements. Trending search phrases/recommendations are snapshots without confirmed historical query counts. Keyword Ideas provides monthly ranges. Hashtags have separate windows/ranks/views; a 14-day request does not create a `14DAY` option. Do not label any of these as seven-day typed-search volumes.
 

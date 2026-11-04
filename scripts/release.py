@@ -13,9 +13,11 @@ ROOT = Path(__file__).resolve().parents[1]
 NAME = "niche-hunter"
 MANIFESTS = ("plugin.json", ".claude-plugin/plugin.json")
 MARKETPLACES = (".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json")
-PACKAGE_FILES = (*MANIFESTS, *MARKETPLACES, "README.md", "LICENSE", "CHANGELOG.md", "avatar.png")
-SKILL_FILES = ("SKILL.md", "scripts/research.py", "references/catalog.json",
-               "references/providers.md", "references/contracts.md", "references/analysis.md", "agents/openai.yaml")
+PACKAGE_FILES = (*MANIFESTS, *MARKETPLACES, "mcp.json", ".claude-plugin/mcp.json",
+                 "README.md", "LICENSE", "PRIVACY.md", "CHANGELOG.md", "avatar.png")
+SKILL_FILES = ("SKILL.md", "scripts/research.py", "scripts/tiktok.py", "references/catalog.json",
+               "references/providers.md", "references/contracts.md", "references/analysis.md",
+               "references/tiktok.md", "agents/openai.yaml")
 
 
 def require(condition, message):
@@ -42,6 +44,13 @@ def validate(root=ROOT, tag=None):
     for key in ("name", "version", "description", "author", "homepage", "repository", "license"):
         require(primary[key] == compatibility[key], "Client manifests disagree on " + key)
     require(primary["name"] == NAME, "Unexpected plugin identity")
+    require(primary["extensions"]["com.openai"]["onboardingSkill"] == "./skills/niche-hunter/SKILL.md",
+            "Onboarding must use the shared setup instructions")
+    require(compatibility.get("mcpServers") == "./.claude-plugin/mcp.json", "Claude must load its bundled MCP config")
+    for name, transport in (("mcp.json", "streamable-http"), (".claude-plugin/mcp.json", "http")):
+        servers = read_json(root, name)["mcpServers"]
+        require(servers == {"tokconnect": {"type": transport, "url": "https://mcp.tokconnect.com/mcp"}},
+                "Bundle only the credential-free TokConnect endpoint with the correct client transport")
     for filename in MARKETPLACES:
         marketplace = read_json(root, filename)
         require(marketplace["name"] == NAME, "Unexpected marketplace identity")

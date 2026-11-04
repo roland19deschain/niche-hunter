@@ -13,6 +13,14 @@ Niche Hunter is a research skill for discovering niches for new digital products
 
 [Install for Codex](#install-for-codex) · [Install for Claude Code](#install-for-claude-code) · [Update](#update) · [Rollback](#rollback) · [Releases](https://github.com/roland19deschain/niche-hunter/releases) · [Changelog](./CHANGELOG.md)
 
+Unreleased development adds a client-managed TokConnect MCP connection and a TikTok search-response adapter. A provider account, authorization, permitted storage and free allowance must be checked before live collection; authenticated integration is not yet validated. These changes are not part of the published v0.1.0 package.
+
+### TikTok connection setup
+
+For a plugin version containing the new connector, ask: **"Use Niche Hunter to set up TikTok."** The skill guides browser sign-in to TokConnect and checks access, permitted use, and available free credits. The connection URL ships with the plugin; each user authorizes their own account. Passwords and tokens do not ship with the skill and must not be pasted into a chat.
+
+The first adapter covers search topics, topic detail/related topics, and autocomplete. It does not yet normalize videos, comments, ads, or Shop sales. Read [the TikTok setup and capture reference](./skills/niche-hunter/references/tiktok.md) for supported methods and honest coverage fallbacks. Standalone skill copies need a separately configured MCP connection. See [Privacy](./PRIVACY.md) for data handling.
+
 ## Install for Codex
 
 Use a Codex client with `plugin add` and `plugin marketplace` support (`codex plugin --help`). Register the stable source, then install:

@@ -5,7 +5,9 @@
 - Make channel → reachable market/need → product combinations the primary research decision, with discovery and existing-product refinement modes.
 - Add a focused analysis guide, separate demand/channel evidence, explicit channel-fit status, acquisition paths, counterevidence, and qualitative next actions.
 - Extend analysis finalization and reports with decision context and opportunity assessments while preserving saved v0.1 analysis compatibility; place decisions before the evidence appendix.
-- Keep provider access unchanged: no authenticated Reddit/TikTok connection is included in these changes.
+- Bundle credential-free TokConnect MCP declarations for both clients and reuse the shared skill for explicit connection onboarding.
+- Add the first TikTok search adapter: bounded search topics, detail/related topics and autocomplete, MCP response normalization, safe call receipts, and explicit missing/failed/partial coverage. Live authenticated validation is pending.
+- Add setup/capture documentation and a privacy disclosure. Reddit access remains unchanged; no accounts, shared credentials, paid REST dependency or background collector are included.
 
 ## [0.1.0] - 2026-11-02
 

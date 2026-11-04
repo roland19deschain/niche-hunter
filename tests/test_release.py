@@ -53,6 +53,26 @@ class ReleaseTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 release.validate(root)
 
+    def test_bundled_connections_cannot_drift_or_ship_credentials(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture(root)
+            for name in ("mcp.json", ".claude-plugin/mcp.json"):
+                path = root / name
+                original = path.read_text()
+                data = json.loads(original)
+                data["mcpServers"]["tokconnect"]["headers"] = {"Authorization": "SYNTHETIC_NOT_A_SECRET"}
+                path.write_text(json.dumps(data))
+                with self.assertRaises(ValueError):
+                    release.validate(root)
+                path.write_text(original)
+                data["mcpServers"]["tokconnect"].pop("headers")
+                data["mcpServers"]["tokconnect"]["url"] = "https://example.org/unreviewed-server"
+                path.write_text(json.dumps(data))
+                with self.assertRaises(ValueError):
+                    release.validate(root)
+                path.write_text(original)
+
     def test_archive_is_reproducible_and_excludes_development_data(self):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)
@@ -72,6 +92,11 @@ class ReleaseTests(unittest.TestCase):
                 self.assertFalse(any("__pycache__" in name or name.endswith(".env") for name in paths))
                 self.assertFalse(any(".." in Path(name).parts for name in paths))
                 self.assertIn("niche-hunter/skills/niche-hunter/references/catalog.json", paths)
+                self.assertIn("niche-hunter/skills/niche-hunter/scripts/tiktok.py", paths)
+                self.assertIn("niche-hunter/skills/niche-hunter/references/tiktok.md", paths)
+                self.assertIn("niche-hunter/mcp.json", paths)
+                self.assertIn("niche-hunter/.claude-plugin/mcp.json", paths)
+                self.assertIn("niche-hunter/PRIVACY.md", paths)
 
     def test_extracted_install_update_and_rollback_keep_helper_usable(self):
         with tempfile.TemporaryDirectory() as directory:

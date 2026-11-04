@@ -10,6 +10,7 @@
   "keywords": ["market-research", "niches", "product-discovery"],
   "extensions": {
     "com.openai": {
+      "onboardingSkill": "./skills/niche-hunter/SKILL.md",
       "interface": {
         "displayName": "Niche Hunter",
         "shortDescription": "Research niches for small digital products",
