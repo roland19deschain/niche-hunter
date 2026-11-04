@@ -16,6 +16,8 @@ Output must be a fresh/empty directory. A source-specific failure produces a sta
 
 Supply one UTF-8 JSON envelope per selected `reddit` or `tiktok` provider with repeatable `--import-file`. Combine permitted tool pages before import. The helper never fetches URLs inside an envelope. Keep only allowed summaries/fields; no authors, access tokens, cookies, or raw private messages. The caller must establish use/storage rights; the envelope records that basis, it does not grant rights.
 
+For the implemented TokConnect search route, [tiktok.md](tiktok.md#capture-and-normalize) defines the input to `scripts/tiktok.py`, which produces this same envelope. This adapter normalizes caller-managed MCP responses; it does not perform authentication or networking. The generic Reddit/TikTok import contract remains unchanged.
+
 Required envelope fields:
 
 | Field | Meaning |

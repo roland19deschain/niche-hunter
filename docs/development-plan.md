@@ -4,7 +4,7 @@ Updated: **November 4, 2026**. Source investigations below retain their original
 
 **Document language: English. Keep all future updates to this plan in English.**
 
-Status: **v0.1.0 of the shared skill is published**. Unreleased development now sharpens channel → market/need → product reasoning and existing-product refinement (section 17). The Python standard-library helper collects public OpenAI Signals, accepts permitted normalized imports, and finalizes evidence-linked reports. On November 2 the user authorized stable-branch distribution, tagged GitHub Releases, and client install/update/rollback documentation. The **free pilot** remains in force; no provider accounts or credentials have been provisioned. Authenticated Reddit/TikTok collection and interactive research quality remain incomplete. Purchasing subscriptions is outside scope.
+Status: **v0.1.0 of the shared skill is published**. Unreleased development sharpens channel → market/need → product reasoning and existing-product refinement (section 17), and adds the first TokConnect MCP/search adapter (section 18). The Python standard-library helper collects public OpenAI Signals, accepts permitted normalized imports, and finalizes evidence-linked reports. On November 2 the user authorized stable-branch distribution, tagged GitHub Releases, and client install/update/rollback documentation. The **free pilot** remains in force; no provider accounts or credentials have been provisioned. Authenticated Reddit/TikTok collection and interactive research quality remain incomplete. Purchasing subscriptions is outside scope.
 
 ## 0. Handoff snapshot — read first
 
@@ -13,12 +13,12 @@ This is the canonical project context and implementation plan. Earlier design no
 | Area | Current state as of November 4, 2026 |
 | --- | --- |
 | Repository | Work and test in `develop`; promote tested releases to stable `master`. Inspect staged/unstaged changes before editing. Do not automatically synchronize unfinished development work. |
-| Implemented artifacts | Canonical `skills/niche-hunter/`: shared `SKILL.md`, references/catalog, Python helper, and Codex UI metadata. Project `.agents/skills/niche-hunter` and `.claude/skills/niche-hunter` symlink to it. Synthetic behavior tests and actual commands are documented. No authenticated social-source adapter is bundled. |
+| Implemented artifacts | Canonical `skills/niche-hunter/`: shared `SKILL.md`, references/catalog, Python helper, and Codex UI metadata. Project `.agents/skills/niche-hunter` and `.claude/skills/niche-hunter` symlink to it. Unreleased TikTok v1 adds client MCP declarations, setup instructions and offline search-response normalization; authenticated operation is still unverified. |
 | Runtime | Python 3.10+ standard library and IANA time-zone data; manual skill invocation with calling-agent analysis. No additional LLM API, continuously running collector, scheduler, hosted backend, or cloud storage. |
 | Analytical decision | Unreleased: discovery/refinement modes, channel → reachable market/need → product combinations, separate demand/channel evidence, acquisition paths, counterevidence, and qualitative next actions. See section 17; published v0.1.0 is unchanged. |
 | Accounts and credentials | None available for Reddit, TikTok for Business, TokConnect, or licensed monitoring services. No credentials are committed. |
 | OpenAI Signals | Live v0.1 helper download and offline replay verified. One global monthly topic-share table is supported, with release hashing, permitted ZIP snapshot, adjacent-month comparisons, explicit monthly fallback and unsupported narrow-topic handling. |
-| TikTok | Public documentation, prices, and unauthenticated MCP/OAuth discovery checked. No authorized data response or metric accuracy validation yet. |
+| TikTok | Unreleased first search route implemented through client-managed TokConnect MCP and `scripts/tiktok.py`. November 4 public schemas/pricing and OAuth discovery checked; the user confirms no account yet. No authorized data response, permitted-storage confirmation or metric-accuracy validation. See section 18. |
 | Reddit | Bounded Arctic Shift metadata retrieval verified. Suitable commercial access, completeness, and future reliability remain unresolved. |
 | Budget and scope | Free pilot only. Implementation is authorized; this document does not itself authorize account creation, paid purchases, advertising, deployment, or scheduled collection. Defaults: 100 normalized observations/provider, 10 external calls/run subject to confirmed free balance, at most two public Signals HTTP attempts. |
 | Distribution | Public `v0.1.0` Release is published at commit `3dd6a25`, with verified ZIP/checksum. Native Codex and Claude GitHub master/tag installation passed. Root manifests, two catalogs, changelog, deterministic package builder, CI and release workflow are implemented. See section 16 and `docs/releasing.md`. |
@@ -105,6 +105,8 @@ Sources: [Signals individual data](https://openai.com/signals/data/), [CSV downl
 ### 3.2. TikTok: TokConnect MCP
 
 **A candidate for the free search-signal pilot. Production data has not yet been tested with authorization.**
+
+**November 4 update:** public pricing now advertises REST on every paid plan, rather than the earlier Pro-only finding below. The free MCP direction is unchanged. DCR/PKCE OAuth metadata and documented compact search-response shapes were checked; an unreleased connector/normalizer is implemented in section 18. The original table and source investigation retain their historical meaning; they do not establish a current account balance or permission to export data.
 
 The supplier claims access to CSI-like search topics, seven-day metrics, related topics, content signals, and MCP. Its collection method and permitted use of results require validation before routine collection.
 
@@ -346,6 +348,7 @@ Artifacts: a compact `report.md` and `results.json` containing parameters, prove
 - [x] Define findings/hypothesis labels and validate evidence IDs and required analysis fields during offline finalization.
 - [x] Generate `report.md` and `results.json`, including source status, actual windows, limitations, provenance and analysis-pending state.
 - [x] Preserve public Signals ZIP for replay and bound helper attempts/imported records; instruct the caller to enforce free-credit limits before tool calls.
+- [x] Implement the first TikTok search normalization and client-managed MCP setup path; keep live authorization/usefulness acceptance open (section 18).
 - [ ] Validate useful multi-source problem extraction and product experiments from real permitted Reddit/TikTok evidence. Broad monthly aggregates alone must not force a hypothesis shortlist.
 
 ### Stage 3 — behavioral validation
@@ -652,3 +655,41 @@ The user clarified the primary outcome before social-provider implementation: co
 Verified on November 4: all **22** helper/release tests passed, including discovery/refinement finalization, preservation of source observations and run parameters, rejected unsupported channel declarations/evidence links, and legacy analysis compatibility. The host skill validator, `scripts/release.py check`, package build into a temporary review directory, and `git diff --check` also passed. The existing HTTP-error fixture emits a non-failing resource-cleanup warning. Synthetic fixtures verify structure and serialization, not supplier access or the model's analytical quality. No provider calls, client-cache updates, commit, stable promotion, or release publication were part of this revision.
 
 Next, validate authorized TikTok and Reddit access as described in section 14. On the first real useful runs, evaluate whether the calling agent can explain every channel → need → product link, distinguish need from channel evidence, account for contrary observations, and propose a measurable test of the riskiest link. Check an existing-product refinement case and a broad/insufficient-evidence case in both clients before treating analytical quality as established.
+
+## 18. TikTok provider v1 — implementation handoff
+
+Implemented in unreleased development on **November 4, 2026**, at the user's request. The user confirmed there is still no TokConnect account; first setup and authenticated data validation remain necessary. This is the first **search** adapter, not a general TikTok crawler or a completed commercial-source validation.
+
+### Execution and package
+
+`shared skill → client-managed TokConnect OAuth/MCP calls → scripts/tiktok.py → normalized import → research.py collect → calling-agent analysis → finalize`.
+
+- Root `mcp.json` declares the public Streamable HTTP endpoint. `.claude-plugin/mcp.json` declares the same endpoint with Claude's `http` transport, referenced explicitly by the Claude manifest. No credentials, shared OAuth client or local server executable are bundled. A standalone skill copy does not inherit plugin MCP configuration.
+- `extensions.com.openai.onboardingSkill` reuses the shared research skill's explicit setup route. Normal research reuses existing access or reports its failure; it does not unexpectedly create accounts or launch login. Users sign in through their client/browser, with client-managed credential storage.
+- `skills/niche-hunter/references/tiktok.md` defines setup, current tool/method routing, quota/rights checks, the capture contract and normalization commands. `scripts/tiktok.py` is standard-library-only and performs **no network or credential access**.
+- V1 accepts compact `demand_find_topics` search/feed/trending, `demand_topic` detail/related, and `demand_keywords` TikTok autocomplete. It unwraps documented MCP/JSON shapes and generates the existing v0.1 import envelope. Videos/comments, Shop/ads, demographics, automatic historical growth and verified regional/language filtering remain outside this version.
+- Captures require actual call counts, zero new paid spend, verified free allowance and explicit permitted-storage basis before retaining data. Topic-scoped results require caller-reviewed selection. Failure captures support no-account/auth/rights errors without fabricated credentials or balance.
+- The adapter retains at most 100 unique observations and 10 captured calls. Repeated topic snapshots use the most recent retrieval (last capture on equal times); undated trend readings are retained without summing. Missing metrics remain null; zero matched videos remains zero. Source publication/measurement times are unknown unless supported; retrieval time does not invent a seven-day boundary.
+- CSI entities remain `unknown` rather than guessed literal typed searches; autocomplete is `recommended_keyword`. Supplier measurements remain `provider_claim_unverified`. Exact source windows are preserved when established; missing dates and unsupported filters produce explicit gaps/partial coverage.
+- Safe receipts retain tool/method, selected nonsecret parameters, retrieval time, call status and pagination information. Headers, author fields, raw errors and opaque cursors are not copied into normalized results. HTTP 401, 402/429, 403, other errors, protocol errors and partial successful batches have distinct handling. Unknown response shapes stop this adapter rather than silently appearing as an empty successful search.
+- The curated release allowlist and tests include both connection configs, the adapter/reference and `PRIVACY.md`. The privacy document explains local artifacts, client processing, third-party requests and credential handling; its stable GitHub URL becomes public with the eventual stable promotion. Published v0.1.0 and installed caches are unchanged; bump the plugin version and follow the release workflow before distribution.
+
+### Source checks and remaining acceptance
+
+Primary references: [demand schemas](https://tokconnect.com/docs/api/demand/), [current pricing](https://app.tokconnect.com/pricing), [supplier Codex setup](https://tokconnect.com/connect/codex/), [supplier Claude Code setup](https://tokconnect.com/connect/claude-code/), [official OpenAI plugin MCP/onboarding packaging](https://developers.openai.com/plugins/build/plugins), and [official Claude plugin MCP support](https://code.claude.com/docs/en/mcp#plugin-provided-mcp-servers).
+
+Verified November 4:
+
+- Public demand schemas and compact examples were reviewed. These are supplier documentation, not authenticated responses from our account. Public pricing advertises Free with 50 initial credits/no card and one credit per lookup; REST is now advertised on every paid plan. Real free balance/charging remains unverified.
+- A bounded unauthenticated MCP initialize request returned **401** with the protected-resource metadata challenge. Protected-resource discovery returned issuer `https://app.tokconnect.com` and scope `mcp`; authorization-server discovery advertised DCR, PKCE S256 and authorization/token endpoints. Zero research tool calls and no account registration were made.
+- Native Codex local `plugin/read` recognized **one `tokconnect` MCP server, one research skill and that same onboarding skill**, without installing a candidate or changing the user's plugin registrations. This is package discovery, not an authenticated connection or research run.
+- Synthetic tests cover MCP wrappers, null versus zero, conservative entity typing, autocomplete, latest-record replacement, retained trend semantics, topic selection, failed/partial calls and usage, rights/free-budget limits, record caps, and adapter → collector processing of a seven-day fallback for a 14-day request. Release tests reject secret-bearing or drifting connection manifests.
+- All **33** helper/release tests passed locally. The host skill validator, release consistency check, Python 3.10 syntax parsing, local skill-reference checks and whitespace checks passed. The extracted review ZIP passed Claude's native directory profile with `--strict` and no findings. A packaged no-account smoke check produced `auth_required`, zero observations and zero research-tool calls for the sole selected TikTok provider. These checks do not establish authenticated collection or model research quality.
+
+Before calling TikTok operationally validated:
+
+1. Have the user create/select their Free TokConnect account and authorize it in the chosen client. Verify the actual account's free allowance and charging; do not rely on the advertised starting balance.
+2. Establish applicable research/storage/retention rights from the account's terms or supplier authorization. Public documentation did not resolve that basis; the attempted public terms routes did not provide usable terms. Do not set `storage_permitted: true` merely because login works.
+3. Inspect live tool schemas and make a minimal authorized call, then a small topic/detail research sample. Validate response wrapping, IDs, pagination, freshness, metric windows, missing values and costs; update the adapter only from observed differences.
+4. Cross-check representative metrics/entity types against an authorized primary TikTok view where possible. Successful JSON does not verify search-volume accuracy or literal-query identity.
+5. Exercise end-to-end research and setup in both target clients, including expired auth, no credits, topic mismatch, custom dates and the no-useful-need case. Record model behavior separately from deterministic fixtures. Do not implement Reddit or broaden to video/Shop scraping as an implicit fallback.

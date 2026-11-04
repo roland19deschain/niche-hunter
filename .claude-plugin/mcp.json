@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "tokconnect": {
+      "type": "http",
+      "url": "https://mcp.tokconnect.com/mcp"
+    }
+  }
+}
