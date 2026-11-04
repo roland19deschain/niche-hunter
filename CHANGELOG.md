@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+- Make channel → reachable market/need → product combinations the primary research decision, with discovery and existing-product refinement modes.
+- Add a focused analysis guide, separate demand/channel evidence, explicit channel-fit status, acquisition paths, counterevidence, and qualitative next actions.
+- Extend analysis finalization and reports with decision context and opportunity assessments while preserving saved v0.1 analysis compatibility; place decisions before the evidence appendix.
+- Keep provider access unchanged: no authenticated Reddit/TikTok connection is included in these changes.
+
 ## [0.1.0] - 2026-11-02
 
 First public plugin release for Codex and Claude Code.

@@ -7,7 +7,7 @@
   <img src="./avatar.png" alt="NicheHunter — a research robot with a magnifying glass against a backdrop of charts" width="360">
 </p>
 
-NicheHunter is a research skill for finding promising niches before development begins. It supports a repeatable workflow: collect available signals from selected sources, identify supported trends and unmet needs, compare them with existing solutions, and propose product hypotheses together with a way to reach the audience.
+Niche Hunter is a research skill for discovering niches for new digital products and refining existing products. Its decision chain is **distribution channel → reachable market and need → product or product change → validation experiment**. It collects available signals, analyzes needs and alternatives, and explains which combinations deserve testing and where evidence is still missing.
 
 > **Release v0.1.0 · November 2, 2026:** one shared skill is packaged for Codex and Claude Code. Public OpenAI Signals collection, date handling, permitted normalized imports, evidence-linked analysis, and Markdown/JSON reporting work. Reddit and TikTok remain access-dependent: no authenticated connection has been validated. Signals supplies broad monthly context, not weekly search logs. Python 3.10+ with IANA time-zone data is required; the public-data path needs no provider account or separate model API key.
 
@@ -136,7 +136,9 @@ The research considers two acquisition models:
 | Existing demand | Someone is already looking for a solution to a specific task | Problem wording, intent to solve it, alternatives in use |
 | Discovery through content | Someone notices a useful or appealing result in their feed | A clear demonstration, understandable value, a reason to visit the product |
 
-An idea should therefore include both the product itself and its proposed distribution method. For example, a suitable experiment for one task might involve finding people who are already asking for a solution, while another might call for a short demonstration of the result on TikTok.
+An idea should therefore include a concrete entry point, audience/intent, proposed product, and path to first useful outcome. Evidence for a problem and evidence for a channel are assessed separately: a Reddit complaint does not establish search demand, and aggregate ChatGPT usage does not establish an acquisition route. Channel fit remains supported, inferred, or untested; none of these labels establishes profitable acquisition.
+
+Use discovery mode for new products. When asking about an existing product, provide its purpose and relevant constraints; refinement mode evaluates positioning, workflow, features, or acquisition changes relative to that product. Both modes can return no hypotheses when available evidence is insufficient. A useful recurring need does not have to be a growing trend.
 
 ## First iteration: Reddit + TikTok + ChatGPT
 
@@ -192,8 +194,8 @@ Overlapping topics will warrant deeper investigation. However, reposts, retellin
 4. **Clean and group.** Remove duplicates, flag spam, and group similar wording while preserving original texts and links.
 5. **Assess trends.** Compare comparable periods, baseline size, source diversity, and topic persistence where the data allow it.
 6. **Extract problems.** Describe the audience, task, alternatives in use, and shortcomings of current solutions.
-7. **Generate opportunities.** Propose 3–5 narrowly scoped product hypotheses with an acquisition channel, monetization, and a minimal MVP.
-8. **Prepare validation.** Propose an experiment for each hypothesis and define in advance which result would support or refute it.
+7. **Construct opportunities.** When evidence supports them, propose 3–5 channel → market/need → product combinations, or changes to an existing product. Explain the route to first value, alternatives, monetization assumptions, and minimal MVP. Fewer or none is valid.
+8. **Challenge and prioritize.** Include counterevidence and identify the weakest link. Recommend testing next, researching more, or deferring, with a reason and a measurable experiment that could refute the hypothesis.
 
 Competitor, pricing, and commercial demand validation will be a separate part of the evidence supporting each hypothesis. Until additional sources are connected, these questions will remain explicitly listed as items for further research.
 
@@ -208,6 +210,8 @@ This scenario can now be requested through the skill. Its usefulness depends on 
 | Parameter | Purpose |
 | --- | --- |
 | Sources | Reddit, TikTok, or combined analysis |
+| Decision and product context | New-product discovery, or refinement of a caller-described existing product |
+| Distribution constraints | Optional caller-selected channels; otherwise propose routes and label their evidence status |
 | Topics and filters | Queries, categories, subreddits, hashtags — depending on the source |
 | Period and time zone | Explicit boundaries of the analysis window; the default reference is seven complete local days |
 | Comparison period | A preceding comparable, non-overlapping interval of the same duration |
@@ -228,7 +232,7 @@ The skill's report includes the available parts of:
 - Metrics and a comparison baseline where available and comparable.
 - User problems, audiences, existing solutions, and identified gaps.
 - Links to primary sources for material conclusions.
-- A shortlist of product opportunities and next steps for validation.
+- A channel → market/need → product shortlist, prioritized next actions, and tests of the weakest links.
 - Missing data and questions the research cannot yet answer.
 
 ### Product hypothesis card
@@ -240,11 +244,14 @@ The skill's report includes the available parts of:
 | Alternatives | Which tools or manual processes are already in use |
 | Product idea | A narrow use case and a clear value proposition |
 | Minimal MVP | What is sufficient to implement to test the key assumption |
-| Distribution | Proposed channel and an example message or demonstration |
+| Market and distribution | Reachable segment/intent, channel entry point, message/demo, and path to first value |
+| Evidence for the combination | Separate need and channel evidence; supported/inferred/untested fit and counterevidence |
+| Existing-product change | In refinement mode, what changes relative to the caller's current product and why |
 | Monetization | A payment model hypothesis and grounds for testing it |
 | Experiment | An interview, demonstration, landing page, prototype, or another suitable test |
 | Decision criteria | Which measurable result allows validation to continue, change, or stop |
 | Confidence and gaps | Strength of evidence, risks, and unknown values |
+| Next action | Test next, research more, or defer, with a reason |
 
 ### Data: `results.json`
 

@@ -1,20 +1,21 @@
 # Niche Hunter — first-version development plan
 
-Updated: **November 2, 2026**. Source investigations below retain their original verification dates.
+Updated: **November 4, 2026**. Source investigations below retain their original verification dates.
 
 **Document language: English. Keep all future updates to this plan in English.**
 
-Status: **v0.1.0 of the shared skill is implemented and packaged for distribution**, with a Python standard-library helper, public OpenAI Signals collection, permitted normalized imports, and evidence-linked report finalization. On November 2 the user authorized stable-branch distribution, tagged GitHub Releases, and client install/update/rollback documentation. The **free pilot** remains in force; no provider accounts or credentials have been provisioned. Authenticated Reddit/TikTok collection and interactive research quality remain incomplete. Purchasing subscriptions is outside scope.
+Status: **v0.1.0 of the shared skill is published**. Unreleased development now sharpens channel → market/need → product reasoning and existing-product refinement (section 17). The Python standard-library helper collects public OpenAI Signals, accepts permitted normalized imports, and finalizes evidence-linked reports. On November 2 the user authorized stable-branch distribution, tagged GitHub Releases, and client install/update/rollback documentation. The **free pilot** remains in force; no provider accounts or credentials have been provisioned. Authenticated Reddit/TikTok collection and interactive research quality remain incomplete. Purchasing subscriptions is outside scope.
 
 ## 0. Handoff snapshot — read first
 
 This is the canonical project context and implementation plan. Earlier design notes and access investigations have been consolidated here; their historical versions remain in Git. An agent should be able to resume without the original chat, screenshots, meeting notes, or deleted documents.
 
-| Area | Current state as of November 2, 2026 |
+| Area | Current state as of November 4, 2026 |
 | --- | --- |
 | Repository | Work and test in `develop`; promote tested releases to stable `master`. Inspect staged/unstaged changes before editing. Do not automatically synchronize unfinished development work. |
 | Implemented artifacts | Canonical `skills/niche-hunter/`: shared `SKILL.md`, references/catalog, Python helper, and Codex UI metadata. Project `.agents/skills/niche-hunter` and `.claude/skills/niche-hunter` symlink to it. Synthetic behavior tests and actual commands are documented. No authenticated social-source adapter is bundled. |
 | Runtime | Python 3.10+ standard library and IANA time-zone data; manual skill invocation with calling-agent analysis. No additional LLM API, continuously running collector, scheduler, hosted backend, or cloud storage. |
+| Analytical decision | Unreleased: discovery/refinement modes, channel → reachable market/need → product combinations, separate demand/channel evidence, acquisition paths, counterevidence, and qualitative next actions. See section 17; published v0.1.0 is unchanged. |
 | Accounts and credentials | None available for Reddit, TikTok for Business, TokConnect, or licensed monitoring services. No credentials are committed. |
 | OpenAI Signals | Live v0.1 helper download and offline replay verified. One global monthly topic-share table is supported, with release hashing, permitted ZIP snapshot, adjacent-month comparisons, explicit monthly fallback and unsupported narrow-topic handling. |
 | TikTok | Public documentation, prices, and unauthenticated MCP/OAuth discovery checked. No authorized data response or metric accuracy validation yet. |
@@ -26,7 +27,7 @@ Resume by reading this snapshot, source-specific constraints in section 3, imple
 
 ## 1. Goal and agreed decisions
 
-Niche Hunter helps identify needs and niches for websites, web applications, mobile and desktop applications, and other small digital products. Research should connect observed interest to a specific user task, existing solutions, a distribution channel, and a minimal experiment before development.
+Niche Hunter helps identify needs and niches for websites, web applications, mobile and desktop applications, and other small digital products, or refine an existing product in a selected domain. The primary decision is **distribution channel → reachable market (audience, intent, unmet need) → potential product or product change → experiment**. Research should explain this combination from observations rather than append a generic channel name to a product idea.
 
 Agreed decisions:
 
@@ -42,7 +43,7 @@ Agreed decisions:
 
 ### Product context and research boundaries
 
-The user is an experienced iOS developer/technical lead who can ship small applications and web-first products. Earlier discussions with Wowmaking supplied UA and paid-experiment experience, not confirmed accounts, partner integrations, advertising budgets, or authority to contact anyone. This project investigates the next product opportunity; optimizing OutLoud and deciding commercial collaboration terms are outside scope.
+The user is an experienced iOS developer/technical lead who can ship small applications and web-first products. Earlier discussions with Wowmaking supplied UA and paid-experiment experience, not confirmed accounts, partner integrations, advertising budgets, or authority to contact anyone. Initial scoping focused on the next product; the November 4 clarification also includes research to refine a caller-specified existing product. No specific product or commercial collaboration is selected by this plan.
 
 Follow **Distribution First**: `channel + audience → observed problem/desire → demand and competitor checks → economic hypothesis → minimal experiment → MVP → payments/retention evidence`.
 
@@ -535,6 +536,8 @@ The next useful sequence after v0.1 is:
 4. Resolve a permitted Reddit adapter or retain an explicit unavailable/terms-unconfirmed result. Do not hold all useful work indefinitely on Reddit access or silently treat an unresolved source as production-ready.
 5. Run the first useful permitted multi-source research and evaluate problem evidence, alternatives, independent corroboration, and the proposed tests. Broader automation/ranking and more granular Signals tables should follow demonstrated need, not expand the initial slice silently.
 
+For the unreleased analytical revision, exercise both discovery and existing-product refinement using section 17's decision criteria. Do not confuse deterministic contract checks with model behavior or authenticated source validation.
+
 Minimum acceptance criteria:
 
 - Default and explicit provider selection, seven-day/14-day/custom windows, and topic filtering work as described; unselected platforms receive no requests.
@@ -606,3 +609,24 @@ Agreed November 2, 2026: `develop` is for ongoing work and checks; `master` is t
 - [GitHub Release v0.1.0](https://github.com/roland19deschain/niche-hunter/releases/tag/v0.1.0) contains `niche-hunter-v0.1.0.zip` (2,097,143 bytes) and `SHA256SUMS`. The downloaded ZIP matched the checksum and local build byte-for-byte: SHA-256 `f7d1dfa07bffd3ac330990118296115def35dba179f64d63e257c07849b168f3`. The downloaded helper ran offline and correctly reported the sole selected Reddit source as unconfigured without calling other platforms.
 - Native GitHub checks passed in both clients for stable `master`, explicit marketplace refresh/update, and reinstall from pinned `v0.1.0`. Those actual public sources were tested separately from the local synthetic `0.1.0 → 0.1.1 → 0.1.0` transition. Temporary test registrations were removed; no provider credentials or user research outputs were stored in the plugin.
 - This verification record is a documentation-only follow-up after the immutable release tag; it does not change packaged runtime bytes or move the tag. Interactive model research, cloud-surface behavior and authenticated provider access remain separate follow-up work. GitHub branch protection has not been configured; CI/release workflow checks and documented promotion rules are implemented.
+
+## 17. Channel-to-product analysis revision — November 4, 2026
+
+The user clarified the primary outcome before social-provider implementation: collect observations, analyze them deeply, and find defensible **distribution channel → reachable market/need → product** combinations. Support both discovery of new products and improvement of an existing product in a selected domain. This revision is development work, not a new published release or an authorization to connect providers.
+
+### Audit findings and implemented direction
+
+- Distribution First already existed, but a free-text channel/hook did not require explaining channel access, audience intent, or the path to product use. The analysis could therefore append a channel to a trend-based idea without supporting the combination.
+- Existing-product refinement had no explicit context/mode. The skill now distinguishes `discovery` from `refinement`, preserves caller constraints, and relates product changes to the existing workflow/positioning rather than proposing unrelated new products.
+- Evidence providers and acquisition channels are explicitly separate. A need found on Reddit can inform a product whose search acquisition remains untested. Aggregate Signals data cannot identify a narrow audience or establish an acquisition route.
+- `references/analysis.md` guides need clustering, alternatives, concrete channel surfaces, acquisition paths, solution/channel fit, counterevidence, and tests of the weakest link. Stable needs and desired outcomes remain valid; rising trends and explicit complaints are not prerequisites.
+- New analyses include `research_context` and a per-hypothesis `opportunity` block: reachable market, separate demand/channel evidence IDs, channel-fit status, entry point, acquisition path, fit reasoning, counterevidence, and a justified next action (`test_next`, `research_more`, `defer`).
+- Finalization validates the additive structure and evidence subsets. Supported/inferred channel fit requires channel references; untested fit requires none. This checks declared structure, not whether the reference actually supports the argument. Legacy v0.1 analyses remain accepted; collection/import schema version stays `0.1.0`.
+- Reports put coverage, decision context and a channel/market/product shortlist before the evidence appendix. Detailed evidence, source attribution, and limitations are preserved. Skill instructions still allow fewer hypotheses or none when evidence is weak.
+- The release allowlist includes the new analysis reference. README, AGENTS, and the unreleased changelog describe the revised goal and output. Published version/tag `v0.1.0`, client caches, and stable distribution are unchanged by these edits.
+
+### Validation and next handoff
+
+Verified on November 4: all **22** helper/release tests passed, including discovery/refinement finalization, preservation of source observations and run parameters, rejected unsupported channel declarations/evidence links, and legacy analysis compatibility. The host skill validator, `scripts/release.py check`, package build into a temporary review directory, and `git diff --check` also passed. The existing HTTP-error fixture emits a non-failing resource-cleanup warning. Synthetic fixtures verify structure and serialization, not supplier access or the model's analytical quality. No provider calls, client-cache updates, commit, stable promotion, or release publication were part of this revision.
+
+Next, validate authorized TikTok and Reddit access as described in section 14. On the first real useful runs, evaluate whether the calling agent can explain every channel → need → product link, distinguish need from channel evidence, account for contrary observations, and propose a measurable test of the riskiest link. Check an existing-product refinement case and a broad/insufficient-evidence case in both clients before treating analytical quality as established.

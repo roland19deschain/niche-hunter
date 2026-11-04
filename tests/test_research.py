@@ -52,6 +52,34 @@ def envelope(run, rows=None):
             "observations": rows if rows is not None else [observation()]}
 
 
+def decision_analysis(evidence_id, mode="discovery"):
+    # A proposed search route deliberately has no channel evidence from this discussion.
+    return {"schema_version": research.VERSION, "summary": "Synthetic decision scenario, not a market recommendation.",
+            "research_context": {"mode": mode, "product": "Existing call-notes app" if mode == "refinement" else None,
+                                 "constraints": ["Keep the MVP small"], "target_channels": ["Search"]},
+            "findings": [], "gaps": ["Search intent and payment remain untested."],
+            "hypotheses": [{"title": "Action-list export", "audience": "Independent consultants",
+                "job": "Turn call notes into a client action list", "problem": "Retyping actions after each call",
+                "alternatives": "Manual copy and paste in the synthetic scenario",
+                "value_proposition": "Add action-list export to the notes workflow" if mode == "refinement"
+                                     else "A focused notes-to-action-list tool",
+                "product_format": "Notes utility", "minimal_mvp": "One export action and an editable preview",
+                "channel": "Search", "distribution_hook": "A demonstration of one completed action list",
+                "monetization": "Unknown; no payment evidence", "risks": "Proposed search route is untested",
+                "experiment": "Inspect permitted search-intent evidence before proposing a channel test",
+                "success_criteria": "Proposed rule: find independent relevant solution-seeking observations",
+                "stop_criteria": "Defer search acquisition if no relevant intent can be established",
+                "missing_data": "Search volume, channel access, and willingness to pay",
+                "confidence": "low", "evidence_ids": [evidence_id],
+                "opportunity": {"market": "Consultants preparing action lists after calls; geography unknown",
+                    "demand_evidence_ids": [evidence_id], "channel_evidence_ids": [], "channel_fit": "untested",
+                    "entry_point": "Proposed query: call notes to action list",
+                    "acquisition_path": "Proposed search result → export demo → paste notes → first action list",
+                    "fit_reasoning": "A narrow task is proposed; the discussion does not validate search acquisition",
+                    "counterevidence": "No contrary data in this synthetic fixture; no competitor check occurred",
+                    "priority": "research_more", "priority_reason": "Establish channel intent before testing acquisition"}}]}
+
+
 class ResearchTests(unittest.TestCase):
     def args(self, *flags):
         return research.parser().parse_args(["collect", "--out", "/tmp/unused-test-run", *flags])
@@ -254,6 +282,76 @@ class ResearchTests(unittest.TestCase):
             result = json.loads(run_file.read_text())
             self.assertEqual(result["analysis"]["status"], "complete")
             self.assertEqual(result["analysis"]["hypotheses"], [])
+
+    def test_discovery_and_refinement_preserve_decision_chain_and_evidence(self):
+        for mode in ("discovery", "refinement"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory, contextlib.redirect_stdout(io.StringIO()):
+                base = Path(directory)
+                args = self.args("--providers", "reddit", "--offline", "--as-of", research.iso(NOW),
+                                 "--out", str(base / "run"))
+                row = observation()
+                row["summary"] = "Synthetic consultant repeatedly copies action items from call notes"
+                imported = base / "import.json"
+                imported.write_text(json.dumps(envelope(research.parameters(args, NOW), [row])))
+                args.import_file = [str(imported)]
+                with patch.object(research, "urlopen", side_effect=AssertionError("unexpected network")):
+                    research.collect(args)
+                    result_file = base / "run/results.json"
+                    before = json.loads(result_file.read_text())
+                    analysis = decision_analysis(before["sources"][0]["observations"][0]["id"], mode)
+                    path = base / "run/analysis.json"
+                    path.write_text(json.dumps(analysis))
+                    research.finalize(research.parser().parse_args(["finalize", "--run", str(base / "run"),
+                                                                   "--analysis", str(path)]))
+                result = json.loads(result_file.read_text())
+                self.assertEqual(result["sources"], before["sources"])
+                self.assertEqual(result["run"], before["run"])
+                self.assertEqual(result["analysis"]["research_context"], analysis["research_context"])
+                self.assertEqual(result["analysis"]["hypotheses"], analysis["hypotheses"])
+                report = (base / "run/report.md").read_text()
+                for value in (analysis["hypotheses"][0]["title"],
+                              analysis["hypotheses"][0]["opportunity"]["market"],
+                              analysis["hypotheses"][0]["opportunity"]["acquisition_path"]):
+                    self.assertIn(value, report)
+                self.assertLess(report.index("## Opportunity shortlist"), report.index("## Evidence appendix"))
+
+    def test_opportunity_rejects_unsupported_channel_claims_and_unlinked_demand(self):
+        run = self.run_params("--providers", "reddit")
+        source = research.collect_import(envelope(run, [observation(), observation("other")]), run, 100)
+        result = {"sources": [source]}
+        analysis = decision_analysis(source["observations"][0]["id"])
+        invalid = []
+        case = copy.deepcopy(analysis)
+        case["research_context"].update(mode="refinement", product=None)
+        invalid.append(case)
+        case = copy.deepcopy(analysis)
+        del case["hypotheses"][0]["opportunity"]
+        invalid.append(case)
+        for field, value in (("demand_evidence_ids", []), ("channel_fit", "supported"),
+                             ("channel_evidence_ids", [source["observations"][0]["id"]]),
+                             ("demand_evidence_ids", [source["observations"][1]["id"]]),
+                             ("channel_evidence_ids", ["invented"]), ("priority", "guaranteed_profit")):
+            case = copy.deepcopy(analysis)
+            case["hypotheses"][0]["opportunity"][field] = value
+            invalid.append(case)
+        for index, case in enumerate(invalid):
+            with self.subTest(case=index), self.assertRaises(ValueError):
+                research.validate_analysis(case, result)
+
+    def test_supported_channel_assessment_and_legacy_hypothesis_remain_usable(self):
+        run = self.run_params("--providers", "reddit")
+        source = research.collect_import(envelope(run), run, 100)
+        result = {"sources": [source]}
+        evidence_id = source["observations"][0]["id"]
+        analysis = decision_analysis(evidence_id)
+        analysis["hypotheses"][0]["channel"] = "Community"
+        opportunity = analysis["hypotheses"][0]["opportunity"]
+        opportunity.update(channel_fit="supported", channel_evidence_ids=[evidence_id],
+                           entry_point="Synthetic workflow community", priority="test_next")
+        self.assertEqual(research.validate_analysis(analysis, result)["hypotheses"], analysis["hypotheses"])
+        del analysis["research_context"]
+        del analysis["hypotheses"][0]["opportunity"]
+        self.assertEqual(research.validate_analysis(analysis, result)["hypotheses"], analysis["hypotheses"])
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 # Versioned runtime contracts
 
-Version: `0.1.0`. The standard-library helper is deterministic for dates, normalization, deduplication and arithmetic. The calling agent handles semantic clustering, independence checks, problems, alternatives, and product hypotheses. No automatic ranking or continuous collection exists.
+Version: `0.1.0`. The standard-library helper is deterministic for dates, normalization, deduplication and arithmetic. The calling agent handles semantic clustering, independence checks, problems, alternatives, and product hypotheses. No automatic ranking or continuous collection exists. The additive analysis fields below preserve compatibility with saved v0.1 analyses; collection/import schemas are unchanged.
 
 ## Collection CLI
 
@@ -97,5 +97,39 @@ Required analysis shape:
 Every finding needs `kind` (`observed_fact`, `estimate`, `inference`, `hypothesis`, `test_needed`), `text`, nonempty `evidence_ids`, `confidence` (`low`, `medium`, `high`), and `trend_classification` (`emerging`, `sustained`, `declining`, `spike-only`, `unassessed`). Include a qualification in the text when an estimate/inference is uncertain. Missing history means unassessed.
 
 Each hypothesis needs nonempty text fields `title`, `audience`, `job`, `problem`, `alternatives`, `value_proposition`, `product_format`, `minimal_mvp`, `channel`, `distribution_hook`, `monetization`, `risks`, `experiment`, `success_criteria`, `stop_criteria`, `missing_data`; plus `confidence` and nonempty `evidence_ids`. Use an explicit unknown/pending statement for unavailable alternatives/economics. Label unverified claims as hypotheses and make experimental thresholds proposed decision criteria rather than market facts. Keep hypotheses empty if no observed problem supports them.
+
+### Decision context and opportunity assessment
+
+For new skill runs, include `research_context` in the analysis:
+
+```json
+{
+  "mode": "discovery",
+  "product": null,
+  "constraints": [],
+  "target_channels": []
+}
+```
+
+`mode` is `discovery` or `refinement`. `product` is caller-provided product context (nonempty text required for refinement, otherwise text or null). `constraints` and `target_channels` are arrays of nonempty caller-supplied strings; empty means unspecified. These describe the decision, not independently collected market facts. Mode/product are analysis inputs handled by the calling agent; there are no corresponding collection CLI flags.
+
+When `research_context` is present, each hypothesis must also include an `opportunity` object. Old saved analyses without either addition remain accepted and render with their original fields. An `opportunity` object, whenever present, is validated:
+
+| Field | Contract |
+| --- | --- |
+| `market` | Nonempty text: reachable audience/use context and solution-seeking or discovery intent; do not invent market size or geography |
+| `demand_evidence_ids` | Nonempty array of this hypothesis's evidence IDs supporting the narrow need or desired outcome |
+| `channel_evidence_ids` | Array of this hypothesis's evidence IDs supporting the proposed channel/entry point; empty when untested |
+| `channel_fit` | `supported` (direct audience/entry-point evidence), `inferred` (indirect fit evidence), or `untested` (no supporting channel evidence). Supported/inferred require channel IDs; untested requires an empty array. None means validated conversions/economics. |
+| `entry_point` | Nonempty text: concrete surface/query/community/content format, or a clearly untested proposed entry point |
+| `acquisition_path` | Nonempty text: entry point → message/demo → intended action → first useful product outcome; distinguish proposals from observations |
+| `fit_reasoning` | Nonempty text: why this solution or product change fits this audience and route, with the weakest link explicit |
+| `counterevidence` | Nonempty text: contrary evidence with references, or checks/limitations when none was observed |
+| `priority` | `test_next`, `research_more`, or `defer`: next action, not a predicted revenue ranking |
+| `priority_reason` | Nonempty explanation of the next action and material uncertainty |
+
+Use [analysis.md](analysis.md) for reasoning and experiment design. `problem` may describe an unmet desired outcome rather than a complaint. In refinement mode, existing `value_proposition`, `minimal_mvp`, and `experiment` fields must identify the proposed change relative to the existing product. An observed need does not by itself support a distribution channel; a proposed channel can remain untested while the need is supported. Both evidence arrays must be subsets of the hypothesis's overall `evidence_ids`.
+
+The report puts the decision context and channel → market → product shortlist before the evidence appendix. It retains detailed cards and source provenance. Structural validation cannot determine whether an ID really supports demand/channel fit, whether observations are independent, or whether a proposed experiment is useful; the calling agent must review these claims.
 
 The helper renders technical Markdown in English. The skill's final chat answer should use the caller's language; the calling agent may translate narrative report text while preserving IDs, source metrics, windows, limitations, and attribution. Do not change measured values to make a summary more persuasive.
