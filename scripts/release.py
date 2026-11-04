@@ -40,7 +40,7 @@ def validate(root=ROOT, tag=None):
     primary, compatibility = (read_json(root, name) for name in MANIFESTS)
     version = primary["version"]
     require(re.fullmatch(r"\d+\.\d+\.\d+", version), "Plugin version must be stable MAJOR.MINOR.PATCH")
-    require(tag is None or tag == "v" + version, "Tag must equal v" + version)
+    require(tag is None or tag == version, "Tag must equal " + version + " (without a v prefix)")
     for key in ("name", "version", "description", "author", "homepage", "repository", "license"):
         require(primary[key] == compatibility[key], "Client manifests disagree on " + key)
     require(primary["name"] == NAME, "Unexpected plugin identity")
@@ -90,7 +90,7 @@ def package(root, output, tag=None):
     paths = [root / name for name in PACKAGE_FILES]
     paths += [root / "skills" / NAME / name for name in SKILL_FILES]
     output.mkdir(parents=True, exist_ok=True)
-    archive = output / f"{NAME}-v{version}.zip"
+    archive = output / f"{NAME}-{version}.zip"
     with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_STORED) as target:
         for path in sorted(paths):
             relative = path.relative_to(root)
@@ -101,7 +101,7 @@ def package(root, output, tag=None):
             content = path.read_bytes()
             if relative.as_posix() == "README.md":
                 # Keep one maintained README; contributor-only links point to this release's source.
-                source_url = read_json(root, "plugin.json")["repository"] + "/blob/v" + version + "/"
+                source_url = read_json(root, "plugin.json")["repository"] + "/blob/" + version + "/"
                 readme = re.sub(r"\]\(\./(docs/[^)]+|AGENTS\.md)\)",
                                 lambda match: "](" + source_url + match.group(1) + ")", content.decode("utf-8"))
                 content = ("This is a release runtime package. Contributor test/release commands require a source checkout.\n\n" + readme).encode("utf-8")

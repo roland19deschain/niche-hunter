@@ -1,8 +1,10 @@
 # Releasing Niche Hunter
 
-`develop` holds ongoing work. `master` is the tested public distribution source. Users follow `master` through their client's marketplace or pin an immutable `vMAJOR.MINOR.PATCH` tag. Do not move published tags or overwrite a release with different bytes; publish a new version for a correction.
+`develop` holds ongoing work. `master` is the tested public distribution source. Users follow `master` through their client's marketplace or pin an immutable `MAJOR.MINOR.PATCH` tag. Do not move published tags or overwrite a release with different bytes; publish a new version for a correction.
 
 ## Version and package
+
+Release tags match the product version exactly, without a leading `v` (for example `0.2.0`). The archive is named `niche-hunter-MAJOR.MINOR.PATCH.zip`.
 
 The product release version is `plugin.json.version`. Mirror it in `.claude-plugin/plugin.json`; `scripts/release.py check` rejects a mismatch. Each release needs a matching section in `CHANGELOG.md`. The research JSON contract (`research.py`'s `VERSION`) is independent; change it only when the data contract changes, not for every plugin release.
 
@@ -30,16 +32,16 @@ CI runs the release checks and helper/artifact tests on Python 3.10 and 3.14. It
 
 ## Promote and publish
 
-The commands below illustrate `v0.2.0`; substitute the agreed new version for later releases. Fetch remote state and ensure the local worktree is clean. A fast-forward promotion is appropriate when `master` is an ancestor of the tested `develop` commit; if histories differ, review/resolve the change instead of force-pushing.
+The commands below illustrate `0.2.0`; substitute the agreed new version for later releases. Fetch remote state and ensure the local worktree is clean. A fast-forward promotion is appropriate when `master` is an ancestor of the tested `develop` commit; if histories differ, review/resolve the change instead of force-pushing.
 
 ```bash
 git fetch origin
 git switch master
 git merge --ff-only develop
 git push origin master
-python3 scripts/release.py check --tag v0.2.0
-git tag -a v0.2.0 -m "Niche Hunter v0.2.0"
-git push origin v0.2.0
+python3 scripts/release.py check --tag 0.2.0
+git tag -a 0.2.0 -m "Niche Hunter 0.2.0"
+git push origin 0.2.0
 git switch develop
 ```
 
@@ -60,3 +62,7 @@ For a problematic stable release, publish a new patch version containing the cor
 - [Codex plugin manifests, marketplaces and refresh](https://developers.openai.com/plugins/build/plugins).
 - [Claude Code plugin installation and updates](https://code.claude.com/docs/en/discover-plugins).
 - [Claude Code marketplace sources and tags](https://code.claude.com/docs/en/plugin-marketplaces).
+
+## One-time tag migration — November 5, 2026
+
+At the maintainer's explicit request, the initial `v0.1.0` and `v0.2.0` tag names were replaced with `0.1.0` and `0.2.0`. Their source commits are preserved. The corresponding Releases, ZIP names, packaged README links and checksums use the new names. Only the packaged README changed; runtime files are unchanged. This is an authorized migration before public adoption, not the procedure for future corrections. See development-plan section 20 for verification and asset hashes. Historical source snapshots and workflow runs predate this convention.

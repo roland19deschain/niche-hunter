@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Use release tags without a leading `v`; align the release workflow, package names, source links and install/rollback examples. Existing 0.1.0 and 0.2.0 tags retain their source commits under the new names.
+
 ## [0.2.0] - 2026-11-04
 
 TikTok search connection and distribution-first opportunity analysis.

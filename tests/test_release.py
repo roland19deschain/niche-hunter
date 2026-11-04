@@ -44,9 +44,11 @@ class ReleaseTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             fixture(root)
-            self.assertEqual(release.validate(root, "v" + PACKAGE_VERSION), PACKAGE_VERSION)
+            self.assertEqual(release.validate(root, PACKAGE_VERSION), PACKAGE_VERSION)
             with self.assertRaises(ValueError):
-                release.validate(root, "v99.0.0")
+                release.validate(root, "99.0.0")
+            with self.assertRaises(ValueError):
+                release.validate(root, "v" + PACKAGE_VERSION)
             path = root / ".claude-plugin/plugin.json"
             data = json.loads(path.read_text())
             data["version"] = "99.0.0"
@@ -96,10 +98,15 @@ class ReleaseTests(unittest.TestCase):
             (root / ".env").write_text("SYNTHETIC_NOT_A_SECRET=excluded\n")
             first = release.package(root, base / "first")
             second = release.package(root, base / "second")
+            self.assertEqual(first.name, f"niche-hunter-{PACKAGE_VERSION}.zip")
             self.assertEqual(first.read_bytes(), second.read_bytes())
             digest = hashlib.sha256(first.read_bytes()).hexdigest()
             self.assertEqual((first.parent / "SHA256SUMS").read_text(), f"{digest}  {first.name}\n")
             with zipfile.ZipFile(first) as archive:
+                readme = archive.read("niche-hunter/README.md").decode("utf-8")
+                repository = json.loads((root / "plugin.json").read_text())["repository"]
+                self.assertIn(f"{repository}/blob/{PACKAGE_VERSION}/docs/releasing.md", readme)
+                self.assertNotIn("/blob/v" + PACKAGE_VERSION + "/", readme)
                 paths = archive.namelist()
                 self.assertFalse(any("__pycache__" in name or name.endswith(".env") for name in paths))
                 self.assertFalse(any(".." in Path(name).parts for name in paths))
