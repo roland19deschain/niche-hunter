@@ -9,15 +9,15 @@
 
 Niche Hunter is a research skill for discovering niches for new digital products and refining existing products. Its decision chain is **distribution channel → reachable market and need → product or product change → validation experiment**. It collects available signals, analyzes needs and alternatives, and explains which combinations deserve testing and where evidence is still missing.
 
-> **Release v0.1.0 · November 2, 2026:** one shared skill is packaged for Codex and Claude Code. Public OpenAI Signals collection, date handling, permitted normalized imports, evidence-linked analysis, and Markdown/JSON reporting work. Reddit and TikTok remain access-dependent: no authenticated connection has been validated. Signals supplies broad monthly context, not weekly search logs. Python 3.10+ with IANA time-zone data is required; the public-data path needs no provider account or separate model API key.
+> **Release v0.2.0 · November 4, 2026:** one shared skill for Codex and Claude Code now includes channel → market/need → product analysis, existing-product refinement, a TokConnect MCP connection and a TikTok search-response adapter. Public OpenAI Signals collection, evidence-linked analysis, and Markdown/JSON reporting remain available. Authenticated TikTok collection is not yet validated; it requires the caller's account, authorization, permitted storage and verified free allowance. Reddit still needs permitted external access. Python 3.10+ with IANA time-zone data is required; the public Signals path needs no provider account or separate model API key.
 
 [Install for Codex](#install-for-codex) · [Install for Claude Code](#install-for-claude-code) · [Update](#update) · [Rollback](#rollback) · [Releases](https://github.com/roland19deschain/niche-hunter/releases) · [Changelog](./CHANGELOG.md)
 
-Unreleased development adds a client-managed TokConnect MCP connection and a TikTok search-response adapter. A provider account, authorization, permitted storage and free allowance must be checked before live collection; authenticated integration is not yet validated. These changes are not part of the published v0.1.0 package.
+TikTok v1 covers search topics, topic detail/related topics and autocomplete. Seven-day popularity remains a supplier claim, with unknown source dates preserved; it does not provide verified exact query counts or arbitrary historical windows. Signals supplies broad monthly context, not weekly search logs.
 
 ### TikTok connection setup
 
-For a plugin version containing the new connector, ask: **"Use Niche Hunter to set up TikTok."** The skill guides browser sign-in to TokConnect and checks access, permitted use, and available free credits. The connection URL ships with the plugin; each user authorizes their own account. Passwords and tokens do not ship with the skill and must not be pasted into a chat.
+In v0.2.0 and later, ask: **"Use Niche Hunter to set up TikTok."** The skill guides browser sign-in to TokConnect and checks access, permitted use, and available free credits. The connection URL ships with the plugin; each user authorizes their own account. Passwords and tokens do not ship with the skill and must not be pasted into a chat.
 
 The first adapter covers search topics, topic detail/related topics, and autocomplete. It does not yet normalize videos, comments, ads, or Shop sales. Read [the TikTok setup and capture reference](./skills/niche-hunter/references/tiktok.md) for supported methods and honest coverage fallbacks. Standalone skill copies need a separately configured MCP connection. See [Privacy](./PRIVACY.md) for data handling.
 
@@ -83,7 +83,7 @@ Keep reports and imports in your working project, outside the installed plugin d
 
 ## Rollback
 
-Choose a tag from [GitHub Releases](https://github.com/roland19deschain/niche-hunter/releases). The commands below pin `v0.1.0`; replace it with the desired published version. Removing this marketplace removes its plugin registration/cache and may clear plugin-managed settings/data, so keep research output outside those directories and retain any configuration you need to reapply. This release bundles no provider credentials or MCP servers.
+Choose a tag from [GitHub Releases](https://github.com/roland19deschain/niche-hunter/releases). The commands below pin the earlier `v0.1.0`; replace it with the desired published version. Removing this marketplace removes its plugin registration/cache and may clear plugin-managed settings/data, so keep research output outside those directories and retain any configuration you need to reapply. Version 0.1.0 contains no MCP server; v0.2.0 adds a TokConnect connection declaration. Neither version bundles provider credentials.
 
 Codex:
 
