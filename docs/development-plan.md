@@ -4,7 +4,7 @@ Updated: **November 4, 2026**. Source investigations below retain their original
 
 **Document language: English. Keep all future updates to this plan in English.**
 
-Status: **v0.2.0 is prepared for release** (publication handoff in section 19). It sharpens channel → market/need → product reasoning and existing-product refinement (section 17), and adds the first TokConnect MCP/search adapter (section 18). The Python standard-library helper collects public OpenAI Signals, accepts permitted normalized imports, and finalizes evidence-linked reports. The user authorized the new release and stable-branch synchronization on November 4. The **free pilot** remains in force; no provider accounts or credentials have been provisioned. Authenticated Reddit/TikTok collection and interactive research quality remain incomplete. Purchasing subscriptions is outside scope.
+Status: **v0.2.0 is published** (verification in section 19). It sharpens channel → market/need → product reasoning and existing-product refinement (section 17), and adds the first TokConnect MCP/search adapter (section 18). The Python standard-library helper collects public OpenAI Signals, accepts permitted normalized imports, and finalizes evidence-linked reports. The user authorized the new release and stable-branch synchronization on November 4. The **free pilot** remains in force; no provider accounts or credentials have been provisioned. Authenticated Reddit/TikTok collection and interactive research quality remain incomplete. Purchasing subscriptions is outside scope.
 
 ## 0. Handoff snapshot — read first
 
@@ -21,7 +21,7 @@ This is the canonical project context and implementation plan. Earlier design no
 | TikTok | First search route included in v0.2.0 through client-managed TokConnect MCP and `scripts/tiktok.py`. November 4 public schemas/pricing and OAuth discovery checked; the user confirms no account yet. No authorized data response, permitted-storage confirmation or metric-accuracy validation. See section 18. |
 | Reddit | Bounded Arctic Shift metadata retrieval verified. Suitable commercial access, completeness, and future reliability remain unresolved. |
 | Budget and scope | Free pilot only. Implementation is authorized; this document does not itself authorize account creation, paid purchases, advertising, deployment, or scheduled collection. Defaults: 100 normalized observations/provider, 10 external calls/run subject to confirmed free balance, at most two public Signals HTTP attempts. |
-| Distribution | Public `v0.1.0` Release is published at commit `3dd6a25`, with verified ZIP/checksum. Native Codex and Claude GitHub master/tag installation passed. Root manifests, two catalogs, changelog, deterministic package builder, CI and release workflow are implemented. See section 16 and `docs/releasing.md`. |
+| Distribution | Public `v0.2.0` is published at commit `8c35dfb`, with verified ZIP/checksum and native client installation checks. Develop/master CI and the tag-triggered Release workflow passed. The immutable v0.1.0 release remains available for rollback. See section 19 and `docs/releasing.md`. |
 
 Resume by reading this snapshot, source-specific constraints in section 3, implementation contracts in section 12, and the next-action checklist in section 14. Treat dated probes as historical observations, not a current access guarantee. Recheck changing schemas, prices, terms, and permissions when implementing an adapter.
 
@@ -106,7 +106,7 @@ Sources: [Signals individual data](https://openai.com/signals/data/), [CSV downl
 
 **A candidate for the free search-signal pilot. Production data has not yet been tested with authorization.**
 
-**November 4 update:** public pricing now advertises REST on every paid plan, rather than the earlier Pro-only finding below. The free MCP direction is unchanged. DCR/PKCE OAuth metadata and documented compact search-response shapes were checked; an unreleased connector/normalizer is implemented in section 18. The original table and source investigation retain their historical meaning; they do not establish a current account balance or permission to export data.
+**November 4 update:** public pricing now advertises REST on every paid plan, rather than the earlier Pro-only finding below. The free MCP direction is unchanged. DCR/PKCE OAuth metadata and documented compact search-response shapes were checked; the connector/normalizer in section 18 ships in v0.2.0. The original table and source investigation retain their historical meaning; they do not establish a current account balance or permission to export data.
 
 The supplier claims access to CSI-like search topics, seven-day metrics, related topics, content signals, and MCP. Its collection method and permitted use of results require validation before routine collection.
 
@@ -561,7 +561,7 @@ The next useful sequence after v0.1 is:
 4. Resolve a permitted Reddit adapter or retain an explicit unavailable/terms-unconfirmed result. Do not hold all useful work indefinitely on Reddit access or silently treat an unresolved source as production-ready.
 5. Run the first useful permitted multi-source research and evaluate problem evidence, alternatives, independent corroboration, and the proposed tests. Broader automation/ranking and more granular Signals tables should follow demonstrated need, not expand the initial slice silently.
 
-For the unreleased analytical revision, exercise both discovery and existing-product refinement using section 17's decision criteria. Do not confuse deterministic contract checks with model behavior or authenticated source validation.
+For the analytical revision included in v0.2.0, exercise both discovery and existing-product refinement using section 17's decision criteria. Do not confuse deterministic contract checks with model behavior or authenticated source validation.
 
 Minimum acceptance criteria:
 
@@ -637,7 +637,7 @@ Agreed November 2, 2026: `develop` is for ongoing work and checks; `master` is t
 
 ## 17. Channel-to-product analysis revision — November 4, 2026
 
-The user clarified the primary outcome before social-provider implementation: collect observations, analyze them deeply, and find defensible **distribution channel → reachable market/need → product** combinations. Support both discovery of new products and improvement of an existing product in a selected domain. This revision is development work, not a new published release or an authorization to connect providers.
+The user clarified the primary outcome before social-provider implementation: collect observations, analyze them deeply, and find defensible **distribution channel → reachable market/need → product** combinations. Support both discovery of new products and improvement of an existing product in a selected domain. This section records the development revision; its v0.2.0 publication is recorded in section 19. It does not authorize provider-account setup or data collection.
 
 ### Audit findings and implemented direction
 
@@ -648,7 +648,7 @@ The user clarified the primary outcome before social-provider implementation: co
 - New analyses include `research_context` and a per-hypothesis `opportunity` block: reachable market, separate demand/channel evidence IDs, channel-fit status, entry point, acquisition path, fit reasoning, counterevidence, and a justified next action (`test_next`, `research_more`, `defer`).
 - Finalization validates the additive structure and evidence subsets. Supported/inferred channel fit requires channel references; untested fit requires none. This checks declared structure, not whether the reference actually supports the argument. Legacy v0.1 analyses remain accepted; collection/import schema version stays `0.1.0`.
 - Reports put coverage, decision context and a channel/market/product shortlist before the evidence appendix. Detailed evidence, source attribution, and limitations are preserved. Skill instructions still allow fewer hypotheses or none when evidence is weak.
-- The release allowlist includes the new analysis reference. README, AGENTS, and the unreleased changelog describe the revised goal and output. Published version/tag `v0.1.0`, client caches, and stable distribution are unchanged by these edits.
+- The release allowlist includes the new analysis reference. README, AGENTS, and the changelog describe the revised goal and output. The development revision left immutable `v0.1.0` and client caches unchanged; section 19 records its subsequent inclusion in stable v0.2.0.
 
 ### Validation and next handoff
 
@@ -658,7 +658,7 @@ Next, validate authorized TikTok and Reddit access as described in section 14. O
 
 ## 18. TikTok provider v1 — implementation handoff
 
-Implemented in unreleased development on **November 4, 2026**, at the user's request. The user confirmed there is still no TokConnect account; first setup and authenticated data validation remain necessary. This is the first **search** adapter, not a general TikTok crawler or a completed commercial-source validation.
+Implemented on **November 4, 2026**, at the user's request, and included in v0.2.0 (section 19). The user confirmed there is still no TokConnect account; first setup and authenticated data validation remain necessary. This is the first **search** adapter, not a general TikTok crawler or a completed commercial-source validation.
 
 ### Execution and package
 
@@ -672,7 +672,7 @@ Implemented in unreleased development on **November 4, 2026**, at the user's req
 - The adapter retains at most 100 unique observations and 10 captured calls. Repeated topic snapshots use the most recent retrieval (last capture on equal times); undated trend readings are retained without summing. Missing metrics remain null; zero matched videos remains zero. Source publication/measurement times are unknown unless supported; retrieval time does not invent a seven-day boundary.
 - CSI entities remain `unknown` rather than guessed literal typed searches; autocomplete is `recommended_keyword`. Supplier measurements remain `provider_claim_unverified`. Exact source windows are preserved when established; missing dates and unsupported filters produce explicit gaps/partial coverage.
 - Safe receipts retain tool/method, selected nonsecret parameters, retrieval time, call status and pagination information. Headers, author fields, raw errors and opaque cursors are not copied into normalized results. HTTP 401, 402/429, 403, other errors, protocol errors and partial successful batches have distinct handling. Unknown response shapes stop this adapter rather than silently appearing as an empty successful search.
-- The curated release allowlist and tests include both connection configs, the adapter/reference and `PRIVACY.md`. The privacy document explains local artifacts, client processing, third-party requests and credential handling; its stable GitHub URL becomes public with the eventual stable promotion. Published v0.1.0 and installed caches are unchanged; bump the plugin version and follow the release workflow before distribution.
+- The curated release allowlist and tests include both connection configs, the adapter/reference and `PRIVACY.md`. The privacy document explains local artifacts, client processing, third-party requests and credential handling; its stable GitHub URL is public with v0.2.0. The initial implementation left v0.1.0 and installed caches unchanged; section 19 records the version bump and stable publication. Existing users update through their client marketplaces.
 
 ### Source checks and remaining acceptance
 
@@ -701,3 +701,12 @@ The user authorized release and synchronization of `develop` and `master`. Both 
 The release packages connection declarations and setup instructions, not provider accounts or shared credentials. TikTok's first adapter is limited to search topics/detail/related topics and autocomplete. Authorized data access, permitted storage, live free allowance, metric accuracy and model research quality remain open acceptance items; publishing the plugin does not complete them.
 
 Release procedure: validate the exact candidate and deterministic assets, push `develop`, wait for its CI, fast-forward stable `master`, and publish annotated tag `v0.2.0` through the existing Release workflow. Verify public notes, ZIP/checksum and source ancestry after publication. At preparation time GitHub Actions reported a partial outage and the preceding develop run remained queued; do not describe queued jobs as passed.
+
+Publication and verification completed:
+
+- [Develop CI](https://github.com/roland19deschain/niche-hunter/actions/runs/41866681935) passed Python 3.10/3.14 at exact commit `8c35dfbf83a9ad2fe702ef5efe42570020f78dd9` before stable promotion. [Master CI](https://github.com/roland19deschain/niche-hunter/actions/runs/41868333595) and the [Release workflow](https://github.com/roland19deschain/niche-hunter/actions/runs/41868414059) also completed successfully after the queue resumed.
+- [GitHub Release v0.2.0](https://github.com/roland19deschain/niche-hunter/releases/tag/v0.2.0) is public, neither a draft nor a prerelease. Its immutable annotated tag points to the tested commit. Both `niche-hunter-v0.2.0.zip` and `SHA256SUMS` are published.
+- The downloaded ZIP is **2,147,866 bytes**, with SHA-256 **`4ce723bf13bb02bcc5ec1bd2c731a5dabe3e23528ff7be18bc29e3b0849428f9`**. It matched the published checksum and local deterministic build byte-for-byte. The package contains product version 0.2.0 and schema version 0.1.0.
+- All **34** local helper/release tests passed. Native Codex recognized one TokConnect MCP server, the shared skill and its onboarding route in the extracted package; Claude's strict directory validation had no findings. A packaged no-account TikTok run returned `auth_required` with zero observations/calls.
+- Native Codex installed the downloaded, verified package using a temporary marketplace name; native Claude Code installed the actual public GitHub `v0.2.0` source in an isolated configuration. Both reported version 0.2.0. Test registrations were removed and existing user installations were preserved. No model, authenticated research, account registration or paid calls were part of these checks.
+- This publication record is a documentation-only follow-up after the immutable tag. It does not change the release's runtime/archive bytes. Keep develop and master synchronized after its CI; the next integration step is user-authorized TokConnect setup and the still-open live acceptance checks in section 18.
