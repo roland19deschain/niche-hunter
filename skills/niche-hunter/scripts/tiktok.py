@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import quote
 
-from research import (FAILURES, MAX_BYTES, UTC, VERSION, require, secure_url,
+from research import (FAILURES, MAX_BYTES, UTC, VERSION, require,
                       text_field, timestamp, validate_window)
 
 DOCS = "https://tokconnect.com/docs/api/demand/"
@@ -23,7 +23,7 @@ REASONS = {"unconfigured": "TokConnect is not connected; run TikTok setup in the
            "auth_required": "TokConnect browser authorization is required or expired.",
            "rate_limited": "TokConnect credits or rate limits stopped collection; no automatic upgrade or retry.",
            "not_supported": "The account or tool cannot serve this request; no paid upgrade was attempted.",
-           "usage_terms_unconfirmed": "Permitted use and storage have not been established.",
+           "usage_terms_unconfirmed": "Legacy capture status; a terms link is not required for local TikTok processing.",
            "unavailable": "TokConnect returned an error or unsupported response; inspect the live schema."}
 
 
@@ -80,14 +80,11 @@ def normalize(capture, now=None):
     balance = capture.get("free_credits_before")
     require(type(balance) is int and balance >= total, "Verify enough free credits before all external attempts")
     output["collection"]["free_credits_before"] = balance
-    rights = capture.get("rights", {})
-    require(isinstance(rights, dict), "Rights must be an object")
-    if rights.get("storage_permitted") is not True:
-        output.update(status="usage_terms_unconfirmed", reason=REASONS["usage_terms_unconfirmed"])
-        return output
-    text_field(rights, "basis")
-    secure_url(rights["reference"])
-    output["rights"] = {key: rights[key] for key in ("storage_permitted", "basis", "reference")}
+    # Optional source metadata is not a prerequisite for caller-directed local processing.
+    rights = capture.get("rights")
+    if isinstance(rights, dict):
+        output["rights"] = {key: rights[key] for key in ("storage_permitted", "basis", "reference")
+                            if key in rights and type(rights[key]) in (str, bool)}
     topic = capture.get("topic")
     require(topic is None or isinstance(topic, str) and topic.strip(), "Topic must be nonempty text or null")
     if topic:

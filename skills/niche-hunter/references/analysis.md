@@ -58,3 +58,7 @@ Identify the riskiest link: existence of the need, ability to reach the audience
 A demonstration test can evaluate qualified interest; it does not establish payment or retention. Economic assumptions must name funnel stages and costs. Tests remain proposals, not authorization to publish, contact users, run ads, or spend money.
 
 Keep the shortlist evidence-dependent. If only aggregate context or unavailable sources remain, return findings, explicit gaps, and the next collection check with no product hypotheses. A full report with no supported opportunity is a valid outcome.
+
+## Short presentation, retained reasoning
+
+Analyze the evidence deeply, then separate it from the initial deliverable. Follow [reporting.md](reporting.md): provider table/chart and one short conclusion, then overall situation, then at most three supported channel/need/product combinations. Store detailed opportunity reasoning and proposed experiments in JSON. Add a one- or two-sentence `brief` per displayed idea. Do not turn those fields into long product cards or repeat limitations after every row. Include material uncertainty once where it changes interpretation; expand on request.

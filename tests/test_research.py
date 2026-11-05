@@ -5,6 +5,7 @@ import copy
 import importlib.util
 import io
 import json
+import sys
 import tempfile
 import unittest
 import zipfile
@@ -16,7 +17,9 @@ from urllib.error import HTTPError, URLError
 SCRIPT = Path(__file__).resolve().parents[1] / "skills/niche-hunter/scripts/research.py"
 SPEC = importlib.util.spec_from_file_location("research", SCRIPT)
 research = importlib.util.module_from_spec(SPEC)
+sys.path.insert(0, str(SCRIPT.parent))
 SPEC.loader.exec_module(research)
+sys.path.pop(0)
 NOW = datetime(2026, 11, 1, 12, tzinfo=timezone.utc)
 
 
@@ -82,7 +85,7 @@ def decision_analysis(evidence_id, mode="discovery"):
 
 class ResearchTests(unittest.TestCase):
     def args(self, *flags):
-        return research.parser().parse_args(["collect", "--out", "/tmp/unused-test-run", *flags])
+        return research.parser().parse_args(["collect", "--diagnostic", "--out", "/tmp/unused-test-run", *flags])
 
     def run_params(self, *flags):
         run = research.parameters(self.args(*flags), NOW)
@@ -309,11 +312,13 @@ class ResearchTests(unittest.TestCase):
                 self.assertEqual(result["analysis"]["research_context"], analysis["research_context"])
                 self.assertEqual(result["analysis"]["hypotheses"], analysis["hypotheses"])
                 report = (base / "run/report.md").read_text()
-                for value in (analysis["hypotheses"][0]["title"],
-                              analysis["hypotheses"][0]["opportunity"]["market"],
-                              analysis["hypotheses"][0]["opportunity"]["acquisition_path"]):
+                for value in (analysis["hypotheses"][0]["title"], analysis["hypotheses"][0]["problem"]):
                     self.assertIn(value, report)
-                self.assertLess(report.index("## Opportunity shortlist"), report.index("## Evidence appendix"))
+                self.assertLess(report.index("## Reddit"), report.index("## Overall"))
+                self.assertLess(report.index("## Overall"), report.index("## Product ideas"))
+                self.assertNotIn(analysis["hypotheses"][0]["opportunity"]["acquisition_path"], report)
+                self.assertNotIn("Evidence appendix", report)
+                self.assertTrue((base / "run/report.pdf").read_bytes().startswith(b"%PDF-"))
 
     def test_opportunity_rejects_unsupported_channel_claims_and_unlinked_demand(self):
         run = self.run_params("--providers", "reddit")

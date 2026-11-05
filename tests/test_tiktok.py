@@ -130,12 +130,18 @@ class TikTokTests(unittest.TestCase):
         self.assertEqual(result["status"], "unavailable")
         self.assertNotIn("private error", json.dumps(result))
 
-    def test_missing_rights_and_no_account_require_no_fake_credentials_or_balance(self):
-        payload = capture()
-        payload["rights"]["storage_permitted"] = False
-        result = tiktok.normalize(payload, NOW)
-        self.assertEqual(result["status"], "usage_terms_unconfirmed")
-        self.assertEqual(result["observations"], [])
+    def test_local_data_does_not_require_terms_link_or_permission_metadata(self):
+        for rights in (None, {}, {"storage_permitted": False}, {"basis": "Caller-directed local processing"}):
+            payload = capture()
+            if rights is None:
+                payload.pop("rights")
+            else:
+                payload["rights"] = rights
+            result = tiktok.normalize(payload, NOW)
+            self.assertEqual(result["status"], "partial")
+            self.assertEqual(len(result["observations"]), 1)
+
+    def test_no_account_failure_requires_no_fake_credentials_or_balance(self):
         payload = {"schema_version": "0.1.0", "status": "auth_required", "external_calls": 0,
                    "new_paid_spending_usd": 0, "calls": []}
         self.assertEqual(tiktok.normalize(payload, NOW)["status"], "auth_required")

@@ -5,9 +5,9 @@ import argparse
 import csv
 import hashlib
 import io
+import importlib.util
 import json
 import math
-import re
 import sys
 import time
 import uuid
@@ -18,6 +18,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+from reporting import build_report, markdown_report, text_report, validate_presentation
 
 VERSION = "0.1.0"
 UTC = timezone.utc
@@ -75,8 +77,58 @@ def selected_providers(value):
     return chosen
 
 
-def parameters(args, now):
+def provider_scope(args):
     chosen = selected_providers(args.providers)
+    excluded = selected_providers(args.exclude_providers) if args.exclude_providers else []
+    chosen = [provider for provider in chosen if provider not in excluded]
+    require(chosen, "Select at least one provider")
+    return chosen
+
+
+def readiness(args, configured=()):
+    chosen = provider_scope(args)
+    imports = {}
+    for filename in args.import_file:
+        payload = load_json(Path(filename))
+        provider = payload["provider"]
+        require(provider in chosen, "Import supplied for an unselected provider")
+        require(provider not in imports, "Supply one combined import envelope per provider")
+        imports[provider] = payload
+    require(not args.signals_file or "chatgpt" in chosen, "--signals-file needs selected chatgpt provider")
+    states = []
+    for provider in chosen:
+        supplied = imports.get(provider)
+        missing_access = supplied is not None and supplied.get("status") in {"unconfigured", "auth_required"} \
+            and supplied.get("collection", {}).get("external_calls", 0) == 0
+        if provider in imports and not missing_access:
+            route = "supplied_result"
+        elif provider == "chatgpt" and args.signals_file:
+            require(Path(args.signals_file).is_file(), "Signals file does not exist")
+            route = "public_release_replay"
+        elif provider == "chatgpt" and not args.offline:
+            route = "public_release_no_credentials"
+        elif provider in configured and provider != "chatgpt":
+            route = "client_connection_checked_by_caller"
+        else:
+            route = None
+        states.append({"provider": provider, "ready": route is not None, "route": route,
+                       "next_action": None if route else "Configure this selected provider or explicitly exclude it."})
+    return {"ready": all(item["ready"] for item in states), "providers": states}, imports
+
+
+def preflight(args):
+    configured = selected_providers(args.configured_providers) if args.configured_providers else []
+    state, _ = readiness(args, configured)
+    pdf_ready = args.native_pdf or importlib.util.find_spec("reportlab") is not None
+    state["pdf"] = {"ready": pdf_ready, "backend": "calling_client" if args.native_pdf else "reportlab",
+                    "next_action": None if pdf_ready else "Install the PDF requirements in the chosen Python environment or configure a native client PDF exporter."}
+    state["ready"] = state["ready"] and pdf_ready
+    print(json.dumps(state, indent=2))
+    return state["ready"]
+
+
+def parameters(args, now):
+    chosen = provider_scope(args)
     zone = ZoneInfo(args.timezone or "UTC")
     require(bool(args.start) == bool(args.end), "Supply both --start and --end (exclusive)")
     require(not (args.start and args.days is not None), "Use dates or --days, not both")
@@ -307,11 +359,15 @@ def collect_import(payload, run, max_records, source=None):
     if status in FAILURES:
         require(not payload["observations"], "Failure status cannot include observations")
         return source
-    rights = payload["rights"]
-    require(rights.get("storage_permitted") is True, "Import needs explicit permitted-storage basis")
-    text_field(rights, "basis")
-    secure_url(rights["reference"])
-    source["provenance"]["rights"] = rights
+    rights = payload.get("rights")
+    if provider == "reddit":
+        require(isinstance(rights, dict) and rights.get("storage_permitted") is True,
+                "Reddit import needs an established access/storage basis")
+        text_field(rights, "basis")
+        secure_url(rights["reference"])
+    if isinstance(rights, dict):
+        source["provenance"]["rights"] = {key: rights[key] for key in ("storage_permitted", "basis", "reference")
+                                          if key in rights and type(rights[key]) in (str, bool)}
     source["effective_filters"] = payload["effective_filters"]
     source["unsupported_filters"] = [key for key in ("topic", "region", "language")
         if run[key] and payload["effective_filters"].get(key) != run[key]]
@@ -383,111 +439,34 @@ def collect_import(payload, run, max_records, source=None):
     return source
 
 
-def md(value):
-    return re.sub(r"([\\`*_{}\[\]<>|])", r"\\\1", str(value)).replace("\n", " ").replace("\r", " ")
-
-
 def render(result):
-    run = result["run"]
-    requested = run["requested_window"]
-    lines = ["# Niche Hunter", "", f"Requested: [{requested['start_at']}, {requested['end_at']}) · {run['timezone']}",
-             f"Topic: {md(run['topic'] or 'bounded catalog survey')} · providers: {', '.join(run['providers'])}",
-             f"Region: {md(run['region'] or 'unspecified')} · language filter: {md(run['language'] or 'unspecified')}",
-             f"Time zone: {run['timezone_reason']} · partial day: {run['includes_partial_day']}", "",
-             "## Coverage", "", "| Provider | Status | Actual window | Retained | Limitation |",
-             "| --- | --- | --- | ---: | --- |"]
-    for source in result["sources"]:
-        actual = source["actual_window"]
-        period = f"[{actual['start_at']}, {actual['end_at']})" if actual else "unknown"
-        lines.append(f"| {source['provider']} | {source['status']} | {period} | {source['counts']['accepted']} | {md(source['reason'])} |")
-    lines += ["", "Coverage is source-specific; sampled records and monthly context do not prove requested-period completeness.",
-              "The requested comparison interval is recorded in results.json; monthly comparisons below use their own baseline."]
-    evidence_lines = ["", "## Evidence appendix"]
-    for source in result["sources"]:
-        if source["unsupported_filters"]:
-            evidence_lines += ["", f"{source['provider']}: unsupported filters: {', '.join(source['unsupported_filters'])}."]
-        if source["observations"]:
-            evidence_lines += ["", f"### {source['provider']} evidence", ""]
-            for row in source["observations"][:20]:
-                measures = []
-                for metric in row["measurements"]:
-                    value = metric["value"]
-                    display = f"{value * 100:.2f}%" if metric["unit"] == "fraction" and value is not None else str(value)
-                    period = metric["window"]
-                    measures.append(f"{md(metric['name'])}: {display} {md(metric['unit'])} [{period['start_at']}, {period['end_at']})")
-                evidence_lines.append(f"- [{md(row['title'])}]({row['url']}) — {md(row['summary'])} {'; '.join(measures)}. Evidence `{row['id']}` ({row['quality']}).")
-            if len(source["observations"]) > 20:
-                evidence_lines.append("- Additional evidence is retained in results.json.")
-        if source["comparisons"]:
-            evidence_lines += ["", "Monthly share changes (derived; not absolute usage growth):", ""]
-            for item in source["comparisons"]:
-                evidence_lines.append(f"- {md(item['topic'])}: {item['percentage_point_change']} percentage points; relative share change {item['relative_change_pct']}%; classification {item['trend_classification']}.")
-        if source["provenance"].get("license"):
-            evidence_lines += ["", f"Source: [OpenAI Signals]({SIGNALS_PAGE}), CC BY 4.0. Derived comparisons by Niche Hunter. Mode: {source['provenance']['mode']}."]
-    analysis = result["analysis"]
-    lines += ["", "## Analysis", "", f"Status: {analysis['status']}.", md(analysis.get("summary", "Calling agent analysis has not been added."))]
-    if "research_context" in analysis:
-        context = analysis["research_context"]
-        lines += ["", f"Mode: {context['mode']} · product: {md(context['product'] or 'unspecified')}",
-                  f"Caller constraints: {md('; '.join(context['constraints']) or 'unspecified')}",
-                  f"Caller-selected channels: {md('; '.join(context['target_channels']) or 'unspecified')}"]
-    assessed = [item for item in analysis.get("hypotheses", []) if "opportunity" in item]
-    if assessed:
-        lines += ["", "## Opportunity shortlist", "",
-                  "| Channel / entry point | Reachable market / need | Product / change | Channel fit | Next action |",
-                  "| --- | --- | --- | --- | --- |"]
-        for item in assessed:
-            opportunity = item["opportunity"]
-            lines.append(f"| {md(item['channel'])}: {md(opportunity['entry_point'])} | {md(opportunity['market'])} | {md(item['title'])} | {opportunity['channel_fit']} | {opportunity['priority']} |")
-    for finding in analysis.get("findings", []):
-        lines += ["", f"- {finding['kind']}: {md(finding['text'])} Evidence: {', '.join(finding['evidence_ids'])}; confidence: {finding['confidence']}; trend: {finding['trend_classification']}."]
-    for item in analysis.get("hypotheses", []):
-        lines += ["", f"### Hypothesis: {md(item['title'])}", ""]
-        for key in ("audience", "job", "problem", "alternatives", "value_proposition", "product_format",
-                    "minimal_mvp", "channel", "distribution_hook", "monetization", "risks", "experiment",
-                    "success_criteria", "stop_criteria", "confidence", "missing_data"):
-            lines.append(f"- {key}: {md(item[key])}")
-        lines.append("- Evidence: " + ", ".join(item["evidence_ids"]))
-        if "opportunity" in item:
-            opportunity = item["opportunity"]
-            for key in ("market", "entry_point", "acquisition_path", "fit_reasoning", "channel_fit",
-                        "counterevidence", "priority", "priority_reason"):
-                lines.append(f"- {key}: {md(opportunity[key])}")
-            for key in ("demand_evidence_ids", "channel_evidence_ids"):
-                lines.append(f"- {key}: {md(', '.join(opportunity[key]) or 'none')}")
-    lines += ["", "## Gaps and next checks", ""]
-    for gap in analysis.get("gaps", ["Analysis and product validation are pending."]):
-        lines.append("- " + md(gap))
-    for source in result["sources"]:
-        for limitation in source["limitations"]:
-            lines.append(f"- {source['provider']}: {md(limitation)}")
-    lines += evidence_lines
-    lines += ["", "Unknowns are not zero. Channel fit is not validated acquisition. No automatic scoring, purchase-intent inference, or verified product economics.", ""]
-    return "\n".join(lines)
+    return markdown_report(build_report(result))
 
 
-def save_run(out, result):
-    # Prepare both before replacing either file, so validation/render errors preserve earlier artifacts.
-    encoded = json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
-    report = render(result)
-    for name, content in (("results.json", encoded), ("report.md", report)):
-        temporary = out / (name + ".tmp")
-        temporary.write_text(content, encoding="utf-8")
-        temporary.replace(out / name)
+def save_run(out, result, pdf=None):
+    # Render and stage every artifact before replacing existing outputs.
+    document = build_report(result)
+    report = markdown_report(document)
+    artifacts = {"report.md": report.encode("utf-8")}
+    if pdf is not None:
+        artifacts["report.pdf"] = pdf
+    result = {**result, "report": document,
+              "exports": {name: {"sha256": hashlib.sha256(data).hexdigest()} for name, data in artifacts.items()}}
+    artifacts["results.json"] = (json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False) + "\n").encode("utf-8")
+    for name, data in artifacts.items():
+        (out / (name + ".tmp")).write_bytes(data)
+    for name in artifacts:
+        (out / (name + ".tmp")).replace(out / name)
 
 
 def collect(args):
     now = timestamp(args.as_of) if args.as_of else datetime.now(UTC)
     run = parameters(args, now)
     require(not args.signals_file or "chatgpt" in run["providers"], "--signals-file needs selected chatgpt provider")
-    imports = {}
-    for path in args.import_file:
-        payload = load_json(Path(path))
-        provider = payload["provider"]
-        require(provider in {"reddit", "tiktok"}, "Imports support reddit and tiktok only")
-        require(provider in run["providers"], "Import supplied for an unselected provider")
-        require(provider not in imports, "Supply one combined import envelope per provider")
-        imports[provider] = payload
+    state, imports = readiness(args)
+    require(state["ready"] or args.diagnostic,
+            "Configure every selected provider before collection, or explicitly exclude it: " +
+            ", ".join(item["provider"] for item in state["providers"] if not item["ready"]))
     require(sum(item["collection"]["external_calls"] for item in imports.values()) <= 10,
             "Imports exceed the total 10 external-call run budget")
     out = Path(args.out)
@@ -549,6 +528,9 @@ def validate_analysis(analysis, result):
                             "product_format", "minimal_mvp", "channel", "distribution_hook", "monetization",
                             "risks", "experiment", "success_criteria", "stop_criteria", "missing_data"):
                     text_field(item, key)
+                if "brief" in item:
+                    text_field(item, "brief")
+                    require(len(item["brief"]) <= 400, "Product brief must be at most 400 characters")
                 if "research_context" in analysis:
                     require("opportunity" in item, "New analyses require an opportunity assessment per hypothesis")
                 if "opportunity" in item:
@@ -565,6 +547,7 @@ def validate_analysis(analysis, result):
                     require(bool(opportunity["demand_evidence_ids"]), "Opportunity needs demand evidence")
                     require(bool(opportunity["channel_evidence_ids"]) == (opportunity["channel_fit"] != "untested"),
                             "Supported/inferred channel fit needs evidence; untested fit needs an empty channel evidence array")
+    validate_presentation(analysis, result)
     return {**analysis, "status": "complete", "method": "calling_agent_analysis_not_independently_verified"}
 
 
@@ -573,28 +556,58 @@ def finalize(args):
     result = load_json(out / "results.json")
     require(result.get("schema_version") == VERSION, "Unsupported results schema_version")
     result["analysis"] = validate_analysis(load_json(Path(args.analysis)), result)
-    save_run(out, result)
-    print(f"Finalized {out.resolve() / 'report.md'} (no collection/network requests)")
+    if args.pdf_file:
+        path = Path(args.pdf_file)
+        require(path.stat().st_size <= 20 * 1024 * 1024, "Native PDF exceeds 20 MiB")
+        pdf = path.read_bytes()
+        require(pdf.startswith(b"%PDF-") and b"%%EOF" in pdf[-1024:], "Supply a complete PDF from the native client exporter")
+    else:
+        from report_pdf import pdf_bytes
+        pdf = pdf_bytes(build_report(result), args.font_regular, args.font_bold)
+    save_run(out, result, pdf)
+    print(f"Finalized report.md, report.pdf and results.json in {out.resolve()} (no collection/network requests)")
+
+
+def show_report(args):
+    result = load_json(Path(args.run) / "results.json")
+    if args.analysis:
+        result["analysis"] = validate_analysis(load_json(Path(args.analysis)), result)
+    document = build_report(result)
+    print(text_report(document) if args.format == "text" else markdown_report(document), end="")
 
 
 def parser():
     root = argparse.ArgumentParser(description=__doc__)
     commands = root.add_subparsers(dest="command", required=True)
-    command = commands.add_parser("collect", help="Collect public Signals and/or permitted normalized imports")
-    command.add_argument("--providers", default=",".join(PROVIDERS))
+    scope = argparse.ArgumentParser(add_help=False)
+    scope.add_argument("--providers", default=",".join(PROVIDERS))
+    scope.add_argument("--exclude-providers", default="")
+    scope.add_argument("--signals-file")
+    scope.add_argument("--import-file", action="append", default=[])
+    scope.add_argument("--offline", action="store_true")
+    command = commands.add_parser("preflight", parents=[scope], help="Check selected provider/output configuration; no research calls")
+    command.add_argument("--configured-providers", default="", help="Client connections actually checked by the calling agent")
+    command.add_argument("--native-pdf", action="store_true", help="Calling client has a configured native PDF exporter")
+    command = commands.add_parser("collect", parents=[scope], help="Collect public Signals and/or normalized imports")
+    command.add_argument("--diagnostic", action="store_true", help="Explicit diagnostic run allowing unconfigured providers; not normal research")
     command.add_argument("--days", type=int)
     command.add_argument("--start", help="ISO date in the selected time zone or timestamp with offset")
     command.add_argument("--end", help="Exclusive ISO date in the selected time zone or timestamp with offset")
     command.add_argument("--timezone", help="Caller IANA zone; disclosed UTC fallback if omitted")
-    for name in ("topic", "region", "language", "request", "as-of", "signals-file"):
+    for name in ("topic", "region", "language", "request", "as-of"):
         command.add_argument("--" + name)
-    command.add_argument("--import-file", action="append", default=[])
-    command.add_argument("--offline", action="store_true")
     command.add_argument("--max-records", type=int, default=100)
     command.add_argument("--out", required=True, help="Fresh/empty output directory")
     command = commands.add_parser("finalize", help="Validate calling-agent analysis and render; no network")
     command.add_argument("--run", required=True)
     command.add_argument("--analysis", required=True)
+    command.add_argument("--font-regular", help="Optional TrueType font covering the report language")
+    command.add_argument("--font-bold", help="Matching bold TrueType font")
+    command.add_argument("--pdf-file", help="Already rendered native client PDF of this same report")
+    command = commands.add_parser("report", help="Print the same compact report as Markdown or a terminal table")
+    command.add_argument("--run", required=True)
+    command.add_argument("--analysis", help="Preview validated analysis before native PDF export")
+    command.add_argument("--format", choices=("markdown", "text"), default="text")
     return root
 
 
@@ -602,7 +615,15 @@ def main():
     root = parser()
     args = root.parse_args()
     try:
-        collect(args) if args.command == "collect" else finalize(args)
+        if args.command == "preflight":
+            if not preflight(args):
+                root.exit(2)
+        elif args.command == "report":
+            show_report(args)
+        elif args.command == "collect":
+            collect(args)
+        else:
+            finalize(args)
     except (ValueError, KeyError, TypeError, OSError, ZoneInfoNotFoundError) as error:
         # Do not echo source payloads or local credential-bearing paths on failure.
         message = str(error) if isinstance(error, ValueError) else type(error).__name__

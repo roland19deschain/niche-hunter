@@ -1,20 +1,22 @@
 # Versioned runtime contracts
 
-Version: `0.1.0`. The standard-library helper is deterministic for dates, normalization, deduplication and arithmetic. The calling agent handles semantic clustering, independence checks, problems, alternatives, and product hypotheses. No automatic ranking or continuous collection exists. The additive analysis fields below preserve compatibility with saved v0.1 analyses; collection/import schemas are unchanged.
+Version: `0.1.0`. The standard-library helper is deterministic for dates, normalization, deduplication and arithmetic. The calling agent handles semantic clustering, independence checks, problems, alternatives, and product hypotheses. No automatic ranking or continuous collection exists. The additive analysis fields preserve compatibility with saved v0.1 analyses. Existing imports remain readable; the reviewed TikTok route makes rights metadata optional.
 
 ## Collection CLI
 
-Run `scripts/research.py collect --help` for flags. Pass all relevant request parameters explicitly; natural-language extraction belongs to the calling agent. Use Python 3.10+ and available IANA time-zone data. No package installation, API keys, or client SDKs are required.
+Run `scripts/research.py collect --help` for flags. Pass all relevant request parameters explicitly; natural-language extraction belongs to the calling agent. Use Python 3.10+ and available IANA time-zone data. Collection/normalization need no external Python packages or client SDKs. PDF finalization uses the optional ReportLab requirements or a PDF from the calling client; see reporting.md.
 
 Dates are `[start_at, end_at)`. `--days` counts calendar days in the selected time zone, including DST transitions. `--start/--end` accept ISO dates interpreted in that zone or timestamps **with offsets**; naive time-of-day strings are rejected. `--as-of` sets the reference instant for reproducible historical runs, not the actual collection timestamp. The preceding baseline uses the same calendar duration in the selected zone and may differ in elapsed UTC hours around DST. Future end boundaries, invalid zones, reversed windows, unknown providers, and conflicting date/duration inputs fail before networking.
 
 The helper fetches only the fixed public Signals URL, with at most two attempts, 20-second timeouts, a 10 MiB compressed/table limit, and bounded 0–2 second `Retry-After` handling. Longer/date-form retry guidance stops collection rather than ignoring the delay. There are no embedded Reddit/TikTok HTTP calls. `--offline` prohibits helper networking, and unselected provider imports/Signals files are rejected. External tool budgeting is enforced by the calling agent **before** calls; import metadata is checked afterwards but cannot undo calls already made.
 
-Output must be a fresh/empty directory. A source-specific failure produces a status and lets other providers continue. Exit 0 means a coverage report was produced, **not** that every provider succeeded. Invalid run inputs/finalization return exit 2. Inspect statuses and counts in `results.json`. Do not silently retry an entire run and spend supplier credits again.
+Use `preflight` before collection. Select all implemented providers by default, apply `--providers` / `--exclude-providers`, reuse checked connections and ask for every missing selected configuration before any research query. Public Signals needs no credentials. `collect` requires supplied result routes for selected Reddit/TikTok before helper networking; missing routes fail without creating a run. `--diagnostic` explicitly permits maintenance coverage checks with unconfigured providers and must not bypass the skill's setup conversation.
+
+Output must be a fresh/empty directory. Once a configured run starts, a source-specific failure produces a status and lets other providers continue. Exit 0 means a coverage report was produced, **not** that every provider succeeded. Invalid run inputs/finalization return exit 2. Inspect statuses and counts in `results.json`. Do not silently retry an entire run and spend supplier credits again.
 
 ## Permitted import envelope
 
-Supply one UTF-8 JSON envelope per selected `reddit` or `tiktok` provider with repeatable `--import-file`. Combine permitted tool pages before import. The helper never fetches URLs inside an envelope. Keep only allowed summaries/fields; no authors, access tokens, cookies, or raw private messages. The caller must establish use/storage rights; the envelope records that basis, it does not grant rights.
+Supply one UTF-8 JSON envelope per selected `reddit` or `tiktok` provider with repeatable `--import-file`. Combine permitted tool pages before import. The helper never fetches URLs inside an envelope. Keep only allowed summaries/fields; no authors, access tokens, cookies, or raw private messages. Available TikTok data may be processed/stored locally as the caller requests, without a terms URL or permission declaration. Optional supplied rights metadata records provenance, not a skill authorization gate. Reddit access requirements remain source-specific.
 
 For the implemented TokConnect search route, [tiktok.md](tiktok.md#capture-and-normalize) defines the input to `scripts/tiktok.py`, which produces this same envelope. This adapter normalizes caller-managed MCP responses; it does not perform authentication or networking. The generic Reddit/TikTok import contract remains unchanged.
 
@@ -27,12 +29,12 @@ Required envelope fields:
 | `status`, `reason` | `ok` / `partial` or an explicit failure status, with a meaningful explanation |
 | `collection` | `external_calls` (integer 0–10), `new_paid_spending_usd` (0), plus pagination/record/limit details |
 | `observations` | Array described below; empty for a failure |
-| `rights` | For data: `storage_permitted: true`, nonempty `basis`, public HTTPS `reference` to applicable terms/license/authorization documentation |
+| `rights` | Optional supplied metadata for TikTok; no fields/link required. Reddit retains an established access/storage basis (`storage_permitted`, `basis`, `reference`). |
 | `effective_filters` | Actually applied `topic`, `region`, `language` (each string or null), and permitted resource filters if relevant |
 | `actual_window` | Source collection/measurement scope; do not use min/max returned record dates as proof of completeness |
 | `limitations` | Array, including sampling, freshness, missing fields and unsupported history |
 
-Failure statuses: `unconfigured`, `auth_required`, `not_supported`, `rate_limited`, `unavailable`, `usage_terms_unconfirmed`. Failure envelopes require only the first six table rows. Example for **no actual data collected**:
+Failure statuses: `unconfigured`, `auth_required`, `not_supported`, `rate_limited`, `unavailable`. Legacy `usage_terms_unconfirmed` imports remain readable but must not be generated merely because TikTok lacks a terms link. Failure envelopes require only the first six table rows. Example for **no actual data collected**:
 
 ```json
 {
@@ -82,7 +84,7 @@ The public raw ZIP is saved under `raw/signals.zip`, with its hash, table path, 
 
 ## Analysis and finalization
 
-Write `analysis.json` separately, then run `scripts/research.py finalize --run RUN_DIR --analysis RUN_DIR/analysis.json`. It reads existing evidence, validates references/required fields, and regenerates `report.md`/`results.json` without network calls. It cannot validate factual accuracy or logical independence of model-written claims.
+Write `analysis.json` separately, then run `scripts/research.py finalize --run RUN_DIR --analysis RUN_DIR/analysis.json`. It reads existing evidence, validates references/required fields, and regenerates compact `report.md`, styled `report.pdf`, and detailed `results.json` without network calls. PDF preparation must succeed before outputs are replaced. It cannot validate factual accuracy or logical independence of model-written claims.
 
 Required analysis shape:
 
@@ -92,7 +94,7 @@ Required analysis shape:
   "summary": "No product need was validated; only broad monthly context was available.",
   "findings": [],
   "hypotheses": [],
-  "gaps": ["Permitted Reddit and TikTok evidence is still needed."]
+  "gaps": ["Configured provider evidence is still needed."]
 }
 ```
 
@@ -132,6 +134,6 @@ When `research_context` is present, each hypothesis must also include an `opport
 
 Use [analysis.md](analysis.md) for reasoning and experiment design. `problem` may describe an unmet desired outcome rather than a complaint. In refinement mode, existing `value_proposition`, `minimal_mvp`, and `experiment` fields must identify the proposed change relative to the existing product. An observed need does not by itself support a distribution channel; a proposed channel can remain untested while the need is supported. Both evidence arrays must be subsets of the hypothesis's overall `evidence_ids`.
 
-The report puts the decision context and channel → market → product shortlist before the evidence appendix. It retains detailed cards and source provenance. Structural validation cannot determine whether an ID really supports demand/channel fit, whether observations are independent, or whether a proposed experiment is useful; the calling agent must review these claims.
+The short report puts each provider's data table and brief conclusion first, followed by the overall conclusion and at most three short channel → problem → product combinations when supported. Detailed cards, context, counterevidence, experiments and provenance stay in JSON for drill-down. Structural validation cannot determine whether an ID really supports demand/channel fit, whether observations are independent, or whether a proposed experiment is useful; the calling agent must review these claims.
 
-The helper renders technical Markdown in English. The skill's final chat answer should use the caller's language; the calling agent may translate narrative report text while preserving IDs, source metrics, windows, limitations, and attribution. Do not change measured values to make a summary more persuasive.
+The optional `presentation` object supplies caller-language labels, selected rows and a short evidence-linked conclusion for each selected provider; hypotheses may supply a short `brief`. See [reporting.md](reporting.md) for its exact fields, terminal formatting, PDF dependencies/native fallback, and font coverage. Old saved analyses remain accepted with English default labels. Use the same content in chat, Markdown, plain-text terminal output and PDF while preserving IDs, source metrics, material coverage differences and attribution. Do not change measured values to make a summary more persuasive.

@@ -139,7 +139,7 @@ class ReleaseTests(unittest.TestCase):
                 self.assertEqual(release.validate(plugin), expected)
                 output = base / (stage + "-run")
                 result = subprocess.run([sys.executable, str(plugin / "skills/niche-hunter/scripts/research.py"),
-                    "collect", "--providers", "reddit", "--offline", "--as-of", "2026-11-01T12:00:00Z",
+                    "collect", "--diagnostic", "--providers", "reddit", "--offline", "--as-of", "2026-11-01T12:00:00Z",
                     "--out", str(output)], capture_output=True, text=True)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 data = json.loads((output / "results.json").read_text())

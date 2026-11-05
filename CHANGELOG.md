@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-06
+
+Provider readiness and compact reports for every client.
+
+- Require a configuration preflight for every selected provider, reuse working connections, and apply exclusions before setup or research calls. Add a zero-research-call `preflight` command and an explicit maintenance-only diagnostic mode.
+- Remove the TikTok terms-link/permission-declaration prerequisite in the skill, normalizer and import validator; retain optional source metadata without inventing it.
+- Replace verbose reports with provider data tables and brief conclusions, an overall summary, and at most three short channel/need/product combinations. Keep detailed analysis and provenance in JSON.
+- Generate matching Markdown, plain-text terminal and styled PDF reports from one model, with localized presentation labels, compatible charts, source links, bundled OFL fonts, export hashes and explicit font/dependency failures.
+- Apply the shared gold, paper, sage, slate and ink palette to styled PDF reports and native chart guidance.
+
+Limitations: configured provider access and metric accuracy still need live validation. Collection remains standard-library-only; default PDF export uses the declared ReportLab dependency, with native client PDF export as an alternative. Research JSON version remains `0.1.0`.
+
 ## [0.2.1] - 2026-11-05
 
 Claude Code first-run readiness and release-tag consistency.

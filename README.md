@@ -9,7 +9,7 @@
 
 Niche Hunter is a research skill for discovering niches for new digital products and refining existing products. Its decision chain is **distribution channel → reachable market and need → product or product change → validation experiment**. It collects available signals, analyzes needs and alternatives, and explains which combinations deserve testing and where evidence is still missing.
 
-> **Release 0.2.1 · November 5, 2026:** Claude Code first-run guidance and support for client-namespaced TokConnect tools. The shared skill includes channel → market/need → product analysis, existing-product refinement, public OpenAI Signals collection and TikTok search-response normalization. Authenticated TikTok collection still requires the caller's account, authorization, permitted storage and verified free allowance; its live responses and metric accuracy are not yet validated. Reddit still needs permitted external access. Python 3.10+ with IANA time-zone data is required; public Signals needs no provider account or separate model API key.
+> **Release 0.3.0 · November 6, 2026:** check every selected provider before collection, reuse available connections and request missing setup. Local TikTok processing no longer requires a terms link. Reports now lead with provider tables and short conclusions, followed by the overall situation and only the best brief channel/problem/product combinations. Matching Markdown and styled PDF exports use one report model; detailed evidence stays in JSON. Collection requires Python 3.10+; default PDF export uses ReportLab or an available native client exporter. Live provider access and metric accuracy remain separate validation work.
 
 [Install for Codex](#install-for-codex) · [Install for Claude Code](#install-for-claude-code) · [Update](#update) · [Rollback](#rollback) · [Releases](https://github.com/roland19deschain/niche-hunter/releases) · [Changelog](./CHANGELOG.md)
 
@@ -25,13 +25,13 @@ For a first run in Claude Code, update/install the plugin, open `/mcp`, select i
 /niche-hunter:niche-hunter set up TikTok using my existing TokConnect account
 ```
 
-Setup reports authentication, supported tools, free allowance and storage rights separately. Once ready, request a small run:
+Setup checks every selected provider before research, reuses working connections and asks for missing configuration. Public Signals needs no credentials. TikTok processing does not require a terms-of-use link or storage declaration. Once ready, request a small run:
 
 ```text
 /niche-hunter:niche-hunter research product opportunities using only TikTok for the last 7 days
 ```
 
-The skill writes `report.md` and `results.json` in your working project. A 14-day request cannot extend an unavailable source window: the report discloses actual coverage. Authorize TokConnect in the client you will use; installation and another client's login do not establish this connection.
+Niche Hunter writes a short `report.md`, a styled `report.pdf` and detailed `results.json` in your working project. The initial report contains provider tables and short conclusions, then the overall situation and only the best supported channel/problem/product ideas. Detail is available on request. PDF export uses the optional `requirements-pdf.txt` dependency or the client's native PDF exporter; see [reporting](./skills/niche-hunter/references/reporting.md). A 14-day request cannot extend an unavailable source window: the report discloses actual coverage. Authorize TokConnect in the client you will use; installation and another client's login do not establish this connection.
 
 **Known setup issue (November 5):** a Claude Code 2.1.316 login attempt failed before browser consent with `client_uri: Invalid URL`. If this occurs, keep the connection unauthenticated and check the [supplier's documented personal MCP-key option](https://tokconnect.com/connect/claude-code/). Key availability and free-plan entitlement must be checked in your own account. Enter credentials only in private client configuration; never paste them into chat or commit them. Do not change billing, patch the client or bypass OAuth validation to continue.
 
@@ -218,7 +218,7 @@ Overlapping topics will warrant deeper investigation. However, reposts, retellin
 4. **Clean and group.** Remove duplicates, flag spam, and group similar wording while preserving original texts and links.
 5. **Assess trends.** Compare comparable periods, baseline size, source diversity, and topic persistence where the data allow it.
 6. **Extract problems.** Describe the audience, task, alternatives in use, and shortcomings of current solutions.
-7. **Construct opportunities.** When evidence supports them, propose 3–5 channel → market/need → product combinations, or changes to an existing product. Explain the route to first value, alternatives, monetization assumptions, and minimal MVP. Fewer or none is valid.
+7. **Construct opportunities.** When evidence supports them, display at most three brief channel → problem/need → product combinations, or changes to an existing product. Keep detailed route-to-value, alternatives, monetization assumptions and MVP reasoning in JSON for requested follow-up. Fewer or none is valid.
 8. **Challenge and prioritize.** Include counterevidence and identify the weakest link. Recommend testing next, researching more, or deferring, with a reason and a measurable experiment that could refute the hypothesis.
 
 Competitor, pricing, and commercial demand validation will be a separate part of the evidence supporting each hypothesis. Until additional sources are connected, these questions will remain explicitly listed as items for further research.
@@ -326,7 +326,7 @@ The portable helper uses Python 3.10+ and its standard library. Connected MCP to
 - [x] Select a runtime, shared skill format, and versioned normalized observation contract.
 - [x] Implement public Signals collection and permitted import processing.
 - [x] Add source-ID deduplication, calendar date handling, and supported monthly share comparisons.
-- [ ] Prepare a combined problem analysis and 3–5 product hypotheses with evidence.
+- [ ] Evaluate a compact cross-provider analysis and up to three product combinations supported by evidence.
 - [x] Generate a Markdown report and JSON with explicit gaps and limitations.
 - [x] Verify helper behavior using synthetic fixtures and the public Signals release, separately labeled.
 - [ ] Verify fresh-session discovery and representative model behavior in both Codex and Claude Code.
@@ -382,12 +382,19 @@ Use `/niche-hunter` with the same request in Claude Code. The agent extracts par
 Direct helper commands from the repository root (Python 3.10+ with IANA time-zone data):
 
 ```bash
+# In the chosen environment, configure PDF export and verify the selected connections:
+python3 -m pip install -r skills/niche-hunter/requirements-pdf.txt
+python3 skills/niche-hunter/scripts/research.py preflight \
+  --configured-providers reddit,tiktok
+
+# After the calling client collects the configured external sources:
 python3 skills/niche-hunter/scripts/research.py collect \
+  --import-file REDDIT_IMPORT_JSON --import-file TIKTOK_IMPORT_JSON \
   --out .nichehunter/runs/first-run
 
-# Only Reddit; no requests to TikTok or Signals, even without configured Reddit access:
+# Only Reddit; no setup or requests for TikTok or Signals:
 python3 skills/niche-hunter/scripts/research.py collect \
-  --providers reddit --days 14 \
+  --providers reddit --days 14 --import-file REDDIT_IMPORT_JSON \
   --out .nichehunter/runs/reddit-14d
 
 # After the calling agent writes analysis.json using the evidence IDs:
@@ -395,10 +402,11 @@ python3 skills/niche-hunter/scripts/research.py finalize \
   --run .nichehunter/runs/first-run \
   --analysis .nichehunter/runs/first-run/analysis.json
 
+python3 -m pip install pypdf  # development PDF extraction checks
 python3 -m unittest discover -s tests -v
 ```
 
-Choose a fresh output directory for every collection. Local `.nichehunter/` runs are ignored by Git. `collect` alone produces evidence and a report with analysis pending; `finalize` adds the agent's checked analysis without recollecting. For offline replay use `--offline --signals-file PATH`; for permitted Reddit/TikTok data use `--import-file PATH` following the [contract](./skills/niche-hunter/references/contracts.md). This does not turn an unlicensed export into permitted data. The helper needs no external packages or API key. Supply `--timezone` from the caller's chosen zone when available; otherwise the helper explicitly reports its UTC fallback. Region and language filters are optional and have no market-specific defaults.
+Choose a fresh output directory for every collection. Local `.nichehunter/` runs are ignored by Git. `collect` alone produces evidence and a report with analysis pending; `finalize` adds the agent's checked analysis without recollecting. For offline replay use `--offline --signals-file PATH`; for permitted Reddit/TikTok data use `--import-file PATH` following the [contract](./skills/niche-hunter/references/contracts.md). This does not turn an unlicensed export into permitted data. Collection/normalization needs no external packages or API key. PDF finalization uses ReportLab from `skills/niche-hunter/requirements-pdf.txt` or an equivalent PDF exported by the calling client. Before collection, complete preflight for every selected provider or explicitly exclude missing ones; use `--diagnostic` only for a requested maintenance check. Supply `--timezone` from the caller's chosen zone when available; otherwise the helper explicitly reports its UTC fallback. Region and language filters are optional and have no market-specific defaults.
 
 Project working instructions: [AGENTS.md](./AGENTS.md).
 
