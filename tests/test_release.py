@@ -112,6 +112,8 @@ class ReleaseTests(unittest.TestCase):
                 self.assertFalse(any(".." in Path(name).parts for name in paths))
                 self.assertIn("niche-hunter/skills/niche-hunter/references/catalog.json", paths)
                 self.assertIn("niche-hunter/skills/niche-hunter/scripts/tiktok.py", paths)
+                self.assertIn("niche-hunter/skills/niche-hunter/scripts/setup_access.py", paths)
+                self.assertIn("niche-hunter/skills/niche-hunter/references/access.md", paths)
                 self.assertIn("niche-hunter/skills/niche-hunter/references/tiktok.md", paths)
                 self.assertIn("niche-hunter/mcp.json", paths)
                 self.assertIn("niche-hunter/.claude-plugin/mcp.json", paths)

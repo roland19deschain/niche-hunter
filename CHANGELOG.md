@@ -2,7 +2,15 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-06
+
+Owner-supplied API keys and automatic first-run configuration choices.
+
+- Add owner-supplied TokConnect API-key onboarding without recipient provider accounts: hidden terminal setup, private Codex/Claude Code settings, key rotation/removal and client-specific native connector guidance. Reuse working connections and verify the shared allowance separately; setup makes no network requests and bundles no secrets.
+- Make bare skill invocations proactively present all missing-provider setup choices, including browser/API-key options for TokConnect, then resume the requested research once configuration is ready.
 - Accept TokConnect autocomplete suggestions as strings as well as objects with `text`, retaining stable deduplication IDs and recommendation-only semantics. Add wrapper and two-call offline import regression coverage.
+
+Limitations: setup writes private client settings and does not verify live authentication, entitlements or credit balances. Codex key setup requires Python 3.11+; Claude Code setup and research support Python 3.10+. Claude native request headers remain a limited beta; ordinary ChatGPT Chat uses its supported OAuth/import routes. No credentials or paid spending are included. Research JSON version remains `0.1.0`.
 
 ## [0.3.0] - 2026-11-06
 

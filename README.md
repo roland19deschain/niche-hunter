@@ -9,15 +9,39 @@
 
 Niche Hunter is a research skill for discovering niches for new digital products and refining existing products. Its decision chain is **distribution channel → reachable market and need → product or product change → validation experiment**. It collects available signals, analyzes needs and alternatives, and explains which combinations deserve testing and where evidence is still missing.
 
-> **Release 0.3.0 · November 6, 2026:** check every selected provider before collection, reuse available connections and request missing setup. Local TikTok processing no longer requires a terms link. Reports now lead with provider tables and short conclusions, followed by the overall situation and only the best brief channel/problem/product combinations. Matching Markdown and styled PDF exports use one report model; detailed evidence stays in JSON. Collection requires Python 3.10+; default PDF export uses ReportLab or an available native client exporter. Live provider access and metric accuracy remain separate validation work.
+> **Release 0.4.0 · November 6, 2026:** a bare invocation checks every selected provider and offers supported setup choices before research. TokConnect supports browser sign-in or an owner-supplied API key, with hidden terminal setup for Codex/Claude Code and client-specific native connector guidance. Autocomplete imports accept both strings and text objects. Collection requires Python 3.10+; Codex key setup requires Python 3.11+. Live provider access, actual allowance and interactive onboarding remain separate validation work.
 
-[Install for Codex](#install-for-codex) · [Install for Claude Code](#install-for-claude-code) · [Update](#update) · [Rollback](#rollback) · [Releases](https://github.com/roland19deschain/niche-hunter/releases) · [Changelog](./CHANGELOG.md)
+[Install for Codex](#install-for-codex) · [Install for Claude Code](#install-for-claude-code) · [API-key setup](#api-key-setup) · [Update](#update) · [Rollback](#rollback) · [Releases](https://github.com/roland19deschain/niche-hunter/releases) · [Changelog](./CHANGELOG.md)
 
 TikTok v1 covers search topics, topic detail/related topics and autocomplete. Seven-day popularity remains a supplier claim, with unknown source dates preserved; it does not provide verified exact query counts or arbitrary historical windows. Signals supplies broad monthly context, not weekly search logs.
 
 ### TikTok connection setup
 
-In 0.2.0 and later, ask: **"Use Niche Hunter to set up TikTok."** The skill guides browser sign-in to TokConnect and checks access, permitted use, and available free credits. The connection URL ships with the plugin; each user authorizes their own account. Passwords and tokens do not ship with the skill and must not be pasted into a chat.
+Ask: **"Use Niche Hunter to set up TikTok."** Reuse a working connection, choose an owner-supplied API key, or sign in to your own TokConnect account through the browser. A key recipient does not need to register with TokConnect or use the owner's login. Passwords and tokens do not ship with the skill and must not be pasted into a chat. The API-key workflow below is included in 0.4.0 and later; older installations need an update.
+
+A bare skill invocation also checks all selected providers before research. If access is missing, it presents the supported setup choices without needing a separate setup prompt: TokConnect browser sign-in or an owner-supplied API key where the client supports it. It waits for the selection, reuses configured providers and continues the original research request once ready. Reddit currently needs an existing supported connection/export; public Signals requires no login. Explicitly excluded providers are not configured.
+
+#### API-key setup
+
+Receive the TokConnect key privately from its owner, install the skill, and ask: **"Set up TikTok with an API key supplied by its owner."** The skill directs you to enter it outside the conversation. From a checkout or extracted runtime package, choose one command and run it yourself in a terminal:
+
+```bash
+python3 skills/niche-hunter/scripts/setup_access.py --client codex
+```
+
+or:
+
+```bash
+python3 skills/niche-hunter/scripts/setup_access.py --client claude-code
+```
+
+For an installed plugin, the skill supplies its actual script path. Codex setup requires Python **3.11+**; Claude Code setup and research require Python 3.10+. Close the target client before setup. Paste the key once into the hidden prompt, then restart the client. Setup saves `niche-hunter-tokconnect` in private user settings, preserves unrelated settings and makes no network or research calls. The file holds the key as plaintext with owner-only POSIX permissions; it is not an encrypted vault. Later runs reuse the connection. Append `--replace` to rotate its key or `--remove` to remove this connection. These settings live outside the plugin and survive normal package updates.
+
+In **Claude.app**, where **Request headers** is available, add the custom TokConnect connector URL `https://mcp.tokconnect.com/mcp`, choose **No sign-in**, and enter `Authorization` with value `Bearer ` followed by the key directly in that credential field. Request headers is a limited beta. This native connector is separate from Claude Code configuration. The command above configures Codex, not ordinary ChatGPT Chat; that surface currently needs a supported OAuth connection or import. [Client-specific setup, rotation and limitations](./skills/niche-hunter/references/access.md).
+
+Before research, confirm supported tools and the current shared free-credit allowance through a non-research facility or a nonsecret confirmation from the owner. Saving a key does not verify account access or grant paid-spending permission. If an unauthenticated bundled duplicate remains, disable only that duplicate in MCP settings and keep the research skill enabled. No account password or browser session is needed for the API-key route.
+
+#### Browser sign-in alternative
 
 For a first run in Claude Code, update/install the plugin, open `/mcp`, select its bundled TokConnect server and sign in with your existing account. Then invoke:
 
@@ -33,7 +57,7 @@ Setup checks every selected provider before research, reuses working connections
 
 Niche Hunter writes a short `report.md`, a styled `report.pdf` and detailed `results.json` in your working project. The initial report contains provider tables and short conclusions, then the overall situation and only the best supported channel/problem/product ideas. Detail is available on request. PDF export uses the optional `requirements-pdf.txt` dependency or the client's native PDF exporter; see [reporting](./skills/niche-hunter/references/reporting.md). A 14-day request cannot extend an unavailable source window: the report discloses actual coverage. Authorize TokConnect in the client you will use; installation and another client's login do not establish this connection.
 
-**Known setup issue (November 5):** a Claude Code 2.1.316 login attempt failed before browser consent with `client_uri: Invalid URL`. If this occurs, keep the connection unauthenticated and check the [supplier's documented personal MCP-key option](https://tokconnect.com/connect/claude-code/). Key availability and free-plan entitlement must be checked in your own account. Enter credentials only in private client configuration; never paste them into chat or commit them. Do not change billing, patch the client or bypass OAuth validation to continue.
+**Known OAuth issue (November 5):** a Claude Code 2.1.316 login attempt failed before browser consent with `client_uri: Invalid URL`. An owner-supplied key is a separate supported setup route in 0.4.0 and later; it does not establish that OAuth is repaired. Verify the key owner's allowance rather than asking a recipient to create an account. Do not change billing, patch the client or bypass OAuth validation to continue.
 
 The first adapter covers search topics, topic detail/related topics, and autocomplete. It does not yet normalize videos, comments, ads, or Shop sales. Read [the TikTok setup and capture reference](./skills/niche-hunter/references/tiktok.md) for supported methods and honest coverage fallbacks. Standalone skill copies need a separately configured MCP connection. See [Privacy](./PRIVACY.md) for data handling.
 

@@ -16,7 +16,7 @@ Implemented helper route: public HTTPS ZIP, no account/key or separate model API
 
 ## TikTok
 
-Implemented first route: bundled TokConnect MCP connection plus `scripts/tiktok.py`, an offline search-response normalizer. Follow [tiktok.md](tiktok.md) for setup, supported methods, bounded collection, and the capture contract. A plugin declaration is not an authorized account: the caller still signs in and verifies the actual free allowance. No authenticated response has been validated in this project yet.
+Implemented first route: bundled TokConnect MCP connection plus `scripts/tiktok.py`, an offline search-response normalizer. Follow [tiktok.md](tiktok.md) for setup, supported methods, bounded collection, and the capture contract. Owner-supplied API keys are supported through [access.md](access.md) without requiring a recipient's provider account; user-invoked `scripts/setup_access.py` configures private Codex/Claude Code settings without research calls. A plugin declaration or saved key is not proof of authentication or allowance. No authenticated response has been validated in this project yet.
 
 **TokConnect:** [connections](https://tokconnect.com/connect/), MCP `https://mcp.tokconnect.com/mcp`, [pricing](https://app.tokconnect.com/pricing), [supplier demand schema](https://tokconnect.com/docs/api/demand/). Public OAuth metadata advertises DCR/PKCE and `mcp` scope. November 4 pricing advertises 50 initial free credits, one credit per lookup, MCP on Free, and REST on every paid plan (a change from the earlier Pro-only REST finding). Actual account balance, charging and metric accuracy remain unverified. Do not purchase REST access or start a paid plan. Onboarding/consent is an explicit setup action when needed.
 
