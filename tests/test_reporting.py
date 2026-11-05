@@ -13,7 +13,7 @@ from unittest.mock import patch
 from test_research import NOW, decision_analysis, envelope, research
 
 sys.path.insert(0, str(research.SKILL_DIR / "scripts"))
-from reporting import build_report, markdown_report, text_report
+from reporting import THEME, build_report, markdown_report, text_report
 from report_pdf import pdf_bytes
 sys.path.pop(0)
 
@@ -149,6 +149,40 @@ class CompactReportTests(unittest.TestCase):
 
 
 class PDFReportTests(unittest.TestCase):
+    def test_dark_theme_keeps_body_labels_links_and_deltas_readable(self):
+        def luminance(color):
+            channels = [int(color[index:index + 2], 16) / 255 for index in (1, 3, 5)]
+            linear = [value / 12.92 if value <= .04045 else ((value + .055) / 1.055) ** 2.4 for value in channels]
+            return sum(weight * value for weight, value in zip((.2126, .7152, .0722), linear))
+
+        for surface in ("background", "surface", "surface_alt"):
+            self.assertLess(luminance(THEME[surface]), .03)
+            for foreground in ("text", "muted", "cyan", "positive", "negative"):
+                contrast = (luminance(THEME[foreground]) + .05) / (luminance(THEME[surface]) + .05)
+                with self.subTest(surface=surface, foreground=foreground):
+                    self.assertGreaterEqual(contrast, 4.5)
+
+    def test_every_pdf_page_stays_dark_with_legacy_theme_and_preserves_report_content(self):
+        from pypdf import PdfReader
+        result = fixture()
+        second = copy.deepcopy(result["sources"][0]["observations"][0])
+        second.update(id="synthetic:second", title="Second synthetic signal")
+        second["measurements"][0]["value"] = 7
+        result["sources"][0]["observations"].append(second)
+        model = build_report(result)
+        model["providers"] = [copy.deepcopy(model["providers"][0]) for _ in range(4)]
+        markdown, terminal = markdown_report(model), text_report(model)
+        model["theme"] = {"paper": "#FFFFFF", "ink": "#000000"}
+        self.assertEqual(markdown_report(model), markdown)
+        self.assertEqual(text_report(model), terminal)
+        reader = PdfReader(io.BytesIO(pdf_bytes(model)))
+        self.assertGreaterEqual(len(reader.pages), 2)
+        for page in reader.pages:
+            fills = [values for values, operator in page.get_contents().operations if operator == b"rg"]
+            self.assertTrue(fills)
+            self.assertTrue(all(float(value) < .15 for value in fills[0]))
+        self.assertIn("Second synthetic signal", " ".join(page.extract_text() for page in reader.pages))
+
     def test_unicode_report_text_survives_pdf_export(self):
         from pypdf import PdfReader
         result = fixture()

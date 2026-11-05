@@ -41,18 +41,21 @@ def pdf_bytes(document, regular=None, bold=None):
         supported = pdfmetrics.getFont(face).face.charToGlyph
         if any(ord(char) not in supported for text in contents for char in text if not char.isspace()):
             raise ValueError("PDF font does not cover report text. Supply --font-regular/--font-bold or use a native client PDF exporter with suitable fonts.")
-    theme = document.get("theme", THEME)
-    ink, slate = colors.HexColor(theme["ink"]), colors.HexColor(theme["slate"])
-    paper, sage, gold = (colors.HexColor(theme[key]) for key in ("paper", "sage", "gold"))
+    # Old report models may carry the former light palette; missing roles use the current theme.
+    theme = {**THEME, **document.get("theme", {})}
+    background, surface, surface_alt, border, text, muted, accent, cyan = (
+        colors.HexColor(theme[key]) for key in
+        ("background", "surface", "surface_alt", "border", "text", "muted", "accent", "cyan"))
+    series = [colors.HexColor(theme[key]) for key in ("accent", "cyan", "teal", "lime")]
     styles = {
-        "title": ParagraphStyle("title", fontName=bold_font, fontSize=24, leading=30, textColor=ink, spaceAfter=10),
-        "heading": ParagraphStyle("heading", fontName=bold_font, fontSize=14, leading=18, textColor=ink,
+        "title": ParagraphStyle("title", fontName=bold_font, fontSize=24, leading=30, textColor=text, spaceAfter=10),
+        "heading": ParagraphStyle("heading", fontName=bold_font, fontSize=14, leading=18, textColor=text,
                                   spaceBefore=14, spaceAfter=8, keepWithNext=True),
-        "body": ParagraphStyle("body", fontName=normal_font, fontSize=9.2, leading=13.8, textColor=ink,
+        "body": ParagraphStyle("body", fontName=normal_font, fontSize=9.2, leading=13.8, textColor=text,
                                spaceAfter=8, alignment=TA_LEFT, splitLongWords=True),
-        "small": ParagraphStyle("small", fontName=normal_font, fontSize=8, leading=11.5, textColor=slate, spaceAfter=8),
-        "headcell": ParagraphStyle("headcell", fontName=bold_font, fontSize=8.4, leading=12, textColor=paper),
-        "cell": ParagraphStyle("cell", fontName=normal_font, fontSize=8.4, leading=12.4, textColor=ink),
+        "small": ParagraphStyle("small", fontName=normal_font, fontSize=8, leading=11.5, textColor=muted, spaceAfter=8),
+        "headcell": ParagraphStyle("headcell", fontName=bold_font, fontSize=8.4, leading=12, textColor=text),
+        "cell": ParagraphStyle("cell", fontName=normal_font, fontSize=8.4, leading=12.4, textColor=text),
     }
 
     def paragraph(text, style="body"):
@@ -72,17 +75,18 @@ def pdf_bytes(document, regular=None, bold=None):
             story.append(paragraph(labels["coverage"] + ": " + section["coverage"], "small"))
         data = [[paragraph(labels["signal"], "headcell"), paragraph(labels["data"], "headcell")]]
         for row in section["rows"]:
-            label = '<link href="' + escape(row["url"], {'"': '&quot;'}) + '">' + escape(row["signal"]) + '</link>'
+            label = ('<link href="' + escape(row["url"], {'"': '&quot;'}) + '" color="' + theme["cyan"]
+                     + '">' + escape(row["signal"]) + '</link>')
             data.append([Paragraph(label, styles["cell"]), paragraph(row["data"], "cell")])
         if len(data) == 1:
             data.append([paragraph("-", "cell"), paragraph(section["status"], "cell")])
         table = Table(data, colWidths=[width * .43, width * .57], repeatRows=1, hAlign="LEFT")
         table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), slate), ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [sage, paper]),
+            ("BACKGROUND", (0, 0), (-1, 0), surface_alt), ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [surface, surface_alt]),
             ("LEFTPADDING", (0, 0), (-1, -1), 10), ("RIGHTPADDING", (0, 0), (-1, -1), 10),
             ("TOPPADDING", (0, 0), (-1, -1), 8), ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-            ("LINEBELOW", (0, -1), (-1, -1), .4, sage)]))
+            ("LINEBELOW", (0, 0), (-1, -1), .4, border)]))
         story += [table, Spacer(1, 10)]
         if section["chart"]:
             items = section["chart"]
@@ -95,11 +99,12 @@ def pdf_bytes(document, regular=None, bold=None):
                     label = label[:-1]
                 if label != item["label"]:
                     label = label[:-3] + "..."
-                chart.add(String(0, y + 3, label, fontName=normal_font, fontSize=7.5, fillColor=slate))
+                chart.add(String(0, y + 3, label, fontName=normal_font, fontSize=7.5, fillColor=muted))
+                chart.add(Rect(width * .38, y, width * .30, 12, fillColor=surface_alt, strokeColor=None))
                 chart.add(Rect(width * .38, y, width * .30 * item["value"] / maximum, 12,
-                               fillColor=slate, strokeColor=None))
+                               fillColor=series[index % len(series)], strokeColor=None))
                 chart.add(String(width * .70, y + 3, item["formatted_value"], fontName=bold_font,
-                                 fontSize=7.5, fillColor=ink))
+                                 fontSize=7.5, fillColor=text))
             story.append(chart)
         story.append(paragraph(section["conclusion"]))
         story[section_start:] = [KeepTogether(story[section_start:])]
@@ -110,8 +115,9 @@ def pdf_bytes(document, regular=None, bold=None):
             proposed = " (" + labels["proposed"] + ")" if item["untested"] else ""
             route = f"{index}. {item['channel']}{proposed} -> {item['need']} -> {item['title']}"
             card = Table([[paragraph(route)], [paragraph(item["description"])]], colWidths=[width])
-            card.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), gold),
-                ("BOX", (0, 0), (-1, -1), .5, slate),
+            card.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), surface_alt),
+                ("BOX", (0, 0), (-1, -1), .5, border),
+                ("LINEBEFORE", (0, 0), (0, -1), 3, cyan),
                 ("LEFTPADDING", (0, 0), (-1, -1), 12), ("RIGHTPADDING", (0, 0), (-1, -1), 12),
                 ("TOPPADDING", (0, 0), (-1, -1), 8), ("BOTTOMPADDING", (0, 0), (-1, -1), 8)]))
             story += [KeepTogether([card, Spacer(1, 9)])]
@@ -120,14 +126,14 @@ def pdf_bytes(document, regular=None, bold=None):
 
     def footer(canvas, document_template):
         canvas.saveState()
-        canvas.setFillColor(paper)
+        canvas.setFillColor(background)
         canvas.rect(0, 0, page_width, page_height, fill=1, stroke=0)
-        canvas.setFillColor(gold)
+        canvas.setFillColor(accent)
         canvas.rect(margin, page_height - 24, width * .22, 3, fill=1, stroke=0)
-        canvas.setStrokeColor(sage)
+        canvas.setStrokeColor(border)
         canvas.line(margin, 31, page_width - margin, 31)
         canvas.setFont(normal_font, 7)
-        canvas.setFillColor(slate)
+        canvas.setFillColor(muted)
         canvas.drawString(margin, 19, "Niche Hunter")
         canvas.drawRightString(page_width - margin, 19, str(document_template.page))
         canvas.restoreState()

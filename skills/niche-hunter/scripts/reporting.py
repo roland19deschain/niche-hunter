@@ -4,8 +4,10 @@ import re
 import textwrap
 
 NAMES = {"tiktok": "TikTok", "reddit": "Reddit", "chatgpt": "ChatGPT / OpenAI Signals"}
-THEME = {"gold": "#DCC48E", "paper": "#EAEFD3", "sage": "#B3C0A4",
-         "slate": "#505168", "ink": "#27233A"}
+THEME = {"background": "#1D1E20", "surface": "#191C1E", "surface_alt": "#24282B",
+         "border": "#3A4145", "text": "#F3F5F7", "muted": "#A3ABB0",
+         "accent": "#01A4FE", "cyan": "#5FCCE9", "teal": "#22C6AB",
+         "lime": "#B6D46A", "positive": "#28D59C", "negative": "#F27870"}
 LABELS = {"signal": "Signal", "data": "Observed data", "overall": "Overall",
           "ideas": "Product ideas", "requested": "Requested", "coverage": "Coverage",
           "unknown": "Unknown", "pending": "Analysis pending.", "end_exclusive": "end exclusive",

@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-06
+
+Dark dashboard styling for reports.
+
+- Replace the light report palette with charcoal backgrounds, light primary text, readable gray labels, dark table surfaces, cyan links/highlights and blue/cyan/teal/lime chart series. Paint every PDF page dark, including continuation pages.
+- Share semantic theme roles with available native chat charts/artifacts. Reserve green/red for supported comparable changes and keep ordinary Markdown/terminal output portable; host chat backgrounds remain controlled by the client.
+- Preserve report content, metric values, source links and layout contracts. Support legacy report-model palette fields through current-theme defaults, and verify text contrast, multipage backgrounds and content preservation.
+
+Limitations: custom chat canvas colors are not controlled by the skill; styled native visuals depend on the client's actual capabilities. No provider, authentication, allowance or spending behavior changes. Research JSON version remains `0.1.0`.
+
 ## [0.4.0] - 2026-11-06
 
 Owner-supplied API keys and automatic first-run configuration choices.

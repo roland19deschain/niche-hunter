@@ -4,7 +4,21 @@ The short report is the same decision-facing content in chat, Markdown, terminal
 
 ## Visual palette
 
-Use the report model's shared `theme`: gold `#DCC48E`, paper `#EAEFD3`, sage `#B3C0A4`, slate `#505168`, ink `#27233A`. The PDF uses ink text on paper, slate table headers with paper text, sage row accents and gold idea highlights. Keep text contrast clear; do not use the lighter accents as body text on paper. Native app charts/exports use the same palette when their renderer supports styling. Markdown and terminal text stay portable; do not add unsupported color markup or ANSI escapes.
+Use the report model's shared dark `theme` for PDF and supported native visuals:
+
+| Role | Color | Use |
+| --- | --- | --- |
+| `background` | `#1D1E20` | Full page and chart/artifact background |
+| `surface` / `surface_alt` | `#191C1E` / `#24282B` | Dark panels, alternating rows, table headers and idea highlights |
+| `border` | `#3A4145` | Subtle separators and chart tracks |
+| `text` / `muted` | `#F3F5F7` / `#A3ABB0` | Primary values/body text and secondary labels |
+| `accent` / `cyan` | `#01A4FE` / `#5FCCE9` | Primary chart series, links and highlight rules |
+| `teal` / `lime` | `#22C6AB` / `#B6D46A` | Additional categorical chart series |
+| `positive` / `negative` | `#28D59C` / `#F27870` | Verified comparable changes only |
+
+The PDF paints every page dark, uses light text on dark tables, cyan source links, blue/cyan/teal/lime bar series and dark idea highlights with a cyan edge. Keep labels readable and all text contrast clear. A green/red delta requires actual comparable change data with its sign stated in text; do not invent change badges or imply a favorable result from popularity alone. Add no decorative KPI, donut or growth data just to imitate a dashboard. Content, measurements and the compact report order stay the same.
+
+In ChatGPT/Claude desktop clients, style available chart/artifact panels with this palette and a dark background when their renderer allows it. Normal Markdown inherits the host application's theme: the skill cannot set the chat window's background or force text colors. Use readable native tables/text and attach the styled PDF when custom visuals are unavailable. Do not emit unsupported HTML/CSS or ANSI escapes, request changes to the user's app theme, or promise a dark chat canvas. Markdown and terminal output remain portable and contain the same values.
 
 ## Structure
 
