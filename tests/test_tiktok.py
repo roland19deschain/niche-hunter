@@ -92,12 +92,62 @@ class TikTokTests(unittest.TestCase):
         self.assertEqual(row["retrieved_at"], newer["retrieved_at"])
 
     def test_autocomplete_has_stable_ids_but_no_volume_or_typed_search_claim(self):
-        result = tiktok.normalize(capture([call({"suggestions": [{"text": "Notes tool"}, {"text": " notes tool "}]},
-            tool="demand_keywords", arguments={"method": "tiktok", "keyword": "notes"})]), NOW)
-        self.assertEqual(len(result["observations"]), 1)
-        self.assertEqual(result["observations"][0]["signal_type"], "recommended_keyword")
-        self.assertEqual(result["observations"][0]["measurements"], [])
-        self.assertTrue(result["observations"][0]["source_id"].startswith("keyword:"))
+        expected = None
+        variants = [[{"text": "Notes tool"}, {"text": " notes tool "}],
+                    ["Notes tool", " notes tool "], ["Notes tool", {"text": " notes tool "}]]
+        for suggestions in variants:
+            data = {"suggestions": suggestions}
+            wrappers = [data, {"data": data}, {"structuredContent": {"data": data}},
+                        {"content": [{"type": "text", "text": json.dumps({"data": data})}]},
+                        {"jsonrpc": "2.0", "id": 1, "result": {"structuredContent": data}}]
+            for response in wrappers:
+                with self.subTest(suggestions=suggestions, response=response):
+                    result = tiktok.normalize(capture([call(response,
+                        tool="mcp__plugin_niche-hunter_tokconnect__demand_keywords",
+                        arguments={"method": "tiktok", "keyword": "notes"})]), NOW)
+                    self.assertEqual(len(result["observations"]), 1)
+                    self.assertEqual(result["observations"][0]["signal_type"], "recommended_keyword")
+                    self.assertEqual(result["observations"][0]["measurements"], [])
+                    self.assertTrue(result["observations"][0]["source_id"].startswith("keyword:"))
+                    if expected is None:
+                        expected = result["observations"]
+                    self.assertEqual(result["observations"], expected)
+
+    def test_autocomplete_rejects_invalid_entries_and_does_not_accept_topic_strings(self):
+        for item in (None, True, 123, [], {}, {"text": None}, {"text": 123}, "", "   "):
+            with self.subTest(item=item), self.assertRaises(ValueError):
+                tiktok.normalize(capture([call({"suggestions": [item]}, tool="demand_keywords",
+                    arguments={"method": "tiktok", "keyword": "notes"})]), NOW)
+        with self.assertRaises(ValueError):
+            tiktok.normalize(capture([call({"topics": ["Not a topic object"]})]), NOW)
+
+    def test_two_string_autocomplete_calls_reach_collector_without_new_provider_calls(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            payload = capture([call({"data": {"suggestions": ["Synthetic phrase A", "Synthetic phrase B"]}},
+                tool="mcp__plugin_niche-hunter_tokconnect__demand_keywords",
+                arguments={"method": "tiktok", "keyword": "synthetic"}),
+                call({"content": [{"type": "text", "text": json.dumps({"data": {
+                    "suggestions": ["synthetic phrase a", "Synthetic phrase C"]}})}]},
+                    tool="demand_keywords", arguments={"method": "tiktok", "keyword": "synthetic"})])
+            source, imported, run = base / "capture.json", base / "import.json", base / "run"
+            source.write_text(json.dumps(payload))
+            normalized = subprocess.run([sys.executable, str(SCRIPTS / "tiktok.py"), "--input", str(source),
+                                         "--out", str(imported)], capture_output=True, text=True)
+            self.assertEqual(normalized.returncode, 0, normalized.stderr)
+            captured = json.loads(imported.read_text())
+            self.assertEqual(captured["collection"]["external_calls"], 2)
+            self.assertEqual([item["status"] for item in captured["collection"]["calls"]], ["ok", "ok"])
+            collected = subprocess.run([sys.executable, str(SCRIPTS / "research.py"), "collect", "--providers", "tiktok",
+                "--offline", "--as-of", "2026-11-04T12:00:00Z", "--import-file", str(imported), "--out", str(run)],
+                capture_output=True, text=True)
+            self.assertEqual(collected.returncode, 0, collected.stderr)
+            sources = json.loads((run / "results.json").read_text())["sources"]
+            self.assertEqual([item["provider"] for item in sources], ["tiktok"])
+            self.assertEqual(sources[0]["counts"]["accepted"], 3)
+            self.assertEqual(sources[0]["usage"]["external_calls"], 2)
+            self.assertTrue(all(item["signal_type"] == "recommended_keyword" and not item["measurements"]
+                                for item in sources[0]["observations"]))
 
     def test_topic_relevance_selection_and_explicit_empty_selection(self):
         payload = capture()

@@ -162,8 +162,10 @@ def normalize(capture, now=None):
             output["limitations"].append("Pagination is incomplete or unknown for at least one sampled call.")
         seen = set()
         for item in candidates:
-            require(isinstance(item, dict), "Search records must be objects")
             autocomplete = tool == "demand_keywords"
+            if autocomplete and isinstance(item, str):
+                item = {"text": item}
+            require(isinstance(item, dict), "Search records must be objects or autocomplete strings")
             text_field(item, "text" if autocomplete else "queryText")
             title = item["text" if autocomplete else "queryText"]
             if autocomplete:

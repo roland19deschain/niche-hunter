@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Accept TokConnect autocomplete suggestions as strings as well as objects with `text`, retaining stable deduplication IDs and recommendation-only semantics. Add wrapper and two-call offline import regression coverage.
+
 ## [0.3.0] - 2026-11-06
 
 Provider readiness and compact reports for every client.
