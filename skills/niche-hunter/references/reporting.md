@@ -26,7 +26,7 @@ For every selected provider, in selected order:
 
 1. Provider heading and a short coverage line only if the actual interval differs or is unknown.
 2. A compact table of observed signals and values, normally at most six rows. Link the signal to its source. Keep units and essential qualifiers, including supplier estimates and monthly shares.
-3. An optional chart for measurements with the same name, unit and window. Never chart missing values as zero or compare shares with counts. No reconstructed historical growth.
+3. An optional chart for measurements with the same name, unit, window and optional comparison group. Never chart missing values as zero or compare shares with counts. No reconstructed historical growth.
 4. One or two sentences about the observed situation and relevant distribution route. A source providing broad context is not automatically an acquisition channel.
 
 After all providers, add one short overall conclusion. Add up to three product ideas only when supported: `channel / reachable market -> problem or desire -> product or change`, with at most two brief sentences explaining the solution. Do not add detailed product cards, experiments, monetization plans, confidence tables, gap lists or an evidence appendix to this initial report. Keep material uncertainty in the short conclusion; expand details on request.
@@ -38,9 +38,9 @@ Use the caller's language. Technical IDs and metric values remain unchanged. Tar
 The analysis contract accepts an additive `presentation` object:
 
 - `title`: optional short report title.
-- `labels`: optional translations of the report's label keys. Supported keys are `signal`, `data`, `overall`, `ideas`, `requested`, `coverage`, `unknown`, `pending`, `end_exclusive`, `proposed`, `supplier_popularity`, `matched_videos`, `share`. Defaults are English; they do not set the target market or requested language.
+- `labels`: optional translations of the report's label keys. Supported keys are `signal`, `data`, `overall`, `ideas`, `requested`, `coverage`, `unknown`, `pending`, `end_exclusive`, `proposed`, `supplier_popularity`, `matched_videos`, `share`, `trends_index`, `trends_growth`, `trends_breakout`, `likes_snapshot`, `comments_window`, `no_comments`. Defaults are English; they do not set the target market or requested language.
 - `providers`: one object per selected provider, with `provider`, a short `conclusion` (at most 420 characters), and `evidence_ids` from that provider. Existing observations require nonempty references. An unavailable source can have no references and a short explanation instead.
-- Each provider may include `row_ids`, one to six distinct observation IDs from that provider, ordered by usefulness. Otherwise the helper selects a bounded sample; Signals defaults to its current comparison month, excluding baseline rows from the short table.
+- Each provider may include `row_ids`, one to six distinct observation IDs from that provider, ordered by usefulness. Otherwise the helper selects a bounded sample; Signals defaults to its current comparison month, excluding baseline rows from the short table. YouTube defaults to query/comment rows, leaving old video context in JSON. Its coverage line distinguishes differing Trends dates from the requested comment interval and explicitly notes missing dated comments.
 
 Each hypothesis may include `brief`: up to 400 characters with one or two short sentences. It is the solution description in the compact report. `channel`, `problem` and `title` supply the combination. Existing detailed hypothesis fields stay in JSON and are not printed as product cards. The caller orders the best supported ideas; deferred items are omitted and at most three are displayed. An untested acquisition route is labeled proposed.
 

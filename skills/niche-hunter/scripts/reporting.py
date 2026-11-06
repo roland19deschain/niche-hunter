@@ -3,7 +3,7 @@
 import re
 import textwrap
 
-NAMES = {"tiktok": "TikTok", "reddit": "Reddit", "chatgpt": "ChatGPT / OpenAI Signals"}
+NAMES = {"tiktok": "TikTok", "reddit": "Reddit", "chatgpt": "ChatGPT / OpenAI Signals", "youtube": "YouTube"}
 THEME = {"background": "#1D1E20", "surface": "#191C1E", "surface_alt": "#24282B",
          "border": "#3A4145", "text": "#F3F5F7", "muted": "#A3ABB0",
          "accent": "#01A4FE", "cyan": "#5FCCE9", "teal": "#22C6AB",
@@ -13,7 +13,9 @@ LABELS = {"signal": "Signal", "data": "Observed data", "overall": "Overall",
           "unknown": "Unknown", "pending": "Analysis pending.", "end_exclusive": "end exclusive",
           "proposed": "Proposed channel",
           "supplier_popularity": "7-day popularity (supplier)", "matched_videos": "Matched videos",
-          "share": "Topic share"}
+          "share": "Topic share", "trends_index": "Trends Top index", "trends_growth": "Trends Rising",
+          "trends_breakout": "Trends Breakout", "likes_snapshot": "Likes (current snapshot)",
+          "comments_window": "Comments: requested interval", "no_comments": "No dated comments collected"}
 
 
 def compact(value, limit=420):
@@ -62,10 +64,22 @@ def validate_presentation(analysis, result):
 def metric_text(metric, labels):
     value = metric["value"]
     if value is None:
+        missing_names = {"comment_like_count": "likes_snapshot", "trends_top_index": "trends_index",
+                         "trends_growth_percent": "trends_growth"}
+        if metric["name"] in missing_names:
+            return labels[missing_names[metric["name"]]] + ": " + labels["unknown"]
         return None
     if metric["unit"] == "fraction":
         return f"{labels['share']}: {value * 100:.2f}%"
     names = {"searchVolume": labels["supplier_popularity"], "videoCount": labels["matched_videos"]}
+    if metric["name"] == "trends_top_index":
+        return f"{labels['trends_index']}: {value:g}/100"
+    if metric["name"] == "trends_growth_percent":
+        return f"{labels['trends_growth']}: +{value:g}%"
+    if metric["name"] == "trends_breakout_lower_bound":
+        return f"{labels['trends_breakout']}: >{value:g}%"
+    if metric["name"] == "comment_like_count":
+        return f"{labels['likes_snapshot']}: {value:,}"
     name = names.get(metric["name"], metric["name"])
     number = f"{value:,.2f}".rstrip("0").rstrip(".") if isinstance(value, float) else f"{value:,}"
     unit = "" if metric["name"] in names else " " + metric["unit"].replace("_", " ")
@@ -92,6 +106,8 @@ def build_report(result):
             selected = [by_id[value] for value in custom["row_ids"]]
         else:
             selected = observations
+            if provider == "youtube":
+                selected = [row for row in selected if row["signal_type"] != "video"]
             if provider == "chatgpt" and source.get("actual_window"):
                 start = source["actual_window"]["start_at"]
                 selected = [row for row in selected if any(m["window"]["start_at"] == start for m in row["measurements"])]
@@ -112,6 +128,14 @@ def build_report(result):
                 coverage = labels["unknown"] + " (" + actual.get("semantics", "unknown") + ")"
         elif not actual:
             coverage = labels["unknown"]
+        if provider == "youtube" and observations:
+            scopes = source.get("provenance", {}).get("collection", {}).get("trends_scopes", [])
+            ranges = list(dict.fromkeys(scope["actual_window"]["start_at"][:10] + " / "
+                + scope["actual_window"]["end_at"][:10] for scope in scopes if scope["actual_window"] != requested))
+            if ranges:
+                coverage = "Trends: " + "; ".join(ranges[:2]) + " (" + labels["end_exclusive"] + "); " + labels["comments_window"]
+            if not any(row["signal_type"] == "comment" for row in observations):
+                coverage = (coverage + "; " if coverage else "") + labels["no_comments"]
         conclusion = custom.get("conclusion")
         if not conclusion:
             known = set(by_id)
@@ -132,7 +156,8 @@ def build_report(result):
             value = metric["value"]
             if value < 0:
                 break
-            signatures.add((metric["name"], metric["unit"], str(sorted(metric["window"].items()))))
+            signatures.add((metric["name"], metric["unit"], str(sorted(metric["window"].items())),
+                            metric.get("comparison_group")))
             candidates.append({"label": row["signal"], "value": value,
                                "display": metric_text(metric, labels), "formatted_value": metric_text(metric, labels).split(": ", 1)[-1],
                                "evidence_id": row["id"]})
@@ -141,6 +166,8 @@ def build_report(result):
         document["providers"].append(section)
         if source.get("provenance", {}).get("license"):
             document["attributions"].append("OpenAI Signals, CC BY 4.0. Derived presentation by Niche Hunter.")
+        if provider == "youtube" and observations:
+            document["attributions"].append("Data sources: Google Trends (YouTube Search) and YouTube. Relative interest is not a search count; likes are current snapshots.")
     # The calling agent orders its best ideas. The short report displays at most three.
     for hypothesis in analysis.get("hypotheses", []):
         opportunity = hypothesis.get("opportunity", {})

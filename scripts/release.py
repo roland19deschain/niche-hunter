@@ -15,11 +15,12 @@ MANIFESTS = ("plugin.json", ".claude-plugin/plugin.json")
 MARKETPLACES = (".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json")
 PACKAGE_FILES = (*MANIFESTS, *MARKETPLACES, "mcp.json", ".claude-plugin/mcp.json",
                  "README.md", "LICENSE", "PRIVACY.md", "CHANGELOG.md", "avatar.png")
-SKILL_FILES = ("SKILL.md", "scripts/research.py", "scripts/tiktok.py", "scripts/setup_access.py", "scripts/reporting.py", "scripts/report_pdf.py",
+SKILL_FILES = ("SKILL.md", "scripts/research.py", "scripts/tiktok.py", "scripts/youtube.py",
+               "scripts/youtube_trends.py", "scripts/setup_access.py", "scripts/reporting.py", "scripts/report_pdf.py",
                "requirements-pdf.txt", "assets/fonts/NotoSans-Regular.ttf", "assets/fonts/NotoSans-Bold.ttf",
                "assets/fonts/OFL.txt", "assets/fonts/NOTICE.md", "references/catalog.json",
                "references/providers.md", "references/contracts.md", "references/analysis.md",
-               "references/tiktok.md", "references/access.md", "references/reporting.md", "agents/openai.yaml")
+               "references/tiktok.md", "references/youtube.md", "references/access.md", "references/reporting.md", "agents/openai.yaml")
 
 
 def require(condition, message):

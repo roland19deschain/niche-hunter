@@ -8,6 +8,7 @@ import io
 import importlib.util
 import json
 import math
+import re
 import sys
 import time
 import uuid
@@ -15,7 +16,7 @@ import zipfile
 from datetime import date, datetime, time as day_time, timedelta, timezone
 from pathlib import Path
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -332,16 +333,32 @@ def text_field(obj, key):
     require(isinstance(obj.get(key), str) and bool(obj[key].strip()), f"Missing nonempty text field: {key}")
 
 
-def secure_url(value):
+def secure_url(value, provider=None):
     parsed = urlsplit(value)
     require(parsed.scheme == "https" and parsed.hostname and not parsed.username and not parsed.password
-            and not parsed.query, "Evidence URL must be HTTPS without credentials/query tokens")
+            and parsed.port in (None, 443), "Evidence URL must be HTTPS without credentials")
+    if provider == "youtube":
+        query = parse_qs(parsed.query, keep_blank_values=True)
+        require(query and all(len(values) == 1 for values in query.values()) and not parsed.fragment,
+                "YouTube evidence URL has repeated parameters or a fragment")
+        if parsed.hostname in {"youtube.com", "www.youtube.com"} and parsed.path == "/watch":
+            require(set(query) <= {"v", "lc"} and "v" in query
+                    and re.fullmatch(r"[A-Za-z0-9_-]{11}", query["v"][0])
+                    and ("lc" not in query or re.fullmatch(r"[A-Za-z0-9_.-]{1,200}", query["lc"][0])),
+                    "Only canonical video/comment parameters are allowed")
+        else:
+            require(parsed.hostname == "trends.google.com" and parsed.path == "/trends/explore"
+                    and set(query) <= {"q", "date", "gprop", "geo", "cat"}
+                    and query.get("gprop") == ["youtube"],
+                    "Only YouTube Search Trends evidence parameters are allowed")
+    else:
+        require(not parsed.query, "Evidence URL must not contain query tokens")
 
 
 def collect_import(payload, run, max_records, source=None):
     require(payload.get("schema_version") == VERSION, "Unsupported import schema_version")
     provider = payload["provider"]
-    require(provider in {"reddit", "tiktok"}, "Imports support reddit and tiktok only")
+    require(provider in {"reddit", "tiktok", "youtube"}, "Unsupported import provider")
     source = source if source is not None else source_result(provider, run)
     source["adapter"] = payload.get("adapter")
     text_field(payload, "adapter")
@@ -390,10 +407,13 @@ def collect_import(payload, run, max_records, source=None):
                             "limitations", "measurements"}, "Unexpected evidence fields; retain only normalized permitted fields")
         for key in ("source_id", "title", "summary"):
             text_field(row, key)
-        secure_url(row["url"])
+        secure_url(row["url"], provider)
         require(row["signal_type"] in SIGNAL_TYPES, "Invalid signal_type")
         if provider == "reddit":
             require(row["signal_type"] in {"discussion", "comment"}, "Reddit import must be discussion/comment evidence")
+        if provider == "youtube":
+            require(row["signal_type"] in {"typed_search", "topic_group", "video", "comment"},
+                    "YouTube evidence must be a Trends query/topic, context video or comment")
         require(row["quality"] in QUALITIES, "Invalid evidence quality")
         require(isinstance(row.get("limitations"), list) and all(isinstance(x, str) for x in row["limitations"]),
                 "Evidence needs text limitations array")
@@ -407,6 +427,11 @@ def collect_import(payload, run, max_records, source=None):
             if row[key] is not None:
                 require(timestamp(row[key]) <= timestamp(run["generated_at"]), "Evidence timestamp is in the future")
         require(row["retrieved_at"] is not None, "Imported evidence needs its actual retrieval time")
+        if provider == "youtube" and row["signal_type"] in {"comment", "video"}:
+            require(timestamp(run["generated_at"]) - timestamp(row["retrieved_at"]) <= timedelta(days=30),
+                    "YouTube snapshot expired; refresh or delete source data before reuse")
+            if row["signal_type"] == "comment":
+                require(row["published_at"] is not None, "Dated YouTube comments need original publication time")
         require(isinstance(row.get("measurements"), list), "Evidence needs measurements array (may be empty)")
         for metric in row["measurements"]:
             for key in ("name", "unit", "methodology"):
@@ -418,13 +443,19 @@ def collect_import(payload, run, max_records, source=None):
             if value is None:
                 text_field(metric, "missing_reason")
             validate_window(metric["window"])
+            if "comparison_group" in metric:
+                text_field(metric, "comparison_group")
         if row["source_id"] in seen:
             source["counts"]["duplicates"] += 1
             continue
         seen.add(row["source_id"])
         actual = source["actual_window"]
-        if row["published_at"] and actual["start_at"] and row["signal_type"] in {"discussion", "comment", "video"}:
-            if not timestamp(actual["start_at"]) <= timestamp(row["published_at"]) < timestamp(actual["end_at"]):
+        temporal = run["requested_window"] if provider == "youtube" else actual
+        windowed = row["signal_type"] in {"discussion", "comment", "video"}
+        if provider == "youtube" and row["signal_type"] == "video":
+            windowed = False  # Older relevant videos can contain comments from the requested period.
+        if row["published_at"] and temporal["start_at"] and windowed:
+            if not timestamp(temporal["start_at"]) <= timestamp(row["published_at"]) < timestamp(temporal["end_at"]):
                 source["counts"]["outside_window"] += 1
                 continue
         if len(source["observations"]) >= max_records:
@@ -467,8 +498,9 @@ def collect(args):
     require(state["ready"] or args.diagnostic,
             "Configure every selected provider before collection, or explicitly exclude it: " +
             ", ".join(item["provider"] for item in state["providers"] if not item["ready"]))
-    require(sum(item["collection"]["external_calls"] for item in imports.values()) <= 10,
-            "Imports exceed the total 10 external-call run budget")
+    reserve = 2 if "chatgpt" in run["providers"] and not args.offline and not args.signals_file else 0
+    require(sum(item["collection"]["external_calls"] for item in imports.values()) + reserve <= 10,
+            "Imports and reserved Signals attempts exceed the total 10 external-call run budget")
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     require(not any(out.iterdir()), "Output directory must be empty; choose a fresh run directory")

@@ -33,6 +33,8 @@ The **market** is the reachable segment and use context, not a made-up market-si
 
 Providers and distribution channels are separate axes. TikTok evidence may concern search, organic video, or ads; do not transfer results between them. Reddit evidence can reveal a problem for a product whose search acquisition is still untested. OpenAI Signals provides aggregate context, not private prompts, audience targeting, or an established ChatGPT acquisition route.
 
+For YouTube, inspect the exact Trends seed/window/region and query → video → comment links. Search interest may support an entry query, and independently repeated comments may support a need; a tutorial view or a liked question does not establish external-product acquisition. Treat old videos as context, current likes as snapshots, and unfetched comments as unknown. Do not rank products by Trends index or comment likes.
+
 Write the acquisition path explicitly: entry point → message/demo → intended action → first useful outcome. Explain why the proposed format and minimal MVP suit both the task and the channel. Identify friction such as installation, trust, data entry, demonstration difficulty, or channel access. Show where evidence ends and the hypothesis begins.
 
 For refinement, name the relevant existing behavior/positioning, proposed change, and expected effect. Preserve this connection in `value_proposition`, `minimal_mvp`, and `experiment`; do not turn every feature suggestion into a separate new product.

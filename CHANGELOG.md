@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-06
+
+YouTube Search interest and dated-comment provider.
+
+- Add `youtube` to provider selection/preflight/defaults with automatic SerpApi Trends delivery or native Google Trends related-query CSVs, followed by YouTube Data API video/comment sampling.
+- Add private, hidden local key setup, bounded zero-new-spending collection, safe attempt accounting, offline normalization and query → video → comment provenance. Keep older videos as discovery context and filter comments by original publication within the requested interval.
+- Preserve scope-relative Top indices, source-reported Rising/Breakout and current-like snapshots; rank only the fetched comment sample. Add a compact YouTube section to Markdown, terminal and dark PDF outputs, without cross-scope index charts.
+- Reserve Signals attempts in the total run budget; document setup, unsupported coverage, 30-day API-data refresh/deletion and additional-analytics acceptance requirements.
+
+Verification uses synthetic responses and isolated settings; no authenticated Google/SerpApi calls, key setup, allowance or analytics approval is claimed. Research JSON remains 0.1.0.
+
 ## [0.4.1] - 2026-11-06
 
 Dark dashboard styling for reports.

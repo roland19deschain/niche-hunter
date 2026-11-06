@@ -94,7 +94,7 @@ class ResearchTests(unittest.TestCase):
 
     def test_default_complete_days_and_explicit_14_days(self):
         run = self.run_params("--timezone", "UTC")
-        self.assertEqual(run["providers"], ["reddit", "tiktok", "chatgpt"])
+        self.assertEqual(run["providers"], ["reddit", "tiktok", "chatgpt", "youtube"])
         self.assertEqual(run["requested_window"]["start_at"], "2026-10-25T00:00:00Z")
         self.assertEqual(run["requested_window"]["end_at"], "2026-11-01T00:00:00Z")
         self.assertFalse(run["includes_partial_day"])
@@ -118,7 +118,7 @@ class ResearchTests(unittest.TestCase):
         self.assertTrue(partial["includes_partial_day"])
 
     def test_invalid_input_before_network(self):
-        cases = [("--days", "0"), ("--providers", "youtube"), ("--start", "2026-10-01"),
+        cases = [("--days", "0"), ("--providers", "unimplemented"), ("--start", "2026-10-01"),
                  ("--start", "2026-10-02", "--end", "2026-10-01"),
                  ("--start", "2026-10-01", "--end", "2026-10-15", "--days", "14"),
                  ("--start", "2026-10-01T12:00:00", "--end", "2026-10-15T12:00:00"),

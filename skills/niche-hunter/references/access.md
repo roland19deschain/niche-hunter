@@ -43,6 +43,10 @@ A recipient need not access the owner's account page. Verify the current shared 
 
 On an authentication, entitlement or exhausted-credit failure, stop this provider's calls. Ask for nonsecret corrective action or direct the user to replace the key outside chat. Do not print the rejected key, repeatedly retry it or fall back to the owner's browser session. Other selected-provider preflight and actual-coverage rules still apply.
 
+## YouTube collector keys
+
+YouTube has a separate local setup, not a TokConnect connection. Read [youtube.md](youtube.md#choose-a-route-during-first-run-preflight): offer the Google YouTube API key plus optional SerpApi key route, or Google key plus native Trends CSV. The user runs `scripts/youtube.py setup` (or `setup --csv-only`) personally; input is hidden, settings are private and no network calls are made. `youtube.py status` prints presence only. Do not send keys into chat, invoke hidden entry through an agent-controlled terminal, or inspect the credential file. Existing supported normalized imports need no new authentication. Native cloud chats without local Python need a supported tool/export route or explicit exclusion.
+
 ## Sources and verification boundary
 
 Reviewed November 6, 2026: [TokConnect key setup](https://tokconnect.com/connect/claude-code/), [Codex HTTP MCP settings](https://learn.chatgpt.com/docs/extend/mcp#streamable-http-servers), [Claude Code remote servers and scopes](https://code.claude.com/docs/en/mcp), [Claude native request headers](https://claude.com/docs/connectors/custom/add-unlisted#authenticate-with-request-headers), [OpenAI plugin authentication](https://developers.openai.com/plugins/build/auth#client-identification).
