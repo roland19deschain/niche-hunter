@@ -6,6 +6,7 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 
 from reporting import THEME
+from research import SKILL_DIR
 
 
 def pdf_bytes(document, regular=None, bold=None):
@@ -20,7 +21,7 @@ def pdf_bytes(document, regular=None, bold=None):
         from reportlab.platypus import KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
     except ImportError as error:
         raise ValueError("PDF export needs ReportLab. Install requirements-pdf.txt in the chosen Python environment, or supply --pdf-file from a native client exporter.") from error
-    fonts = Path(__file__).resolve().parents[1] / "assets/fonts"
+    fonts = SKILL_DIR / "assets/fonts"
     faces = []
     for path in (Path(regular) if regular else fonts / "NotoSans-Regular.ttf",
                  Path(bold) if bold else fonts / "NotoSans-Bold.ttf"):

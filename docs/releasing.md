@@ -6,15 +6,15 @@
 
 Release tags match the product version exactly, without a leading `v` (for example `0.2.0`). The archive is named `niche-hunter-MAJOR.MINOR.PATCH.zip`.
 
-The product release version is `plugin.json.version`. Mirror it in `.claude-plugin/plugin.json`; `scripts/release.py check` rejects a mismatch. Each release needs a matching section in `CHANGELOG.md`. The research JSON contract (`research.py`'s `VERSION`) is independent; change it only when the data contract changes, not for every plugin release.
+The product release version is `plugin.json.version`. Mirror it in `.claude-plugin/plugin.json` and `desktop/manifest.json`. The release check validates the plugin versions, and the Desktop build checks its version against the plugin. Each release needs a matching section in `CHANGELOG.md`. The research JSON contract (`research.py`'s `VERSION`) is independent; change it only when the data contract changes, not for every plugin release.
 
 Both marketplaces resolve the plugin at their own checked-out root (`./`). Do not replace that source with an unpinned remote `master` URL: it would let an old marketplace tag install a newer runtime and break rollback. Codex and Claude metadata differ, but `skills/niche-hunter/` is the only research implementation.
 
-The release ZIP is built from an explicit runtime allowlist and normalized ZIP metadata. It includes the manifests/marketplaces, client-specific MCP connection declarations, shared skill, README, privacy disclosure, public avatar, license and changelog, plus declared PDF requirements and licensed report fonts. Contributor-only README links resolve to the corresponding versioned source on GitHub. Research exports, machine instructions, repository tests, bytecode and credentials are excluded. Runtime components have no filesystem links outside the package root. `SHA256SUMS` covers the ZIP. It is a consistency check, not a detached signature.
+The release ZIP is built from an explicit runtime allowlist and normalized ZIP metadata. It includes the manifests/marketplaces, client-specific MCP connection declarations, shared skill, README, privacy disclosure, public avatar, license and changelog, plus declared PDF requirements and licensed report fonts. Contributor-only README links resolve to the corresponding versioned source on GitHub. Research exports, machine instructions, repository tests, bytecode and credentials are excluded. Runtime components have no filesystem links outside the package root. The release also includes the Apple silicon `niche-hunter-desktop-MAJOR.MINOR.PATCH-macos-arm64.mcpb` and the uploadable `niche-hunter-skill-MAJOR.MINOR.PATCH.zip`. The published `SHA256SUMS` covers all three archives and verifies their contents against the published hashes.
 
 ## Prepare a release on develop
 
-1. Update both product manifest versions and add a dated changelog entry. Keep previous entries for users choosing a rollback tag.
+1. Update the product and Desktop manifest versions and add a dated changelog entry. Keep previous entries for users choosing a rollback tag.
 2. Update README and the English development plan with actual capabilities and verification limits. Keep skill examples portable.
 3. Run from the repository root:
 
@@ -46,9 +46,9 @@ git push origin 0.2.0
 git switch develop
 ```
 
-The tag-triggered `Release` workflow verifies the version/changelog, requires the tagged commit to be contained in `master`, reruns tests, builds the runtime ZIP/checksum, and creates a GitHub Release using that version's changelog notes. GitHub provides the workflow's repository token; maintainers do not commit a personal token or provider credentials.
+The tag-triggered `Release` workflow runs on an Apple silicon macOS runner. It verifies the version/changelog, requires the tagged commit to be contained in `master`, reruns the shared and Desktop tests, builds all three archives, and creates a GitHub Release using that version's changelog notes. GitHub provides the workflow's repository token; maintainers do not commit a personal token or provider credentials.
 
-Verify the Release workflow succeeded and that the [published release](https://github.com/roland19deschain/niche-hunter/releases) contains the expected tag, source commit, notes, ZIP and checksum. A successful `git push` alone is not proof of a published release. Download the asset and verify its checksum, then test the README's GitHub marketplace installation for both clients. New research outputs belong in the caller's working project.
+Verify the Release workflow succeeded and that the [published release](https://github.com/roland19deschain/niche-hunter/releases) contains the expected tag, source commit, notes, three archives and checksum file. Download the archives and verify them with `shasum -a 256 -c SHA256SUMS` from their shared directory. Test the marketplace installations and Claude Desktop's extension and skill upload paths separately. New research outputs belong in the caller's working project or the Desktop reports directory.
 
 If publication fails, inspect the workflow and correct the cause. A rerun can finish an interrupted job if no Release was created. If a Release already exists, inspect its assets before retrying; the workflow deliberately refuses to overwrite it. Do not delete/recreate published tags to make a failed release appear successful.
 

@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-10
+
+Claude Desktop pilot for Apple silicon Macs.
+
+- Add a local MCPB with native sensitive fields for TokConnect, YouTube Data API v3 and SerpApi. The companion skill ZIP guides first-run setup and uses the local tools for preflight, collection and Markdown/PDF export.
+- Check the exact provider selection and confirmed allowance before collection. ChatGPT uses public Signals, and Reddit uses permitted imports. Save reports to the Mac for access in Finder.
+- Publish the Desktop MCPB and companion skill ZIP alongside the shared plugin archive. Verification uses synthetic data; native Claude Desktop installation and authenticated provider runs are pilot acceptance checks.
+
+Download both Desktop assets from this release and follow the [installation guide](https://github.com/roland19deschain/niche-hunter/blob/0.6.0/skills/niche-hunter/references/claude-desktop.md).
+
 ## [0.5.0] - 2026-11-06
 
 YouTube Search interest and dated-comment provider.

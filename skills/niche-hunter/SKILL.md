@@ -10,11 +10,13 @@ Find testable combinations using **Distribution First**:
 
 Support both new-product discovery and refinement of an existing product. The deliverable is a reasoned opportunity and a way to test it, not just a trend list. Stable recurring needs can support an opportunity even without measurable growth.
 
-This is a shared skill for Codex and Claude Code. Use the calling agent's tools and reasoning; no separate LLM API is required. Respond in the caller's language. Resolve paths relative to this skill's directory, including when loaded through a symlink. Python 3.10+ with standard-library `zoneinfo` data is required for the helper.
+This is a shared skill for Codex, Claude Code and Claude Desktop. Use the calling agent's tools and reasoning. Respond in the caller's language. Resolve paths relative to this skill's directory, including when loaded through a symlink. Python 3.10+ with standard-library `zoneinfo` data is required when calling the helper directly.
 
 Installed plugin invocation is `$niche-hunter:niche-hunter` in Codex or `/niche-hunter:niche-hunter` in Claude Code. Standalone repository skills use the unprefixed name. Keep the caller's project as the working directory and resolve the helper script from the supplied skill location; store run outputs in the caller's project, outside the installed plugin/cache directory.
 
 ## Connection setup
+
+In Claude Desktop, or when the `niche_hunter_status`, `niche_hunter_collect` and `niche_hunter_finalize` tools are available, follow [references/claude-desktop.md](references/claude-desktop.md) for setup, collection and finalization. Use the request, scope, evidence analysis and report rules below. Use native extension settings for missing keys and pause until the selected routes are configured. The Desktop route uses those MCP tools in place of the shell commands below, including for file export.
 
 An invocation with no additional task or parameters starts the default research workflow, including preflight for every selected provider. No separate setup prompt is required. First use is determined by missing access in this client, not by a persistent first-run flag: a new chat with valid connections must not ask for authentication again.
 

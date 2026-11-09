@@ -20,7 +20,8 @@ SKILL_FILES = ("SKILL.md", "scripts/research.py", "scripts/tiktok.py", "scripts/
                "requirements-pdf.txt", "assets/fonts/NotoSans-Regular.ttf", "assets/fonts/NotoSans-Bold.ttf",
                "assets/fonts/OFL.txt", "assets/fonts/NOTICE.md", "references/catalog.json",
                "references/providers.md", "references/contracts.md", "references/analysis.md",
-               "references/tiktok.md", "references/youtube.md", "references/access.md", "references/reporting.md", "agents/openai.yaml")
+               "references/tiktok.md", "references/youtube.md", "references/access.md", "references/claude-desktop.md",
+               "references/reporting.md", "agents/openai.yaml")
 
 
 def require(condition, message):

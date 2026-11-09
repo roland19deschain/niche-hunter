@@ -1,0 +1,54 @@
+{
+  "manifest_version": "0.3",
+  "name": "niche-hunter-desktop",
+  "display_name": "Niche Hunter",
+  "version": "0.6.0",
+  "description": "Collect research evidence and create Niche Hunter reports in Claude Desktop on Apple silicon Macs.",
+  "author": {"name": "Niche Hunter contributors"},
+  "homepage": "https://github.com/roland19deschain/niche-hunter",
+  "license": "MIT",
+  "privacy_policies": [
+    "https://tokconnect.com/privacy/",
+    "https://policies.google.com/privacy",
+    "https://serpapi.com/privacy",
+    "https://openai.com/policies/privacy-policy/"
+  ],
+  "server": {
+    "type": "binary",
+    "entry_point": "server/niche-hunter-desktop",
+    "mcp_config": {
+      "command": "${__dirname}/server/niche-hunter-desktop",
+      "env": {
+        "NICHE_HUNTER_TOKCONNECT_KEY": "${user_config.tokconnect_key}",
+        "NICHE_HUNTER_YOUTUBE_KEY": "${user_config.youtube_key}",
+        "NICHE_HUNTER_SERPAPI_KEY": "${user_config.serpapi_key}"
+      }
+    }
+  },
+  "compatibility": {"platforms": ["darwin"]},
+  "user_config": {
+    "tokconnect_key": {
+      "type": "string",
+      "title": "TokConnect API key",
+      "description": "Required for live TikTok collection.",
+      "sensitive": true
+    },
+    "youtube_key": {
+      "type": "string",
+      "title": "YouTube Data API v3 key",
+      "description": "Required for live YouTube video and comment collection.",
+      "sensitive": true
+    },
+    "serpapi_key": {
+      "type": "string",
+      "title": "SerpApi API key",
+      "description": "Required for live YouTube Search interest through SerpApi.",
+      "sensitive": true
+    }
+  },
+  "tools": [
+    {"name": "niche_hunter_status", "description": "Check selected provider configuration without making network requests."},
+    {"name": "niche_hunter_collect", "description": "Collect bounded research evidence for a single run."},
+    {"name": "niche_hunter_finalize", "description": "Validate evidence-linked analysis and save Markdown and PDF reports."}
+  ]
+}

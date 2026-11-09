@@ -24,7 +24,7 @@ from reporting import build_report, markdown_report, text_report, validate_prese
 
 VERSION = "0.1.0"
 UTC = timezone.utc
-SKILL_DIR = Path(__file__).resolve().parents[1]
+SKILL_DIR = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[1]))
 CATALOG = json.loads((SKILL_DIR / "references/catalog.json").read_text())
 PROVIDERS = CATALOG["default_providers"]
 SIGNALS_URL = "https://cdn.openai.com/signals/data-download-csv.zip"
