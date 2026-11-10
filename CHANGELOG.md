@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-11-11
+
+- Avoid positional argument substitution in the skill's spending instruction and validate the shared skill at packaging time.
+- Expose the running Desktop extension version and attempt plan. Apply owner-configured per-run caps and caller-reported available allowances before live collection, and record attempted usage by service.
+- Support a caller-selected Trends seed in broad Desktop YouTube runs. Show seed and sample coverage, prioritize cited evidence, and label hypotheses that require more research in compact exports.
+
 ## [0.6.1] - 2026-11-11
 
 Fixes from the first live Desktop YouTube run.

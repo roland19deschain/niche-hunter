@@ -78,6 +78,7 @@ def pdf_bytes(document, regular=None, bold=None):
         contents += [item[key] for item in section["chart"] or [] for key in ("label", "formatted_value")]
     for item in document["products"]:
         contents += [item[key] for key in ("title", "channel", "need", "description")]
+        contents += [item.get(key, "") for key in ("action", "evidence")]
     missing = sorted({ord(char) for text in contents for char in text if not char.isspace() and not covered(ord(char))})
     if missing:
         listed = ", ".join(f"U+{code:04X}" for code in missing[:8]) + (", ..." if len(missing) > 8 else "")
@@ -154,8 +155,10 @@ def pdf_bytes(document, regular=None, bold=None):
         story.append(paragraph(labels["ideas"], "heading"))
         for index, item in enumerate(document["products"], 1):
             proposed = " (" + labels["proposed"] + ")" if item["untested"] else ""
-            route = f"{index}. {item['channel']}{proposed} -> {item['need']} -> {item['title']}"
-            card = Table([[paragraph(route)], [paragraph(item["description"])]], colWidths=[width])
+            action = item["action"] + ". " if item.get("action") else ""
+            route = f"{index}. {action}{item['channel']}{proposed} -> {item['need']} -> {item['title']}"
+            description = " ".join(filter(None, (item["description"], item.get("evidence"))))
+            card = Table([[paragraph(route)], [paragraph(description)]], colWidths=[width])
             card.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), surface_alt),
                 ("BOX", (0, 0), (-1, -1), .5, border),
                 ("LINEBEFORE", (0, 0), (0, -1), 3, cyan),

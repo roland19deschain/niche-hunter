@@ -141,6 +141,32 @@ class CompactReportTests(unittest.TestCase):
                          ["Synthetic idea 1", "Synthetic idea 2", "Synthetic idea 3"])
         self.assertEqual(len(result["analysis"]["hypotheses"]), 6)
 
+    def test_youtube_short_report_surfaces_cited_comments_and_marks_research_first(self):
+        result = fixture()
+        source = result["sources"][0]
+        source["provider"] = "youtube"
+        source["provenance"] = {"collection": {"trends_scopes": [
+            {"seed": "synthetic workflow", "actual_window": result["run"]["requested_window"]},
+        ]}}
+        template = source["observations"][0]
+        source["observations"] = [
+            {**template, "id": "query", "signal_type": "typed_search", "title": "Synthetic query"},
+            {**template, "id": "second-query", "signal_type": "typed_search", "title": "Second synthetic query"},
+            *[{**template, "id": f"comment-{index}", "signal_type": "comment", "title": f"Comment {index}",
+               "url": f"https://www.youtube.com/watch?v=abcdefghijk&lc={index}"} for index in range(7)],
+        ]
+        idea = result["analysis"]["hypotheses"][0]
+        idea["evidence_ids"] = ["query", "comment-5", "comment-6"]
+        idea["opportunity"]["demand_evidence_ids"] = ["comment-5", "comment-6"]
+        model = build_report(result)
+        self.assertEqual([row["id"] for row in model["providers"][0]["rows"][:3]],
+                         ["query", "comment-5", "comment-6"])
+        for text in (markdown_report(model), text_report(model)):
+            self.assertIn("Trends seed: synthetic workflow", text)
+            self.assertIn("Retained comments: 7", text)
+            self.assertIn("Research first", text)
+            self.assertIn("Cited comments: 2. Videos with cited comments: 1.", " ".join(text.split()))
+
     def test_native_and_terminal_present_same_values_without_metric_mixing(self):
         result = fixture()
         source = result["sources"][0]

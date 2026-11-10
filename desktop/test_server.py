@@ -26,7 +26,7 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
         folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)
         self.root = Path(folder.name) / "reports"
-        self.desktop = server.DesktopResearch(KEYS, self.root)
+        self.desktop = server.DesktopResearch(KEYS, self.root, dict.fromkeys(server.QUOTA_CAPS, 1))
 
     async def collect(self, **changes):
         args = {"providers": "tiktok,youtube", "days": 7, "start": None, "end": None, "timezone": None,
@@ -46,6 +46,18 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
             with self.assertRaisesRegex(ValueError, "credentials"):
                 await self.collect(topic=KEYS["tokconnect"])
         tiktok.assert_not_called()
+        self.assertFalse(self.root.exists())
+
+    async def test_provider_numbers_cannot_bypass_owner_settings(self):
+        self.desktop = server.DesktopResearch(KEYS, self.root)
+        with patch.object(server.youtube, "collect_capture") as collect:
+            result = await self.collect(providers="youtube", youtube_comment_units=8)
+        self.assertFalse(result["ready"])
+        self.assertIn("youtube_comment_units per-run limit", result["providers"][0]["missing"])
+        self.assertTrue(self.desktop.status("chatgpt")["ready"])
+        self.assertTrue(self.desktop.status("youtube", ["youtube"])["ready"])
+        self.assertEqual(result["extension_version"], json.loads(server.MANIFEST.read_text())["version"])
+        collect.assert_not_called()
         self.assertFalse(self.root.exists())
 
     async def test_tokconnect_protocol_uses_one_fixed_bearer_authenticated_tool_call(self):
@@ -118,7 +130,7 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
 
         with patch.object(server, "collect_tokconnect", new_callable=AsyncMock, return_value=capture) as tiktok:
             with patch.object(server.youtube, "Network", side_effect=fixture_network):
-                result = await self.collect()
+                result = await self.collect(youtube_comment_units=8)
             tik, yt = result["sources"]
             self.assertTrue(tik["topic_review_pending"])
             self.assertEqual(yt["usage"]["external_calls"], 3)
@@ -137,9 +149,30 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Synthetic review only.", pdf.pages[0].extract_text())
         saved = Path(report["files"]["results.json"]).read_text()
         self.assertEqual([row["id"] for row in json.loads(saved)["sources"][0]["observations"]], [chosen])
+        budget = json.loads(saved)["run"]["desktop_budget"]
+        self.assertEqual(budget["planned_attempts"]["youtube_comment_units"], 1)
+        self.assertEqual(budget["actual_attempts"]["youtube_comment_units"], 1)
+        self.assertEqual(budget["actual_attempts"]["serpapi_searches"], 1)
+        self.assertEqual(budget["actual_attempts"]["youtube_search_calls"], 1)
+        self.assertEqual(json.loads(saved)["run"]["extension_version"], self.desktop.status("youtube")["extension_version"])
         for key in KEYS.values():
             self.assertNotIn(key, saved)
             self.assertNotIn(key, report["markdown"])
+
+    async def test_broad_youtube_seed_uses_the_existing_single_search_budget(self):
+        with patch.object(server.youtube, "collect_capture", return_value={
+            "schema_version": server.research.VERSION, "status": "unavailable",
+            "collection": {"external_calls": 0, "new_paid_spending_usd": 0},
+        }) as collect:
+            with self.assertRaisesRegex(ValueError, "Use youtube_seed"):
+                await self.collect(providers="youtube", youtube_seed="synthetic workflow")
+            self.assertFalse(self.root.exists())
+            await self.collect(providers="youtube", topic=None, youtube_seed="synthetic workflow")
+        collect.assert_called_once()
+        options = collect.call_args.args[1]
+        self.assertEqual(options.seed, ["synthetic workflow"])
+        self.assertEqual(options.max_trends_calls, 1)
+        self.assertEqual(options.max_calls, 3)
 
     async def test_provider_echo_of_credential_is_dropped_and_attempt_is_counted(self):
         capture = {"external_calls": 1, "response": KEYS["tokconnect"]}

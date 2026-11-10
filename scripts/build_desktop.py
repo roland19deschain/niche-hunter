@@ -39,6 +39,7 @@ def build(output):
                         "--name", Path(executable).name, "--target-architecture", "arm64",
                         "--paths", str(SKILL / "scripts"), "--copy-metadata", "mcp",
                         "--add-data", str(SKILL / "references/catalog.json") + ":references",
+                        "--add-data", str(manifest_path) + ":.",
                         "--add-data", str(SKILL / "assets/fonts") + ":assets/fonts",
                         "--collect-data", "tzdata",
                         "--collect-data", "emoji",

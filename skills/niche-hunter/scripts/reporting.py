@@ -2,6 +2,7 @@
 
 import re
 import textwrap
+from urllib.parse import parse_qs, urlsplit
 
 NAMES = {"tiktok": "TikTok", "reddit": "Reddit", "chatgpt": "ChatGPT / OpenAI Signals", "youtube": "YouTube"}
 THEME = {"background": "#1D1E20", "surface": "#191C1E", "surface_alt": "#24282B",
@@ -15,7 +16,10 @@ LABELS = {"signal": "Signal", "data": "Observed data", "overall": "Overall",
           "supplier_popularity": "7-day popularity (supplier)", "matched_videos": "Matched videos",
           "share": "Topic share", "trends_index": "Trends Top index", "trends_growth": "Trends Rising",
           "trends_breakout": "Trends Breakout", "likes_snapshot": "Likes (current snapshot)",
-          "comments_window": "Comments: requested interval", "no_comments": "No dated comments collected"}
+          "comments_window": "Comments: requested interval", "no_comments": "No dated comments collected",
+          "trends_seed": "Trends seed", "retained_comments": "Retained comments",
+          "comment_videos": "Videos with retained comments", "research_first": "Research first",
+          "cited_comments": "Cited comments", "cited_videos": "Videos with cited comments"}
 
 
 def compact(value, limit=420):
@@ -86,6 +90,12 @@ def metric_text(metric, labels):
     return f"{name}: {number}{unit}"
 
 
+def youtube_comment_sample(rows):
+    comments = [row for row in rows if row["signal_type"] == "comment"]
+    videos = {video for row in comments for video in parse_qs(urlsplit(row["url"]).query).get("v", [])}
+    return len(comments), len(videos)
+
+
 def build_report(result):
     analysis, run = result["analysis"], result["run"]
     presentation = analysis.get("presentation", {})
@@ -93,6 +103,11 @@ def build_report(result):
     supplied = {item["provider"]: item for item in presentation.get("providers", [])}
     requested = run["requested_window"]
     period = f"{requested['start_at']} / {requested['end_at']} ({run['timezone']}, {labels['end_exclusive']})"
+    hypotheses = [item for item in analysis.get("hypotheses", [])
+                  if item.get("opportunity", {}).get("priority") != "defer"][:3]
+    need_refs = {ref for item in hypotheses for ref in
+                 item.get("opportunity", {}).get("demand_evidence_ids", item["evidence_ids"])}
+    youtube_evidence = {}
     document = {"title": compact(presentation.get("title") or "Niche Hunter", 100), "period": period,
                 "theme": dict(THEME),
                 "labels": labels, "providers": [], "summary": compact(analysis.get("summary", labels["pending"])),
@@ -102,12 +117,19 @@ def build_report(result):
         custom = supplied.get(provider, {})
         observations = source["observations"]
         by_id = {row["id"]: row for row in observations}
+        if provider == "youtube":
+            youtube_evidence = by_id
         if custom.get("row_ids"):
             selected = [by_id[value] for value in custom["row_ids"]]
         else:
             selected = observations
             if provider == "youtube":
                 selected = [row for row in selected if row["signal_type"] != "video"]
+                conclusion_refs = set(custom.get("evidence_ids", []))
+                primary_query = next((row["id"] for row in selected if row["signal_type"] == "typed_search"), None)
+                selected = sorted(selected, key=lambda row: (
+                    row["id"] != primary_query, row["id"] not in need_refs,
+                    row["id"] not in conclusion_refs, row["signal_type"] != "typed_search"))
             if provider == "chatgpt" and source.get("actual_window"):
                 start = source["actual_window"]["start_at"]
                 selected = [row for row in selected if any(m["window"]["start_at"] == start for m in row["measurements"])]
@@ -134,8 +156,16 @@ def build_report(result):
                 + scope["actual_window"]["end_at"][:10] for scope in scopes if scope["actual_window"] != requested))
             if ranges:
                 coverage = "Trends: " + "; ".join(ranges[:2]) + " (" + labels["end_exclusive"] + "); " + labels["comments_window"]
-            if not any(row["signal_type"] == "comment" for row in observations):
-                coverage = (coverage + "; " if coverage else "") + labels["no_comments"]
+            seeds = list(dict.fromkeys(scope["seed"] for scope in scopes if scope.get("seed")))
+            comments, videos = youtube_comment_sample(observations)
+            details = [coverage] if coverage else []
+            if seeds:
+                details.append(labels["trends_seed"] + ": " + ", ".join(seeds))
+            if comments:
+                details += [f"{labels['retained_comments']}: {comments}", f"{labels['comment_videos']}: {videos}"]
+            else:
+                details.append(labels["no_comments"])
+            coverage = ". ".join(details)
         conclusion = custom.get("conclusion")
         if not conclusion:
             known = set(by_id)
@@ -169,16 +199,16 @@ def build_report(result):
         if provider == "youtube" and observations:
             document["attributions"].append("Data sources: Google Trends (YouTube Search) and YouTube. Relative interest is not a search count; likes are current snapshots.")
     # The calling agent orders its best ideas. The short report displays at most three.
-    for hypothesis in analysis.get("hypotheses", []):
+    for hypothesis in hypotheses:
         opportunity = hypothesis.get("opportunity", {})
-        if opportunity.get("priority") == "defer":
-            continue
         description = hypothesis.get("brief") or hypothesis["value_proposition"] + ". " + hypothesis["product_format"]
+        cited = dict.fromkeys(opportunity.get("demand_evidence_ids", hypothesis["evidence_ids"]))
+        comments, videos = youtube_comment_sample(youtube_evidence[ref] for ref in cited if ref in youtube_evidence)
         document["products"].append({"title": compact(hypothesis["title"], 100),
             "channel": compact(hypothesis["channel"], 100), "need": compact(hypothesis["problem"], 180),
-            "description": compact(description, 400), "untested": opportunity.get("channel_fit") == "untested"})
-        if len(document["products"]) == 3:
-            break
+            "description": compact(description, 400), "untested": opportunity.get("channel_fit") == "untested",
+            "action": labels["research_first"] if opportunity.get("priority") == "research_more" else "",
+            "evidence": f"{labels['cited_comments']}: {comments}. {labels['cited_videos']}: {videos}." if comments else ""})
     return document
 
 
@@ -213,8 +243,10 @@ def markdown_report(document):
         lines += ["## " + labels["ideas"], ""]
         for index, item in enumerate(document["products"], 1):
             route = item["channel"] + (" (" + labels["proposed"] + ")" if item["untested"] else "")
-            lines += [f"{index}. **{escape_md(route)} -> {escape_md(item['need'])} -> {escape_md(item['title'])}.** "
-                      + escape_md(item["description"]), ""]
+            action = escape_md(item["action"]) + ". " if item.get("action") else ""
+            description = " ".join(filter(None, (item["description"], item.get("evidence"))))
+            lines += [f"{index}. **{action}{escape_md(route)} -> {escape_md(item['need'])} -> {escape_md(item['title'])}.** "
+                      + escape_md(description), ""]
     for attribution in document["attributions"]:
         lines += [attribution, ""]
     return "\n".join(lines)
@@ -248,7 +280,10 @@ def text_report(document, width=96):
         lines += [labels["ideas"], "-" * len(labels["ideas"])]
         for index, item in enumerate(document["products"], 1):
             proposed = " (" + labels["proposed"] + ")" if item["untested"] else ""
-            lines += textwrap.wrap(f"{index}. {item['channel']}{proposed} -> {item['need']} -> {item['title']}. {item['description']}", width) + [""]
+            action = item["action"] + ". " if item.get("action") else ""
+            description = " ".join(filter(None, (item["description"], item.get("evidence"))))
+            route = f"{index}. {action}{item['channel']}{proposed} -> {item['need']} -> {item['title']}."
+            lines += textwrap.wrap(f"{route} {description}", width) + [""]
     for attribution in document["attributions"]:
         lines += textwrap.wrap(attribution, width) + [""]
     return "\n".join(lines)

@@ -29,6 +29,15 @@ def fixture(root):
 
 
 class ReleaseTests(unittest.TestCase):
+    def test_skill_rejects_positional_argument_shorthand_in_budget_text(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture(root)
+            skill = root / "skills/niche-hunter/SKILL.md"
+            skill.write_text(skill.read_text() + "\nDefault to $0 new paid spending.\n")
+            with self.assertRaisesRegex(ValueError, "positional argument"):
+                release.validate(root)
+
     def test_packaged_examples_reject_named_regional_timezones(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

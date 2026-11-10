@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "niche-hunter-desktop",
   "display_name": "Niche Hunter",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Collect research evidence and create Niche Hunter reports in Claude Desktop on Apple silicon Macs.",
   "author": {"name": "Niche Hunter contributors"},
   "homepage": "https://github.com/roland19deschain/niche-hunter",
@@ -21,7 +21,11 @@
       "env": {
         "NICHE_HUNTER_TOKCONNECT_KEY": "${user_config.tokconnect_key}",
         "NICHE_HUNTER_YOUTUBE_KEY": "${user_config.youtube_key}",
-        "NICHE_HUNTER_SERPAPI_KEY": "${user_config.serpapi_key}"
+        "NICHE_HUNTER_SERPAPI_KEY": "${user_config.serpapi_key}",
+        "NICHE_HUNTER_TOKCONNECT_CREDITS_PER_RUN": "${user_config.tokconnect_credits_per_run}",
+        "NICHE_HUNTER_SERPAPI_SEARCHES_PER_RUN": "${user_config.serpapi_searches_per_run}",
+        "NICHE_HUNTER_YOUTUBE_SEARCH_CALLS_PER_RUN": "${user_config.youtube_search_calls_per_run}",
+        "NICHE_HUNTER_YOUTUBE_COMMENT_UNITS_PER_RUN": "${user_config.youtube_comment_units_per_run}"
       }
     }
   },
@@ -44,6 +48,38 @@
       "title": "SerpApi API key",
       "description": "Required for live YouTube Search interest through SerpApi.",
       "sensitive": true
+    },
+    "tokconnect_credits_per_run": {
+      "type": "number",
+      "title": "TokConnect credits per run",
+      "description": "Maximum free TokConnect credits authorized per run. Zero disables live TikTok.",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    },
+    "serpapi_searches_per_run": {
+      "type": "number",
+      "title": "SerpApi searches per run",
+      "description": "Maximum free SerpApi searches authorized per run. Zero disables live YouTube.",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    },
+    "youtube_search_calls_per_run": {
+      "type": "number",
+      "title": "YouTube search calls per run",
+      "description": "Maximum YouTube Search Queries calls authorized per run. Zero disables live YouTube.",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    },
+    "youtube_comment_units_per_run": {
+      "type": "number",
+      "title": "YouTube comment units per run",
+      "description": "Maximum general Data API units for comment attempts per run. Zero disables live YouTube.",
+      "default": 0,
+      "min": 0,
+      "max": 8
     }
   },
   "tools": [

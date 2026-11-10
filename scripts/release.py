@@ -69,7 +69,9 @@ def validate(root=ROOT, tag=None):
     skill = root / "skills" / NAME
     for filename in SKILL_FILES:
         require((skill / filename).is_file(), "Missing shared skill file: " + filename)
-    require(re.search(r"^name: niche-hunter$", (skill / "SKILL.md").read_text(), re.M), "Skill identity mismatch")
+    skill_text = (skill / "SKILL.md").read_text(encoding="utf-8")
+    require(re.search(r"^name: niche-hunter$", skill_text, re.M), "Skill identity mismatch")
+    require(not re.search(r"\$[0-9]", skill_text), "SKILL.md must avoid Claude Code positional argument shorthand")
     for path in skill.rglob("*"):
         if not path.is_file() or "__pycache__" in path.parts:
             continue

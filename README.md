@@ -9,7 +9,7 @@
 
 Niche Hunter is a research skill for discovering niches for new digital products and refining existing products. Its decision chain is **distribution channel → reachable market and need → product or product change → validation experiment**. It collects available signals, analyzes needs and alternatives, and explains which combinations deserve testing and where evidence is still missing.
 
-> **Release 0.6.1 · November 11, 2026:** PDF export handles unsupported emoji sequences while preserving validation of other text and symbols. SerpApi receipts count Top and Rising result rows. The Apple silicon Desktop extension and companion skill ZIP include both fixes.
+> **Release 0.6.2 · November 11, 2026:** Desktop reports its running extension version, applies owner-configured request limits and records attempts by service. YouTube reports show the Trends seed and prioritize cited comments. The shared skill states its spending limit in words for Claude Code.
 
 [Install for Codex](#install-for-codex) · [Install for Claude Code](#install-for-claude-code) · [API-key setup](#api-key-setup) · [Update](#update) · [Rollback](#rollback) · [Releases](https://github.com/roland19deschain/niche-hunter/releases) · [Changelog](./CHANGELOG.md)
 
@@ -80,7 +80,7 @@ Keys stay in private local settings outside Git/plugin files. Saving them makes 
 
 ## Claude Desktop pilot
 
-On an Apple silicon Mac, download both Desktop assets from the [0.6.1 release](https://github.com/roland19deschain/niche-hunter/releases/tag/0.6.1). Install the `.mcpb` extension and upload `niche-hunter-skill-0.6.1.zip` in Claude Desktop. Enter the TokConnect, YouTube Data API v3 and SerpApi keys in the extension's native settings. The pilot uses the Mac for collection and report export and needs no terminal setup. See the [Claude Desktop installation and workflow](./skills/niche-hunter/references/claude-desktop.md).
+On an Apple silicon Mac, download both Desktop assets from the [0.6.2 release](https://github.com/roland19deschain/niche-hunter/releases/tag/0.6.2). Install the `.mcpb` extension and upload `niche-hunter-skill-0.6.2.zip` in Claude Desktop. Set provider keys and authorized per-run limits in the extension settings. The pilot uses the Mac for collection and report export and needs no terminal setup. See the [Claude Desktop installation and workflow](./skills/niche-hunter/references/claude-desktop.md).
 
 ## Install for Codex
 
