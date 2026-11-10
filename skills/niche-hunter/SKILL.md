@@ -102,7 +102,7 @@ Read the generated `results.json`, [references/analysis.md](references/analysis.
 - Prioritize the next decision (`test_next`, `research_more`, or `defer`) with a reason, confidence, and critical unknowns. Use an experiment that tests the weakest link in the channel → need → solution chain, with a defined funnel/denominator and proposed success/stop criteria. Keep any score and independent evidence count separate from confidence. Do not infer CAC/LTV/profitability from engagement.
 - Competitor checks outside the selected provider set are pending unless separately requested. Do not silently call future roadmap providers. Experiments are proposals, not authorization to contact users, publish pages, run ads, or spend money.
 
-Keep deep analysis, evidence IDs, confidence, comparisons and detailed product reasoning in `analysis.json` / `results.json`, not in the main answer. For new runs, include `presentation` with a short conclusion and selected evidence rows for every selected provider; see [references/reporting.md](references/reporting.md). Use its labels and narrative fields for the caller's language; do not translate IDs or change numbers.
+Keep deep analysis, evidence IDs, confidence, comparisons and detailed product reasoning in `analysis.json` / `results.json`, not in the main answer. For new runs, include `presentation` with a short conclusion, selected evidence rows and any useful next steps for every selected provider; see [references/reporting.md](references/reporting.md). Use its labels and narrative fields for the caller's language; do not translate IDs or change numbers.
 
 Finalize **without collecting again**:
 
@@ -117,9 +117,9 @@ Finalization creates matching `report.md`, `report.pdf` and detailed `results.js
 
 Use this order and no detailed product cards or evidence appendix in the initial answer:
 
-1. **Each selected provider:** its name, a compact table of the useful collected signals/values, then a one- or two-sentence conclusion about the observed audience/need and relevant channel. A small chart may accompany comparable data. Keep only material coverage differences or failures in a short line; no repeated methodological explanation. A provider is not automatically a distribution channel: aggregate usage context does not prove an acquisition route.
-2. **Overall:** one short cross-provider conclusion about the current situation.
-3. **Best ideas, only if supported:** up to three numbered combinations, `distribution channel / reachable market -> problem or desire -> product or change`. Give each product at most two short sentences. No feature list, monetization plan, MVP specification or experiment detail unless requested. Keep unsupported channel fit explicit in a few words.
+1. **Each selected provider:** its name, a compact table of useful signals/values, a chart when useful, a one- or two-sentence conclusion about the audience/need and relevant channel, and up to two actionable next steps. A provider is not automatically a distribution channel: aggregate usage context does not prove an acquisition route.
+2. **Overall, only with multiple selected providers:** briefly compare what the available evidence supports, name the most promising channel/product combination to validate and explain why, or state why there is no supported preference.
+3. **Best ideas, only if supported:** up to three numbered `distribution channel / reachable market -> problem or desire -> product or change` combinations, under Overall when present. Give each product at most two short sentences and keep untested channel fit explicit.
 
 Aim for roughly 300–500 words, with only the useful rows (up to six per provider by default). Link signal titles to their sources; retain full evidence/provenance and analysis in JSON for follow-up. Expand a provider, method, product or validation plan only when the caller asks. Missing windows and incompatible units still cannot be disguised as precise growth.
 

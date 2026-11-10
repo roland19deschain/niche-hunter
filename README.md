@@ -9,7 +9,7 @@
 
 Niche Hunter is a research skill for discovering niches for new digital products and refining existing products. Its decision chain is **distribution channel → reachable market and need → product or product change → validation experiment**. It collects available signals, analyzes needs and alternatives, and explains which combinations deserve testing and where evidence is still missing.
 
-> **Release 0.6.2 · November 11, 2026:** Desktop reports its running extension version, applies owner-configured request limits and records attempts by service. YouTube reports show the Trends seed and prioritize cited comments. The shared skill states its spending limit in words for Claude Code.
+> **Release 0.8.0 · November 11, 2026.** Reports add next steps for each provider and an overall comparison when multiple providers are selected. OpenAI Signals tables show changes from the previous month in percentage points.
 
 [Install for Codex](#install-for-codex) · [Install for Claude Code](#install-for-claude-code) · [API-key setup](#api-key-setup) · [Update](#update) · [Rollback](#rollback) · [Releases](https://github.com/roland19deschain/niche-hunter/releases) · [Changelog](./CHANGELOG.md)
 
@@ -57,7 +57,7 @@ Setup checks every selected provider before research, reuses working connections
 /niche-hunter:niche-hunter research product opportunities using only TikTok for the last 7 days
 ```
 
-Niche Hunter writes a short `report.md`, a styled `report.pdf` and detailed `results.json` in your working project. The initial report contains provider tables and short conclusions, then the overall situation and only the best supported channel/problem/product ideas. The PDF uses a dark background on every page. Native charts/artifacts use matching colors when supported; the skill does not change the application's chat background. Detail is available on request. PDF export uses the optional `requirements-pdf.txt` dependency or the client's native PDF exporter; see [reporting](./skills/niche-hunter/references/reporting.md). A 14-day request cannot extend an unavailable source window: the report discloses actual coverage. Authorize TokConnect in the client you will use; installation and another client's login do not establish this connection.
+Niche Hunter writes a short `report.md`, a styled `report.pdf` and detailed `results.json` in your working project. Each provider has a table, a brief conclusion and any useful next steps. Runs with multiple providers add an overall comparison; the report shows only supported channel/problem/product ideas. The PDF uses a dark background on every page. Native charts/artifacts use matching colors when supported; the skill does not change the application's chat background. Detail is available on request. PDF export uses the optional `requirements-pdf.txt` dependency or the client's native PDF exporter; see [reporting](./skills/niche-hunter/references/reporting.md). A 14-day request cannot extend an unavailable source window: the report discloses actual coverage. Authorize TokConnect in the client you will use; installation and another client's login do not establish this connection.
 
 **Known OAuth issue (November 5):** a Claude Code 2.1.316 login attempt failed before browser consent with `client_uri: Invalid URL`. An owner-supplied key is a separate supported setup route in 0.4.0 and later; it does not establish that OAuth is repaired. Verify the key owner's allowance rather than asking a recipient to create an account. Do not change billing, patch the client or bypass OAuth validation to continue.
 
@@ -80,7 +80,7 @@ Keys stay in private local settings outside Git/plugin files. Saving them makes 
 
 ## Claude Desktop pilot
 
-On an Apple silicon Mac, download both Desktop assets from the [0.6.2 release](https://github.com/roland19deschain/niche-hunter/releases/tag/0.6.2). Install the `.mcpb` extension and upload `niche-hunter-skill-0.6.2.zip` in Claude Desktop. Set provider keys and authorized per-run limits in the extension settings. The pilot uses the Mac for collection and report export and needs no terminal setup. See the [Claude Desktop installation and workflow](./skills/niche-hunter/references/claude-desktop.md).
+On an Apple silicon Mac, download both Desktop assets from the [0.8.0 release](https://github.com/roland19deschain/niche-hunter/releases/tag/0.8.0). Install the `.mcpb` extension and upload `niche-hunter-skill-0.8.0.zip` in Claude Desktop. Set provider keys and authorized per-run limits in the extension settings. The pilot uses the Mac for collection and report export and needs no terminal setup. See the [Claude Desktop installation and workflow](./skills/niche-hunter/references/claude-desktop.md).
 
 ## Install for Codex
 

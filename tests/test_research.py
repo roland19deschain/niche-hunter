@@ -314,8 +314,8 @@ class ResearchTests(unittest.TestCase):
                 report = (base / "run/report.md").read_text()
                 for value in (analysis["hypotheses"][0]["title"], analysis["hypotheses"][0]["problem"]):
                     self.assertIn(value, report)
-                self.assertLess(report.index("## Reddit"), report.index("## Overall"))
-                self.assertLess(report.index("## Overall"), report.index("## Product ideas"))
+                self.assertLess(report.index("## Reddit"), report.index("## Product ideas"))
+                self.assertNotIn("## Overall", report)
                 self.assertNotIn(analysis["hypotheses"][0]["opportunity"]["acquisition_path"], report)
                 self.assertNotIn("Evidence appendix", report)
                 self.assertTrue((base / "run/report.pdf").read_bytes().startswith(b"%PDF-"))

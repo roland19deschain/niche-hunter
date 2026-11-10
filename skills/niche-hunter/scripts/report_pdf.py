@@ -70,10 +70,10 @@ def pdf_bytes(document, regular=None, bold=None):
     # Emoji in quoted source text are common; Markdown and JSON keep the original characters.
     document = printable(document, covered, emoji)
     # Fail visibly instead of exporting unreadable boxes for unsupported scripts.
-    contents = ["Niche Hunter 0123456789 ->", document["title"], document["period"], document["summary"], *document["labels"].values(),
+    contents = ["Niche Hunter 0123456789 ->", document["title"], document["period"], document["overall"], *document["labels"].values(),
                 *document["attributions"]]
     for section in document["providers"]:
-        contents += [section["name"], section["coverage"], section["conclusion"], section["status"]]
+        contents += [section["name"], section["coverage"], section["conclusion"], section["status"], *section["suggestions"]]
         contents.append(section.get("delta_column", ""))
         contents += [row[key] for row in section["rows"] for key in ("signal", "data")]
         contents += [row.get("delta", "") for row in section["rows"]]
@@ -95,6 +95,8 @@ def pdf_bytes(document, regular=None, bold=None):
         "title": ParagraphStyle("title", fontName=bold_font, fontSize=24, leading=30, textColor=text, spaceAfter=10),
         "heading": ParagraphStyle("heading", fontName=bold_font, fontSize=14, leading=18, textColor=text,
                                   spaceBefore=14, spaceAfter=8, keepWithNext=True),
+        "subheading": ParagraphStyle("subheading", fontName=bold_font, fontSize=10, leading=14, textColor=text,
+                                     spaceBefore=4, spaceAfter=5, keepWithNext=True),
         "body": ParagraphStyle("body", fontName=normal_font, fontSize=9.2, leading=13.8, textColor=text,
                                spaceAfter=8, alignment=TA_LEFT, splitLongWords=True),
         "small": ParagraphStyle("small", fontName=normal_font, fontSize=8, leading=11.5, textColor=muted, spaceAfter=8),
@@ -170,10 +172,14 @@ def pdf_bytes(document, regular=None, bold=None):
                 chart.add(Rect(axis, 5, .7, len(items) * 24, fillColor=muted, strokeColor=None))
             story.append(chart)
         story.append(paragraph(section["conclusion"]))
+        if section["suggestions"]:
+            story.append(paragraph(labels["suggestions"], "subheading"))
+            story.extend(paragraph("- " + text) for text in section["suggestions"])
         story[section_start:] = [KeepTogether(story[section_start:])]
-    story += [paragraph(labels["overall"], "heading"), paragraph(document["summary"])]
+    if document["overall"]:
+        story += [paragraph(labels["overall"], "heading"), paragraph(document["overall"])]
     if document["products"]:
-        story.append(paragraph(labels["ideas"], "heading"))
+        story.append(paragraph(labels["ideas"], "subheading" if document["overall"] else "heading"))
         for index, item in enumerate(document["products"], 1):
             proposed = " (" + labels["proposed"] + ")" if item["untested"] else ""
             action = item["action"] + ". " if item.get("action") else ""

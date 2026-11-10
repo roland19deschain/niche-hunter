@@ -129,22 +129,58 @@ class CompactReportTests(unittest.TestCase):
                          "2026-10-25 00:00+03:00 – 2026-10-25 13:45+03:00 (Etc/GMT-3, end exclusive)")
         self.assertEqual(run["requested_window"]["end_at"], "2026-10-25T10:45:00Z")
 
-    def test_provider_data_precedes_conclusion_overall_and_short_ideas(self):
+    def test_single_provider_keeps_its_conclusion_suggestions_and_ideas_without_overall(self):
+        from pypdf import PdfReader
         result = fixture()
         reference = result["sources"][0]["observations"][0]["id"]
         result["analysis"]["presentation"] = {"providers": [{"provider": "reddit",
             "conclusion": "Synthetic repeated workflow friction; acquisition remains untested.",
+            "suggestions": ["Check independent discussions.", "Verify search intent."],
             "evidence_ids": [reference], "row_ids": [reference]}]}
         research.validate_analysis(result["analysis"], result)
-        report = markdown_report(build_report(result))
-        self.assertLess(report.index("| Signal |"), report.index("Synthetic repeated workflow friction"))
-        self.assertLess(report.index("Synthetic repeated workflow friction"), report.index("## Overall"))
-        self.assertLess(report.index("## Overall"), report.index("## Product ideas"))
-        for value in ("monetization:", "success_criteria:", "Evidence appendix", "Caller constraints"):
-            self.assertNotIn(value, report)
-        self.assertIn("Proposed channel", report)
-        self.assertIn(result["analysis"]["hypotheses"][0]["brief"], report)
-        self.assertIn("acquisition_path", json.dumps(result))
+        model = build_report(result)
+        pdf = PdfReader(io.BytesIO(pdf_bytes(model)))
+        for report in (markdown_report(model), text_report(model), " ".join(page.extract_text() for page in pdf.pages)):
+            expected = ("Observed data", "Synthetic repeated workflow friction", "Next steps",
+                        "Check independent discussions.", "Verify search intent.", "Product ideas", "Proposed channel")
+            self.assertEqual(list(map(report.index, expected)), sorted(map(report.index, expected)))
+            self.assertNotIn("Overall", report)
+            self.assertNotIn(result["analysis"]["summary"], report)
+            self.assertIn(result["analysis"]["hypotheses"][0]["brief"], " ".join(report.split()))
+
+    def test_multiple_providers_end_with_one_comparison_and_a_shortlist(self):
+        from pypdf import PdfReader
+        result = fixture()
+        result["run"]["providers"].append("tiktok")
+        payload = envelope(result["run"])
+        payload["provider"] = "tiktok"
+        payload["observations"][0].update(signal_type="unknown", url="https://www.tiktok.com/tag/example")
+        result["sources"].append(research.collect_import(payload, result["run"], 100))
+        result["analysis"]["summary"] = "Discussions suggest a need; the content sample leaves channel fit open."
+        result["analysis"]["presentation"] = {"labels": {"suggestions": "Suggested checks"}, "providers": [
+            {"provider": source["provider"], "conclusion": f"{source['provider']} synthetic conclusion.",
+             "evidence_ids": [source["observations"][0]["id"]], "suggestions": [f"Verify {source['provider']} fit."]}
+            for source in result["sources"]]}
+        research.validate_analysis(result["analysis"], result)
+        model = build_report(result)
+        pdf = PdfReader(io.BytesIO(pdf_bytes(model)))
+        for report in (markdown_report(model), text_report(model), " ".join(page.extract_text() for page in pdf.pages)):
+            expected = ("reddit synthetic conclusion.", "Verify reddit fit.", "tiktok synthetic conclusion.",
+                        "Verify tiktok fit.", "Overall", result["analysis"]["summary"], "Product ideas")
+            self.assertEqual(list(map(report.index, expected)), sorted(map(report.index, expected)))
+            self.assertEqual(report.count("Suggested checks"), 2)
+            self.assertEqual(report.count("Overall"), 1)
+        self.assertIn("### Product ideas", markdown_report(model))
+
+    def test_provider_suggestions_must_be_short_actions(self):
+        result = fixture()
+        reference = result["sources"][0]["observations"][0]["id"]
+        provider = {"provider": "reddit", "conclusion": "Synthetic fixture", "evidence_ids": [reference]}
+        result["analysis"]["presentation"] = {"providers": [provider]}
+        for invalid in ("One action", ["Check a source", " ", "Third action"], [" "], ["x" * 181]):
+            with self.subTest(invalid=invalid), self.assertRaisesRegex(ValueError, "Provider suggestions"):
+                provider["suggestions"] = invalid
+                research.validate_analysis(result["analysis"], result)
 
     def test_provider_display_cannot_use_an_unselected_source_or_invented_rows(self):
         result = fixture()
@@ -310,12 +346,13 @@ class PDFReportTests(unittest.TestCase):
 
     def test_pdf_contains_same_short_report_and_clickable_evidence(self):
         from pypdf import PdfReader
-        model = build_report(fixture())
-        data = pdf_bytes(model)
+        result = fixture()
+        data = pdf_bytes(build_report(result))
         reader = PdfReader(io.BytesIO(data))
         text = " ".join(page.extract_text() for page in reader.pages)
-        for value in ("Niche Hunter", "Reddit", "Synthetic fixture", "Overall", "Action-list export"):
+        for value in ("Niche Hunter", "Reddit", "Synthetic fixture", result["analysis"]["summary"], "Action-list export"):
             self.assertIn(value, text)
+        self.assertNotIn("Overall", text)
         links = [annotation.get_object() for page in reader.pages for annotation in page.get("/Annots", [])]
         self.assertTrue(any(item.get("/A", {}).get("/URI", "").startswith("https://www.reddit.com/") for item in links))
 

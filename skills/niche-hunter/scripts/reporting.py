@@ -13,7 +13,7 @@ THEME = {"background": "#1D1E20", "surface": "#191C1E", "surface_alt": "#24282B"
          "border": "#3A4145", "text": "#F3F5F7", "muted": "#A3ABB0",
          "accent": "#01A4FE", "cyan": "#5FCCE9", "teal": "#22C6AB",
          "lime": "#B6D46A", "positive": "#28D59C", "negative": "#F27870"}
-LABELS = {"signal": "Signal", "data": "Observed data", "overall": "Overall",
+LABELS = {"signal": "Signal", "data": "Observed data", "overall": "Overall", "suggestions": "Next steps",
           "ideas": "Product ideas", "requested": "Requested", "coverage": "Coverage",
           "unknown": "Unknown", "pending": "Analysis pending.", "end_exclusive": "end exclusive",
           "proposed": "Proposed channel",
@@ -62,6 +62,10 @@ def validate_presentation(analysis, result):
         refs = item.get("evidence_ids", [])
         if not isinstance(refs, list) or any(ref not in known for ref in refs) or known and not refs:
             raise ValueError("Provider conclusions must reference that provider's evidence")
+        suggestions = item.get("suggestions", [])
+        if (not isinstance(suggestions, list) or len(suggestions) > 2
+                or any(not isinstance(text, str) or not text.strip() or len(text) > 180 for text in suggestions)):
+            raise ValueError("Provider suggestions must contain at most two short actions (180 characters each)")
         selected = item.get("row_ids")
         if selected is not None and (not isinstance(selected, list) or not 1 <= len(selected) <= 6
                                      or len(set(selected)) != len(selected) or any(ref not in known for ref in selected)):
@@ -125,12 +129,14 @@ def build_report(result):
     need_refs = {ref for item in hypotheses for ref in
                  item.get("opportunity", {}).get("demand_evidence_ids", item["evidence_ids"])}
     youtube_evidence = {}
+    sources = result["sources"]
     document = {"title": compact(presentation.get("title") or "Niche Hunter", 100),
                 "period": requested_period(run, labels),
                 "theme": dict(THEME),
-                "labels": labels, "providers": [], "summary": compact(analysis.get("summary", labels["pending"])),
+                "labels": labels, "providers": [],
+                "overall": compact(analysis.get("summary", labels["pending"])) if len(sources) > 1 else "",
                 "products": [], "attributions": []}
-    for source in result["sources"]:
+    for source in sources:
         provider = source["provider"]
         custom = supplied.get(provider, {})
         observations = source["observations"]
@@ -185,13 +191,18 @@ def build_report(result):
                 details.append(labels["no_comments"])
             coverage = ". ".join(details)
         conclusion = custom.get("conclusion")
+        if not conclusion and len(sources) == 1 and observations:
+            conclusion = analysis.get("summary")
         if not conclusion:
             known = set(by_id)
             findings = [item["text"] for item in analysis.get("findings", [])
                         if known.intersection(item["evidence_ids"])]
             conclusion = " ".join(findings[:2]) or source["reason"]
+            if len(sources) == 1 and analysis.get("status") == "pending":
+                conclusion = f"{labels['pending']} {conclusion}"
         section = {"provider": provider, "name": NAMES.get(provider, provider), "rows": rows,
                    "coverage": coverage, "conclusion": compact(conclusion), "status": source["status"],
+                   "suggestions": [compact(text, 180) for text in custom.get("suggestions", [])],
                    "chart": None}
         if provider == "chatgpt" and rows:
             section["delta_column"] = labels["month_change"]
@@ -293,9 +304,13 @@ def markdown_report(document):
         if section["chart"]:
             lines += ["", "```text", *chart_lines(section), "```"]
         lines += ["", escape_md(section["conclusion"]), ""]
-    lines += ["## " + labels["overall"], "", escape_md(document["summary"]), ""]
+        if section["suggestions"]:
+            lines += ["**" + escape_md(labels["suggestions"]) + "**", "",
+                      *["- " + escape_md(text) for text in section["suggestions"]], ""]
+    if document["overall"]:
+        lines += ["## " + labels["overall"], "", escape_md(document["overall"]), ""]
     if document["products"]:
-        lines += ["## " + labels["ideas"], ""]
+        lines += [("### " if document["overall"] else "## ") + labels["ideas"], ""]
         for index, item in enumerate(document["products"], 1):
             route = item["channel"] + (" (" + labels["proposed"] + ")" if item["untested"] else "")
             action = escape_md(item["action"]) + ". " if item.get("action") else ""
@@ -339,9 +354,15 @@ def text_report(document, width=96):
         if section["chart"]:
             lines += [*chart_lines(section), ""]
         lines += textwrap.wrap(section["conclusion"], width) + [""]
-    lines += [labels["overall"], "-" * len(labels["overall"])] + textwrap.wrap(document["summary"], width) + [""]
+        if section["suggestions"]:
+            lines.append(labels["suggestions"] + ":")
+            for text in section["suggestions"]:
+                lines += textwrap.wrap(text, width, initial_indent="- ", subsequent_indent="  ")
+            lines.append("")
+    if document["overall"]:
+        lines += [labels["overall"], "-" * len(labels["overall"])] + textwrap.wrap(document["overall"], width) + [""]
     if document["products"]:
-        lines += [labels["ideas"], "-" * len(labels["ideas"])]
+        lines += [labels["ideas"] + ":"] if document["overall"] else [labels["ideas"], "-" * len(labels["ideas"])]
         for index, item in enumerate(document["products"], 1):
             proposed = " (" + labels["proposed"] + ")" if item["untested"] else ""
             action = item["action"] + ". " if item.get("action") else ""

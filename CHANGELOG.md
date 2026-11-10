@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-11
+
+- Add up to two short next steps per provider. For runs with multiple providers, compare the available evidence and identify which channel and product to validate first when the evidence supports a preference.
 - Show month-to-month Signals changes in percentage points and chart comparable changes around zero. Display requested periods as local calendar dates or local times for partial days.
 - Ground comments about evidence quality in cited, observable patterns.
 
