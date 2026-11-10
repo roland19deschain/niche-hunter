@@ -1007,3 +1007,9 @@ The owner installed the 0.6.0 MCPB (release checksums matched) and entered the Y
 - Desktop preflight returns the version embedded from the extension manifest and an attempt ceiling by service. Owner-configured per-run caps default to zero for live routes. Collection applies the lower of each cap and the caller-reported free allowance and accounts for Signals and imported attempts. Results record the extension version and planned and actual counts. Provider balance verification remains the caller's responsibility.
 - Untargeted live Desktop YouTube runs accept an optional explicit Trends seed. The short report shows the actual seed and retained sample size, prioritizes cited comments in the default selection and labels hypotheses that need more research.
 - Review the implementation and validate the new settings in Claude Desktop before a live acceptance run. Inspect the status and run receipts first. Fresh YouTube and SerpApi allowances are needed for live collection.
+
+## 34. Local report dates and monthly Signals changes
+
+- Compact Markdown, terminal and PDF reports show the previous-month change in percentage points alongside each eligible Signals share. The signed chart uses the same stored comparisons and omits missing values. Zero remains an observed zero change.
+- Complete calendar days appear as inclusive dates in the requested time zone. Partial-day ranges show local times and offsets with an exclusive end. The run retains exact UTC timestamps.
+- Analysis guidance requires observable evidence and citations for comment-quality concerns. Claims about automated authorship require direct evidence.

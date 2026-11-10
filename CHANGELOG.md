@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Show month-to-month Signals changes in percentage points and chart comparable changes around zero. Display requested periods as local calendar dates or local times for partial days.
+- Ground comments about evidence quality in cited, observable patterns.
+
 ## [0.6.2] - 2026-11-11
 
 - Avoid positional argument substitution in the skill's spending instruction and validate the shared skill at packaging time.

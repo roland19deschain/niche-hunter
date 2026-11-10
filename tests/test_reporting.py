@@ -10,7 +10,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from test_research import NOW, decision_analysis, envelope, research
+from test_research import NOW, decision_analysis, envelope, release, research
 
 sys.path.insert(0, str(research.SKILL_DIR / "scripts"))
 from reporting import THEME, build_report, markdown_report, text_report
@@ -89,6 +89,46 @@ class ConfigurationTests(unittest.TestCase):
 
 
 class CompactReportTests(unittest.TestCase):
+    def test_signals_table_and_chart_use_signed_percentage_point_changes(self):
+        from pypdf import PdfReader
+        rows = ("2026-09-01,Decline,0.35\n2026-10-01,Decline,0.31\n"
+                "2026-09-01,Growth,0.20\n2026-10-01,Growth,0.25\n"
+                "2026-10-01,Missing,0.12\n"
+                "2026-09-01,Stable,0.20\n2026-10-01,Stable,0.20\n")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / "signals.zip"
+            path.write_bytes(release(rows))
+            args = research.parser().parse_args(["collect", "--providers", "chatgpt", "--offline",
+                                                 "--signals-file", str(path), "--out", directory])
+            run = research.parameters(args, NOW)
+            source = research.collect_signals(run, args, root)
+        model = build_report({"run": run, "sources": [source], "analysis": {"summary": "Synthetic comparison."}})
+        section = model["providers"][0]
+        self.assertEqual([row["delta"] for row in section["rows"]], ["-4", "+5", "Unknown", "0"])
+        self.assertEqual([item["value"] for item in section["chart"]], [-4, 5, 0])
+        markdown = markdown_report(model)
+        self.assertIn("| Topic share: 31.00% | -4 |", markdown)
+        self.assertIn("| Topic share: 12.00% | Unknown |", markdown)
+        self.assertIn("#######|", markdown)
+        self.assertIn("|#########", text_report(model))
+        reader = PdfReader(io.BytesIO(pdf_bytes(model)))
+        text = " ".join(page.extract_text() for page in reader.pages)
+        self.assertIn("Change vs prior month (pp)", text)
+        self.assertIn("+5", text)
+        self.assertIn("-4", text)
+
+    def test_requested_period_shows_inclusive_local_dates_and_partial_day_times(self):
+        result = fixture()
+        run = result["run"]
+        run["timezone"] = "Etc/GMT-3"
+        run["requested_window"].update(start_at="2026-10-24T21:00:00Z", end_at="2026-10-31T21:00:00Z")
+        self.assertEqual(build_report(result)["period"], "2026-10-25 – 2026-10-31 (Etc/GMT-3)")
+        run["requested_window"]["end_at"] = "2026-10-25T10:45:00Z"
+        self.assertEqual(build_report(result)["period"],
+                         "2026-10-25 00:00+03:00 – 2026-10-25 13:45+03:00 (Etc/GMT-3, end exclusive)")
+        self.assertEqual(run["requested_window"]["end_at"], "2026-10-25T10:45:00Z")
+
     def test_provider_data_precedes_conclusion_overall_and_short_ideas(self):
         result = fixture()
         reference = result["sources"][0]["observations"][0]["id"]

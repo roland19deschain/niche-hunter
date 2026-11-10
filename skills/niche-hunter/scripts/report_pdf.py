@@ -74,7 +74,9 @@ def pdf_bytes(document, regular=None, bold=None):
                 *document["attributions"]]
     for section in document["providers"]:
         contents += [section["name"], section["coverage"], section["conclusion"], section["status"]]
+        contents.append(section.get("delta_column", ""))
         contents += [row[key] for row in section["rows"] for key in ("signal", "data")]
+        contents += [row.get("delta", "") for row in section["rows"]]
         contents += [item[key] for item in section["chart"] or [] for key in ("label", "formatted_value")]
     for item in document["products"]:
         contents += [item[key] for key in ("title", "channel", "need", "description")]
@@ -115,14 +117,21 @@ def pdf_bytes(document, regular=None, bold=None):
         story.append(paragraph(section["name"], "heading"))
         if section["coverage"]:
             story.append(paragraph(labels["coverage"] + ": " + section["coverage"], "small"))
+        delta_column = section.get("delta_column")
         data = [[paragraph(labels["signal"], "headcell"), paragraph(labels["data"], "headcell")]]
+        if delta_column:
+            data[0].append(paragraph(delta_column, "headcell"))
         for row in section["rows"]:
             label = ('<link href="' + escape(row["url"], {'"': '&quot;'}) + '" color="' + theme["cyan"]
                      + '">' + escape(row["signal"]) + '</link>')
-            data.append([Paragraph(label, styles["cell"]), paragraph(row["data"], "cell")])
+            cells = [Paragraph(label, styles["cell"]), paragraph(row["data"], "cell")]
+            if delta_column:
+                cells.append(paragraph(row["delta"], "cell"))
+            data.append(cells)
         if len(data) == 1:
             data.append([paragraph("-", "cell"), paragraph(section["status"], "cell")])
-        table = Table(data, colWidths=[width * .43, width * .57], repeatRows=1, hAlign="LEFT")
+        fractions = (.42, .30, .28) if delta_column else (.43, .57)
+        table = Table(data, colWidths=[width * fraction for fraction in fractions], repeatRows=1, hAlign="LEFT")
         table.setStyle(TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), surface_alt), ("VALIGN", (0, 0), (-1, -1), "TOP"),
             ("ROWBACKGROUNDS", (0, 1), (-1, -1), [surface, surface_alt]),
@@ -133,7 +142,10 @@ def pdf_bytes(document, regular=None, bold=None):
         if section["chart"]:
             items = section["chart"]
             chart = Drawing(width, len(items) * 24 + 8)
-            maximum = max(item["value"] for item in items)
+            maximum = max(abs(item["value"]) for item in items)
+            if delta_column:
+                story.append(paragraph(delta_column, "small"))
+                axis = width * .53
             for index, item in enumerate(items):
                 y = (len(items) - index - 1) * 24 + 8
                 label = item["label"]
@@ -143,10 +155,19 @@ def pdf_bytes(document, regular=None, bold=None):
                     label = label[:-3] + "..."
                 chart.add(String(0, y + 3, label, fontName=normal_font, fontSize=7.5, fillColor=muted))
                 chart.add(Rect(width * .38, y, width * .30, 12, fillColor=surface_alt, strokeColor=None))
-                chart.add(Rect(width * .38, y, width * .30 * item["value"] / maximum, 12,
-                               fillColor=series[index % len(series)], strokeColor=None))
+                value = item["value"]
+                if delta_column:
+                    span = width * .15 * abs(value) / maximum
+                    start = axis - span if value < 0 else axis
+                    color = colors.HexColor(theme["negative" if value < 0 else "positive"])
+                else:
+                    span = width * .30 * value / maximum
+                    start, color = width * .38, series[index % len(series)]
+                chart.add(Rect(start, y, span, 12, fillColor=color, strokeColor=None))
                 chart.add(String(width * .70, y + 3, item["formatted_value"], fontName=bold_font,
                                  fontSize=7.5, fillColor=text))
+            if delta_column:
+                chart.add(Rect(axis, 5, .7, len(items) * 24, fillColor=muted, strokeColor=None))
             story.append(chart)
         story.append(paragraph(section["conclusion"]))
         story[section_start:] = [KeepTogether(story[section_start:])]

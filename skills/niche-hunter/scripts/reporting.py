@@ -1,8 +1,12 @@
 """One compact report model shared by Markdown, terminal and PDF outputs."""
 
+import math
 import re
 import textwrap
+from datetime import datetime, time, timedelta
+from itertools import zip_longest
 from urllib.parse import parse_qs, urlsplit
+from zoneinfo import ZoneInfo
 
 NAMES = {"tiktok": "TikTok", "reddit": "Reddit", "chatgpt": "ChatGPT / OpenAI Signals", "youtube": "YouTube"}
 THEME = {"background": "#1D1E20", "surface": "#191C1E", "surface_alt": "#24282B",
@@ -19,7 +23,8 @@ LABELS = {"signal": "Signal", "data": "Observed data", "overall": "Overall",
           "comments_window": "Comments: requested interval", "no_comments": "No dated comments collected",
           "trends_seed": "Trends seed", "retained_comments": "Retained comments",
           "comment_videos": "Videos with retained comments", "research_first": "Research first",
-          "cited_comments": "Cited comments", "cited_videos": "Videos with cited comments"}
+          "cited_comments": "Cited comments", "cited_videos": "Videos with cited comments",
+          "month_change": "Change vs prior month (pp)"}
 
 
 def compact(value, limit=420):
@@ -96,19 +101,32 @@ def youtube_comment_sample(rows):
     return len(comments), len(videos)
 
 
+def requested_period(run, labels):
+    window, zone = run["requested_window"], ZoneInfo(run["timezone"])
+    start, end = (datetime.fromisoformat(window[key].replace("Z", "+00:00")).astimezone(zone)
+                  for key in ("start_at", "end_at"))
+    if start.time() == end.time() == time.min:
+        first, last = start.date(), end.date() - timedelta(days=1)
+        dates = str(first) if first == last else f"{first} – {last}"
+        return f"{dates} ({run['timezone']})"
+    first, last = (value.isoformat(sep=" ", timespec="auto" if value.second or value.microsecond else "minutes")
+                   for value in (start, end))
+    return f"{first} – {last} ({run['timezone']}, {labels['end_exclusive']})"
+
+
 def build_report(result):
     analysis, run = result["analysis"], result["run"]
     presentation = analysis.get("presentation", {})
     labels = {**LABELS, **presentation.get("labels", {})}
     supplied = {item["provider"]: item for item in presentation.get("providers", [])}
     requested = run["requested_window"]
-    period = f"{requested['start_at']} / {requested['end_at']} ({run['timezone']}, {labels['end_exclusive']})"
     hypotheses = [item for item in analysis.get("hypotheses", [])
                   if item.get("opportunity", {}).get("priority") != "defer"][:3]
     need_refs = {ref for item in hypotheses for ref in
                  item.get("opportunity", {}).get("demand_evidence_ids", item["evidence_ids"])}
     youtube_evidence = {}
-    document = {"title": compact(presentation.get("title") or "Niche Hunter", 100), "period": period,
+    document = {"title": compact(presentation.get("title") or "Niche Hunter", 100),
+                "period": requested_period(run, labels),
                 "theme": dict(THEME),
                 "labels": labels, "providers": [], "summary": compact(analysis.get("summary", labels["pending"])),
                 "products": [], "attributions": []}
@@ -175,24 +193,44 @@ def build_report(result):
         section = {"provider": provider, "name": NAMES.get(provider, provider), "rows": rows,
                    "coverage": coverage, "conclusion": compact(conclusion), "status": source["status"],
                    "chart": None}
-        # A chart is useful only for compatible observed measurements, never synthetic growth.
-        candidates = []
-        signatures = set()
-        for row in rows:
-            metrics = row["measurements"]
-            if not metrics or metrics[0]["value"] is None:
-                break
-            metric = metrics[0]
-            value = metric["value"]
-            if value < 0:
-                break
-            signatures.add((metric["name"], metric["unit"], str(sorted(metric["window"].items())),
-                            metric.get("comparison_group")))
-            candidates.append({"label": row["signal"], "value": value,
-                               "display": metric_text(metric, labels), "formatted_value": metric_text(metric, labels).split(": ", 1)[-1],
-                               "evidence_id": row["id"]})
-        if len(candidates) == len(rows) and len(rows) >= 2 and len(signatures) == 1 and any(item["value"] > 0 for item in candidates):
-            section["chart"] = candidates
+        if provider == "chatgpt" and rows:
+            section["delta_column"] = labels["month_change"]
+            changes = {}
+            for comparison in source.get("comparisons", []):
+                refs = comparison.get("evidence_ids", [])
+                delta = comparison.get("percentage_point_change")
+                if (comparison.get("method") == "adjacent_calendar_month_share_change" and len(refs) == 2
+                        and all(ref in by_id for ref in refs) and type(delta) in (int, float) and math.isfinite(delta)):
+                    changes[refs[0]] = round(delta, 2)
+            candidates = []
+            for row in rows:
+                delta = changes.get(row["id"])
+                if delta is None:
+                    row["delta"] = labels["unknown"]
+                    continue
+                row["delta"] = f"{delta:+g}" if delta else "0"
+                candidates.append({"label": row["signal"], "value": delta, "display": row["delta"],
+                                   "formatted_value": row["delta"], "evidence_id": row["id"]})
+            if len(candidates) >= 2 and any(item["value"] for item in candidates):
+                section["chart"] = candidates
+        else:
+            # Compare compatible observations only, using their original units and windows.
+            candidates, signatures = [], set()
+            for row in rows:
+                metrics = row["measurements"]
+                if not metrics or metrics[0]["value"] is None:
+                    break
+                metric = metrics[0]
+                value = metric["value"]
+                if value < 0:
+                    break
+                signatures.add((metric["name"], metric["unit"], str(sorted(metric["window"].items())),
+                                metric.get("comparison_group")))
+                display = metric_text(metric, labels)
+                candidates.append({"label": row["signal"], "value": value, "display": display,
+                                   "formatted_value": display.split(": ", 1)[-1], "evidence_id": row["id"]})
+            if len(candidates) == len(rows) and len(rows) >= 2 and len(signatures) == 1 and any(item["value"] > 0 for item in candidates):
+                section["chart"] = candidates
         document["providers"].append(section)
         if source.get("provenance", {}).get("license"):
             document["attributions"].append("OpenAI Signals, CC BY 4.0. Derived presentation by Niche Hunter.")
@@ -216,6 +254,22 @@ def escape_md(value):
     return re.sub(r"([\\`*_{}\[\]<>|])", r"\\\1", str(value)).replace("\n", " ")
 
 
+def chart_lines(section):
+    delta_column = section.get("delta_column")
+    maximum = max(abs(item["value"]) for item in section["chart"])
+    lines = [delta_column] if delta_column else []
+    for item in section["chart"]:
+        value = item["value"]
+        if delta_column:
+            bar = "#" * round(abs(value) / maximum * 9)
+            left, right = (bar, "") if value < 0 else ("", bar)
+            bars = f"{left:>9}|{right:<9}"
+        else:
+            bars = ("#" * round(value / maximum * 18)).ljust(18)
+        lines.append(f"{compact(item['label'], 30):<30} {bars} {item['display']}")
+    return lines
+
+
 def markdown_report(document):
     labels = document["labels"]
     lines = ["# " + escape_md(document["title"]), "", labels["requested"] + ": " + document["period"], ""]
@@ -223,20 +277,21 @@ def markdown_report(document):
         lines += ["## " + section["name"], ""]
         if section["coverage"]:
             lines += [labels["coverage"] + ": " + section["coverage"], ""]
+        headers = [labels["signal"], labels["data"]]
+        if section.get("delta_column"):
+            headers.append(section["delta_column"])
+        lines += ["| " + " | ".join(escape_md(value) for value in headers) + " |",
+                  "| " + " | ".join(["---"] * len(headers)) + " |"]
         if section["rows"]:
-            lines += [f"| {labels['signal']} | {labels['data']} |", "| --- | --- |"]
             for row in section["rows"]:
-                lines.append(f"| [{escape_md(row['signal'])}]({row['url']}) | {escape_md(row['data'])} |")
+                cells = [f"[{escape_md(row['signal'])}]({row['url']})", escape_md(row["data"])]
+                if section.get("delta_column"):
+                    cells.append(escape_md(row["delta"]))
+                lines.append("| " + " | ".join(cells) + " |")
         else:
-            lines += [f"| {labels['signal']} | {labels['data']} |", "| --- | --- |",
-                      f"| - | {escape_md(section['status'])} |"]
+            lines.append(f"| - | {escape_md(section['status'])} |")
         if section["chart"]:
-            maximum = max(item["value"] for item in section["chart"])
-            lines += ["", "```text"]
-            for item in section["chart"]:
-                bar = "#" * max(0, round(item["value"] / maximum * 18))
-                lines.append(f"{compact(item['label'], 30):<30} {bar:<18} {item['display']}")
-            lines += ["```"]
+            lines += ["", "```text", *chart_lines(section), "```"]
         lines += ["", escape_md(section["conclusion"]), ""]
     lines += ["## " + labels["overall"], "", escape_md(document["summary"]), ""]
     if document["products"]:
@@ -252,28 +307,37 @@ def markdown_report(document):
     return "\n".join(lines)
 
 
+def text_row(cells, widths):
+    wrapped = [textwrap.wrap(value, width) or [""] for value, width in zip(cells, widths)]
+    return ["| " + " | ".join(f"{value:<{width}}" for value, width in zip(line, widths)) + " |"
+            for line in zip_longest(*wrapped, fillvalue="")]
+
+
 def text_report(document, width=96):
     labels = document["labels"]
     lines = [document["title"], "=" * min(width, len(document["title"])), labels["requested"] + ": " + document["period"], ""]
-    left, right = 34, width - 41
     for section in document["providers"]:
         lines += [section["name"], "-" * len(section["name"])]
         if section["coverage"]:
             lines += [labels["coverage"] + ": " + section["coverage"]]
-        lines += [f"| {labels['signal']:<{left}} | {labels['data']:<{right}} |", "+" + "-" * (left + 2) + "+" + "-" * (right + 2) + "+"]
+        headers = [labels["signal"], labels["data"]]
+        widths = [34, width - 41]
+        if section.get("delta_column"):
+            headers.append(section["delta_column"])
+            usable = width - 10
+            left, delta = min(34, usable * 4 // 10), min(28, usable * 3 // 10)
+            widths = [left, usable - left - delta, delta]
+        lines += text_row(headers, widths)
+        lines.append("+" + "+".join("-" * (column + 2) for column in widths) + "+")
         rows = section["rows"] or [{"signal": "-", "data": section["status"]}]
         for row in rows:
-            a = textwrap.wrap(row["signal"], left) or [""]
-            b = textwrap.wrap(row["data"], right) or [""]
-            for index in range(max(len(a), len(b))):
-                lines.append(f"| {a[index] if index < len(a) else '':<{left}} | {b[index] if index < len(b) else '':<{right}} |")
+            cells = [row["signal"], row["data"]]
+            if section.get("delta_column"):
+                cells.append(row["delta"])
+            lines += text_row(cells, widths)
         lines += [""]
         if section["chart"]:
-            maximum = max(item["value"] for item in section["chart"])
-            for item in section["chart"]:
-                bar = "#" * max(0, round(item["value"] / maximum * 18))
-                lines.append(f"{compact(item['label'], 30):<30} {bar:<18} {item['display']}")
-            lines += [""]
+            lines += [*chart_lines(section), ""]
         lines += textwrap.wrap(section["conclusion"], width) + [""]
     lines += [labels["overall"], "-" * len(labels["overall"])] + textwrap.wrap(document["summary"], width) + [""]
     if document["products"]:
