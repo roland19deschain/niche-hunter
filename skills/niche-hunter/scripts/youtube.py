@@ -134,7 +134,14 @@ class Network:
                         "Unknown or excessive YouTube result page")
             receipt["status"] = "ok"
             receipt["pagination_complete"] = not bool(data.get("nextPageToken"))
-            receipt["returned"] = len(data.get("items", [])) if isinstance(data.get("items", []), list) else 0
+            if service == "youtube":
+                receipt["returned"] = len(data["items"])
+            else:
+                # SerpApi delivers Trends rows under related_queries, not a YouTube-style items page.
+                related = data.get("related_queries")
+                related = related if isinstance(related, dict) else {}
+                receipt["returned"] = sum(len(related[kind]) for kind in ("top", "rising")
+                                          if isinstance(related.get(kind), list))
             return data, receipt
         except HTTPError as error:
             code, reason = error.code, None

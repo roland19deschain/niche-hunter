@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-11-11
+
+Fixes from the first live Desktop YouTube run.
+
+- Keep PDF export working when quoted source text contains emoji. Recognized emoji sequences with missing glyphs are omitted from the PDF, and uncovered arrows become ASCII (`->`). Other missing symbols still raise an explicit error listing their code points. Markdown and JSON keep the original text. Chart labels are included in the coverage check.
+- Bundle the emoji recognition data in the Desktop extension and declare the dependency for Python PDF export.
+- Count the Top and Rising related queries returned in SerpApi call receipts instead of always recording `returned: 0`.
+
 ## [0.6.0] - 2026-11-10
 
 Claude Desktop pilot for Apple silicon Macs.

@@ -120,7 +120,7 @@ def readiness(args, configured=()):
 def preflight(args):
     configured = selected_providers(args.configured_providers) if args.configured_providers else []
     state, _ = readiness(args, configured)
-    pdf_ready = args.native_pdf or importlib.util.find_spec("reportlab") is not None
+    pdf_ready = args.native_pdf or all(importlib.util.find_spec(name) is not None for name in ("reportlab", "emoji"))
     state["pdf"] = {"ready": pdf_ready, "backend": "calling_client" if args.native_pdf else "reportlab",
                     "next_action": None if pdf_ready else "Install the PDF requirements in the chosen Python environment or configure a native client PDF exporter."}
     state["ready"] = state["ready"] and pdf_ready

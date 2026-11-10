@@ -41,6 +41,7 @@ def build(output):
                         "--add-data", str(SKILL / "references/catalog.json") + ":references",
                         "--add-data", str(SKILL / "assets/fonts") + ":assets/fonts",
                         "--collect-data", "tzdata",
+                        "--collect-data", "emoji",
                         "--distpath", str(work / "dist"), "--workpath", str(work / "build"),
                         "--specpath", str(work), str(DESKTOP / "server.py")],
                        check=True, cwd=ROOT, env={**os.environ, "PYINSTALLER_CONFIG_DIR": str(work / "cache")})

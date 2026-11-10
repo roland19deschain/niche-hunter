@@ -9,11 +9,11 @@
 
 Niche Hunter is a research skill for discovering niches for new digital products and refining existing products. Its decision chain is **distribution channel → reachable market and need → product or product change → validation experiment**. It collects available signals, analyzes needs and alternatives, and explains which combinations deserve testing and where evidence is still missing.
 
-> **Release 0.6.0 · November 10, 2026:** The Claude Desktop pilot adds a local Apple silicon extension with native fields for TokConnect, YouTube Data API v3 and SerpApi, plus a companion skill ZIP. The extension runs bounded collection and creates Markdown/PDF reports on the Mac. Native installation and authenticated provider runs are pilot acceptance checks.
+> **Release 0.6.1 · November 11, 2026:** PDF export handles unsupported emoji sequences while preserving validation of other text and symbols. SerpApi receipts count Top and Rising result rows. The Apple silicon Desktop extension and companion skill ZIP include both fixes.
 
 [Install for Codex](#install-for-codex) · [Install for Claude Code](#install-for-claude-code) · [API-key setup](#api-key-setup) · [Update](#update) · [Rollback](#rollback) · [Releases](https://github.com/roland19deschain/niche-hunter/releases) · [Changelog](./CHANGELOG.md)
 
-**YouTube in 0.5.0:** the `youtube` provider combines Google Trends **YouTube Search Top/Rising → relevant videos → comments published in the requested period → current-like ranking within that sample**. It produces a separate YouTube table and conclusion in chat, Markdown and PDF. [Setup, automatic/CSV routes and limits](./skills/niche-hunter/references/youtube.md). No authenticated Google/SerpApi run has been validated yet.
+**YouTube since 0.5.0:** the `youtube` provider combines Google Trends **YouTube Search Top/Rising → relevant videos → comments published in the requested period → current-like ranking within that sample**. It produces a separate YouTube table and conclusion in chat, Markdown and PDF. The owner reports one successful authenticated Desktop run in the Code tab on November 10. Chat-tab invocation, confirmed quota and broader sampling remain pilot checks. [Setup, automatic/CSV routes and limits](./skills/niche-hunter/references/youtube.md).
 
 TikTok v1 covers search topics, topic detail/related topics and autocomplete. Seven-day popularity remains a supplier claim, with unknown source dates preserved; it does not provide verified exact query counts or arbitrary historical windows. Signals supplies broad monthly context, not weekly search logs.
 
@@ -80,7 +80,7 @@ Keys stay in private local settings outside Git/plugin files. Saving them makes 
 
 ## Claude Desktop pilot
 
-On an Apple silicon Mac, download both Desktop assets from the [0.6.0 release](https://github.com/roland19deschain/niche-hunter/releases/tag/0.6.0). Install the `.mcpb` extension and upload `niche-hunter-skill-0.6.0.zip` in Claude Desktop. Enter the TokConnect, YouTube Data API v3 and SerpApi keys in the extension's native settings. The pilot uses the Mac for collection and report export and needs no terminal setup. See the [Claude Desktop installation and workflow](./skills/niche-hunter/references/claude-desktop.md).
+On an Apple silicon Mac, download both Desktop assets from the [0.6.1 release](https://github.com/roland19deschain/niche-hunter/releases/tag/0.6.1). Install the `.mcpb` extension and upload `niche-hunter-skill-0.6.1.zip` in Claude Desktop. Enter the TokConnect, YouTube Data API v3 and SerpApi keys in the extension's native settings. The pilot uses the Mac for collection and report export and needs no terminal setup. See the [Claude Desktop installation and workflow](./skills/niche-hunter/references/claude-desktop.md).
 
 ## Install for Codex
 

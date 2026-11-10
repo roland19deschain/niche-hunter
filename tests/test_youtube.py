@@ -230,6 +230,9 @@ class YouTubeTests(unittest.TestCase):
         self.assertNotIn(KEY, json.dumps(normalized))
         self.assertEqual(requests[0][1]["gprop"], ["youtube"])
         self.assertEqual(requests[0][1]["date"], ['2026-10-28 2026-11-03'])
+        # One Top row and two Rising rows; SerpApi has no YouTube-style items list.
+        self.assertEqual([row["returned"] for row in net.calls if row["service"] == "serpapi"], [3])
+        self.assertTrue(all(row["returned"] == 1 for row in net.calls if row["service"] == "youtube"))
         searches = [values for path, values in requests if path.endswith('/search')]
         self.assertTrue(all('publishedAfter' not in values for values in searches))
 

@@ -8,9 +8,41 @@ from xml.sax.saxutils import escape
 from reporting import THEME
 from research import SKILL_DIR
 
+# Uncovered arrows keep their meaning in ASCII; the product route already uses "->".
+ASCII_FALLBACKS = {"←": "<-", "→": "->", "↔": "<->", "⇐": "<=", "⇒": "=>", "⇔": "<=>"}
+
+
+def printable(value, covered, emoji):
+    """Omit unsupported emoji sequences while preserving text for the coverage check."""
+    if isinstance(value, dict):
+        return {key: item if key in {"url", "theme"} else printable(item, covered, emoji) for key, item in value.items()}
+    if isinstance(value, list):
+        return [printable(item, covered, emoji) for item in value]
+    if not isinstance(value, str):
+        return value
+
+    def replace_sequence(chars, data):
+        # A single unqualified symbol can be ordinary text, such as a copyright sign.
+        if len(chars) == 1 and data["status"] == emoji.STATUS["unqualified"]:
+            return chars
+        return chars if all(covered(ord(char)) for char in chars) else ""
+
+    value = emoji.replace_emoji(value, replace=replace_sequence)
+    text = []
+    for char in value:
+        fallback = ASCII_FALLBACKS.get(char)
+        if char.isspace() or covered(ord(char)):
+            text.append(char)
+        elif fallback and all(covered(ord(part)) for part in fallback):
+            text.append(fallback)
+        else:
+            text.append(char)
+    return "".join(text)
+
 
 def pdf_bytes(document, regular=None, bold=None):
     try:
+        import emoji
         from reportlab.lib import colors
         from reportlab.graphics.shapes import Drawing, Rect, String
         from reportlab.lib.enums import TA_LEFT
@@ -20,7 +52,7 @@ def pdf_bytes(document, regular=None, bold=None):
         from reportlab.pdfbase.ttfonts import TTFont
         from reportlab.platypus import KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
     except ImportError as error:
-        raise ValueError("PDF export needs ReportLab. Install requirements-pdf.txt in the chosen Python environment, or supply --pdf-file from a native client exporter.") from error
+        raise ValueError("PDF export needs the packages in requirements-pdf.txt. Install them in the chosen Python environment, or supply --pdf-file from a native client exporter.") from error
     fonts = SKILL_DIR / "assets/fonts"
     faces = []
     for path in (Path(regular) if regular else fonts / "NotoSans-Regular.ttf",
@@ -30,18 +62,26 @@ def pdf_bytes(document, regular=None, bold=None):
             pdfmetrics.registerFont(TTFont(name, str(path)))
         faces.append(name)
     normal_font, bold_font = faces
+    glyphs = [pdfmetrics.getFont(face).face.charToGlyph for face in faces]
+
+    def covered(code):
+        return all(code in supported for supported in glyphs)
+
+    # Emoji in quoted source text are common; Markdown and JSON keep the original characters.
+    document = printable(document, covered, emoji)
     # Fail visibly instead of exporting unreadable boxes for unsupported scripts.
     contents = ["Niche Hunter 0123456789 ->", document["title"], document["period"], document["summary"], *document["labels"].values(),
                 *document["attributions"]]
     for section in document["providers"]:
         contents += [section["name"], section["coverage"], section["conclusion"], section["status"]]
         contents += [row[key] for row in section["rows"] for key in ("signal", "data")]
+        contents += [item[key] for item in section["chart"] or [] for key in ("label", "formatted_value")]
     for item in document["products"]:
         contents += [item[key] for key in ("title", "channel", "need", "description")]
-    for face in faces:
-        supported = pdfmetrics.getFont(face).face.charToGlyph
-        if any(ord(char) not in supported for text in contents for char in text if not char.isspace()):
-            raise ValueError("PDF font does not cover report text. Supply --font-regular/--font-bold or use a native client PDF exporter with suitable fonts.")
+    missing = sorted({ord(char) for text in contents for char in text if not char.isspace() and not covered(ord(char))})
+    if missing:
+        listed = ", ".join(f"U+{code:04X}" for code in missing[:8]) + (", ..." if len(missing) > 8 else "")
+        raise ValueError("PDF font does not cover report text (" + listed + "). Supply --font-regular/--font-bold or use a native client PDF exporter with suitable fonts.")
     # Old report models may carry the former light palette; missing roles use the current theme.
     theme = {**THEME, **document.get("theme", {})}
     background, surface, surface_alt, border, text, muted, accent, cyan = (

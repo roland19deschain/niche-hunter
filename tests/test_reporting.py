@@ -28,6 +28,17 @@ def fixture():
 
 
 class ConfigurationTests(unittest.TestCase):
+    def test_preflight_requires_emoji_for_python_pdf_export(self):
+        args = research.parser().parse_args(["preflight", "--providers", "chatgpt"])
+        with patch.object(research.importlib.util, "find_spec",
+                          side_effect=lambda name: None if name == "emoji" else object()):
+            with contextlib.redirect_stdout(io.StringIO()) as output:
+                self.assertFalse(research.preflight(args))
+            self.assertFalse(json.loads(output.getvalue())["pdf"]["ready"])
+            args.native_pdf = True
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertTrue(research.preflight(args))
+
     def test_preflight_requires_every_selected_route_and_reuses_checked_clients(self):
         args = research.parser().parse_args(["preflight", "--native-pdf"])
         with patch.object(research, "urlopen", side_effect=AssertionError("preflight must not collect")):
@@ -191,6 +202,46 @@ class PDFReportTests(unittest.TestCase):
         reader = PdfReader(io.BytesIO(pdf_bytes(build_report(result))))
         self.assertIn(text, " ".join(page.extract_text() for page in reader.pages))
 
+    def test_pdf_omits_uncovered_emoji_and_maps_arrows_without_changing_markdown(self):
+        from pypdf import PdfReader
+        result = fixture()
+        result["sources"][0]["observations"][0]["title"] = "Synthetic comment " + chr(0x1F680) + chr(0xFE0F)
+        result["analysis"]["summary"] = "Search " + chr(0x2192) + " tutorial " + chr(0x2192) + " tool " + chr(0x1F44D) + chr(0x1F3FD)
+        model = build_report(result)
+        markdown = markdown_report(model)
+        self.assertIn(chr(0x1F680), markdown)
+        text = " ".join(page.extract_text() for page in PdfReader(io.BytesIO(pdf_bytes(model))).pages)
+        self.assertIn("Synthetic comment", text)
+        self.assertIn("Search -> tutorial -> tool", text)
+        self.assertFalse({chr(0x1F680), chr(0x1F44D), chr(0x2192)} & set(text))
+        self.assertEqual(markdown_report(model), markdown)
+
+    def test_pdf_handles_emoji_sequences_and_preserves_other_unicode_symbols(self):
+        import emoji
+        from report_pdf import printable
+        sequences = ("\U0001F44D\U0001F3FD", "\U0001F469\u200D\U0001F4BB",
+                     "\U0001F3F3\uFE0F\u200D\U0001F308", "\U0001F3F3\u200D\U0001F308",
+                     "\U0001F1FA\U0001F1F3", "1\uFE0F\u20E3",
+                     "\U0001F3F4\U000E0067\U000E0062\U000E0065\U000E006E\U000E0067\U000E007F")
+        for sequence in sequences:
+            with self.subTest(sequence=repr(sequence)):
+                result = fixture()
+                result["analysis"]["summary"] = "Before " + sequence + " after"
+                model = build_report(result)
+                self.assertIn(sequence, markdown_report(model))
+                self.assertTrue(pdf_bytes(model).startswith(b"%PDF-"))
+                self.assertEqual(printable(sequence, lambda code: True, emoji), sequence)
+        for code in (0x1D11E, 0x2E80, 0x00A9, 0x200D):
+            with self.subTest(code=code):
+                char = chr(code)
+                self.assertEqual(printable(char, lambda value: False, emoji), char)
+        for code in (0x1D11E, 0x2E80):
+            with self.subTest(code=code):
+                result = fixture()
+                result["analysis"]["summary"] = chr(code)
+                with self.assertRaisesRegex(ValueError, f"U\\+{code:04X}"):
+                    pdf_bytes(build_report(result))
+
     def test_pdf_contains_same_short_report_and_clickable_evidence(self):
         from pypdf import PdfReader
         model = build_report(fixture())
@@ -212,7 +263,7 @@ class PDFReportTests(unittest.TestCase):
             path = root / "analysis.json"
             path.write_text(json.dumps(result["analysis"]))
             args = research.parser().parse_args(["finalize", "--run", str(root), "--analysis", str(path)])
-            with self.assertRaisesRegex(ValueError, "font does not cover"):
+            with self.assertRaisesRegex(ValueError, r"font does not cover report text \(U\+4E2D\)"):
                 research.finalize(args)
             self.assertEqual(before, {name: (root / name).read_bytes() for name in before})
 

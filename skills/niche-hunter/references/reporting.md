@@ -60,7 +60,7 @@ This prints plain-text tables and ASCII charts, with the same signals, conclusio
 
 ## PDF export
 
-Configure PDF capability during preflight. The bundled renderer uses ReportLab, included Noto Sans fonts and no remote assets. Collection/normalization still use the Python standard library. Install the exporter in the chosen environment if absent:
+Configure PDF capability during preflight. The bundled renderer uses ReportLab, the emoji sequence catalog and included Noto Sans fonts. Collection/normalization still use the Python standard library. Install the exporter in the chosen environment if absent:
 
 ```bash
 python3 -m pip install -r SKILL_DIR/requirements-pdf.txt
@@ -74,6 +74,8 @@ python3 skills/niche-hunter/scripts/research.py finalize \
 ```
 
 This creates `report.md`, styled `report.pdf` and detailed `results.json`. The PDF uses the same report model, with colored tables, compatible bar charts, clickable source links and page numbers. Export hashes are recorded in JSON. Rendering/validation failures preserve previous artifacts instead of reporting success with no PDF.
+
+PDF export omits recognized emoji sequences when the configured fonts cannot display them and maps unsupported directional arrows to ASCII. Ordinary text symbols remain subject to the font coverage check, including chart labels. Missing glyph errors list the affected code points. Markdown and JSON retain the original text.
 
 The default fonts provide broad text coverage but not every writing system. If needed, pass `--font-regular FONT_TTF --font-bold FONT_TTF` with suitable TrueType fonts or use a native client exporter. Missing glyphs fail explicitly rather than producing unreadable boxes. Fonts are licensed separately under the included OFL; no font choice sets a region or market.
 
