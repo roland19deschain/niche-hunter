@@ -70,7 +70,11 @@ This prints plain-text tables and ASCII charts, with the same signals, conclusio
 
 ## PDF export
 
-Configure PDF capability during preflight. The bundled renderer uses ReportLab, the emoji sequence catalog and included Noto Sans fonts. Collection/normalization still use the Python standard library. Install the exporter in the chosen environment if absent:
+In Claude Desktop, use `niche_hunter_finalize` for both report files. The extension already includes the renderer and fonts. For missing tools, use [Desktop recovery](claude-desktop.md#one-time-setup-in-claude-desktop).
+
+### Direct helper PDF export
+
+Configure PDF capability during CLI preflight. The renderer uses ReportLab, the emoji sequence catalog and included Noto Sans fonts. For an explicitly chosen direct helper workflow, install the exporter in the chosen environment if absent:
 
 ```bash
 python3 -m pip install -r SKILL_DIR/requirements-pdf.txt

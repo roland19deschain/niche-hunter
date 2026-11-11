@@ -9,7 +9,7 @@
 
 Niche Hunter is a research skill for discovering niches for new digital products and refining existing products. Its decision chain is **distribution channel → reachable market and need → product or product change → validation experiment**. It collects available signals, analyzes needs and alternatives, and explains which combinations deserve testing and where evidence is still missing.
 
-> **Release 0.9.0 · November 12, 2026.** App Store and Google Trends Web Search join the default provider set. Each run confirms its public source scope and offers Tier 1.
+> **Release 0.10.0 · November 12, 2026.** The Claude Desktop skill uses the extension's bundled PDF exporter and guides users to the extension settings when its tools are missing.
 
 [Install for Codex](#install-for-codex) · [Install for Claude Code](#install-for-claude-code) · [API-key setup](#api-key-setup) · [Update](#update) · [Rollback](#rollback) · [Releases](https://github.com/roland19deschain/niche-hunter/releases) · [Changelog](./CHANGELOG.md)
 
@@ -80,7 +80,7 @@ Keys stay in private local settings outside Git/plugin files. Saving them makes 
 
 ## Claude Desktop pilot
 
-On an Apple silicon Mac, download both Desktop assets from the [0.9.0 release](https://github.com/roland19deschain/niche-hunter/releases/tag/0.9.0). Install the `.mcpb` extension and upload `niche-hunter-skill-0.9.0.zip` in Claude Desktop. Set provider keys and authorized per-run limits in the extension settings. The pilot uses the Mac for collection and report export and needs no terminal setup. See the [Claude Desktop installation and workflow](./skills/niche-hunter/references/claude-desktop.md).
+On an Apple silicon Mac, download both Desktop assets from the [0.10.0 release](https://github.com/roland19deschain/niche-hunter/releases/tag/0.10.0). Install the `.mcpb` extension and upload `niche-hunter-skill-0.10.0.zip` in Claude Desktop. Set provider keys and authorized per-run limits in the extension settings. The pilot uses the Mac for collection and report export and needs no terminal setup. See the [Claude Desktop installation and workflow](./skills/niche-hunter/references/claude-desktop.md).
 
 ## Install for Codex
 

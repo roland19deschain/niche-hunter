@@ -14,9 +14,13 @@ This is a shared skill for Codex, Claude Code and Claude Desktop. Use the callin
 
 Installed plugin invocation is `$niche-hunter:niche-hunter` in Codex or `/niche-hunter:niche-hunter` in Claude Code. Standalone repository skills use the unprefixed name. Keep the caller's project as the working directory and resolve the helper script from the supplied skill location; store run outputs in the caller's project, outside the installed plugin/cache directory.
 
-## Connection setup
+## Choose the client route first
 
-In Claude Desktop, or when the `niche_hunter_status`, `niche_hunter_collect` and `niche_hunter_finalize` tools are available, follow [references/claude-desktop.md](references/claude-desktop.md) for setup, collection and finalization. Use the request, scope, evidence analysis and report rules below. Use native extension settings for missing keys and pause until the selected routes are configured. The Desktop route uses those MCP tools in place of the shell commands below, including for file export.
+- **Claude Desktop extension route:** use this route when running in Claude Desktop, when this copy declares the Desktop companion entry point, or when any `niche_hunter_status`, `niche_hunter_collect`, or `niche_hunter_finalize` tool is visible. Follow [the Desktop workflow](references/claude-desktop.md). Discover all three tools before collecting. Use the extension for status, collection and both report files. It already includes PDF export.
+- **When a Desktop tool is missing:** pause and ask the caller to enable the Niche Hunter extension in Claude settings and open a new chat. If an export was interrupted, preserve the run ID so it can be finalized when the extension is available. Never check local Python environments, run the shell helpers, offer dependency installation, or ask the caller to choose Markdown-only as a workaround in this route. Keep recovery instructions in plain language.
+- **Direct helper route:** use the shell commands below only for a confirmed direct helper workflow, such as Codex or Claude Code outside the Desktop companion workflow. If the host is unclear and Desktop tools are unavailable, clarify the client before trying shell setup.
+
+## Connection setup
 
 An invocation with no additional task or parameters starts the default research workflow, including preflight for every selected provider. No separate setup prompt is required. First use is determined by missing access in this client, not by a persistent first-run flag: a new chat with valid connections must not ask for authentication again.
 
@@ -46,11 +50,11 @@ For every run, include the following selected-provider choices in one setup ques
 
 Ask only for the providers selected in this run. Pass provider-specific choices separately so a country or topic selected for one provider does not change the others. See [public source routes](references/providers.md#app-store-and-google-trends-web-search).
 3. Verify connection authorization and the available free budget through client/account facilities or a nonsecret, current allowance confirmation from a shared key's owner. Do not require a key recipient to log into the owner's account. Do not consume research credits just to fill the setup table. TikTok results already available to the client can be used and stored locally as the caller requests; no terms-of-use URL, permission flag or legal confirmation is a skill prerequisite. Preserve supplied provenance without inventing permission metadata. Keep passwords and tokens in client facilities or the separate private YouTube collector settings; never read them through agent tools.
-4. Check the output route too: Python for the helper and the packages in `requirements-pdf.txt`, or an available native client PDF exporter. Use an existing suitable environment; configure missing export capability before the run. Never claim an export succeeded without its file.
+4. Check the output route. In Desktop, verify that `niche_hunter_finalize` is available and use its built-in PDF export. For the direct helper, follow the [PDF export reference](references/reporting.md#pdf-export). Never claim an export succeeded without its file.
 
 Show the planned attempts by service before collection. Proceed after the caller approves the plan and current free allowances are confirmed by the owner or a permitted account facility. Treat a previous run's allowance as historical. Use the reported attempt counts to describe usage after collection, with SerpApi, YouTube search and YouTube comment requests identified individually.
 
-The helper's `preflight` command makes no research requests. Pass `--configured-providers` only for connections the calling agent actually checked; this records readiness, not authentication performed by Python. Supplied imports count as available result inputs. For example, substituting the selected provider IDs:
+For the direct helper only, `preflight` makes no research requests. Pass `--configured-providers` only for connections the calling agent actually checked. Supplied imports count as available result inputs. Substitute the selected provider IDs:
 
 ```bash
 python3 skills/niche-hunter/scripts/research.py preflight \
@@ -114,7 +118,7 @@ Read the generated `results.json`, [references/analysis.md](references/analysis.
 
 Keep deep analysis, evidence IDs, confidence, comparisons and detailed product reasoning in `analysis.json` / `results.json`, not in the main answer. For new runs, include `presentation` with a short conclusion, selected evidence rows and any useful next steps for every selected provider; see [references/reporting.md](references/reporting.md). Use its labels and narrative fields for the caller's language; do not translate IDs or change numbers.
 
-Finalize **without collecting again**:
+Finalize **without collecting again**. For Desktop, call `niche_hunter_finalize` with the saved run ID. For the direct helper:
 
 ```bash
 python3 skills/niche-hunter/scripts/research.py finalize \

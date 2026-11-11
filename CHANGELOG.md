@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-12
+
+- Use the bundled PDF exporter for the Claude Desktop companion. Guide users to the extension settings when its tools are missing.
+
 ## [0.9.0] - 2026-11-12
 
 - Add credential-free App Store competitor snapshots and Google Trends Web Search via Trending Now RSS or a related-queries CSV.

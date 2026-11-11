@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "niche-hunter-desktop",
   "display_name": "Niche Hunter",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Collect research evidence and create Niche Hunter reports in Claude Desktop on Apple silicon Macs.",
   "author": {"name": "Niche Hunter contributors"},
   "homepage": "https://github.com/roland19deschain/niche-hunter",

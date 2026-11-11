@@ -10,6 +10,8 @@ The product release version is `plugin.json.version`. Mirror it in `.claude-plug
 
 Both marketplaces resolve the plugin at their own checked-out root (`./`). Do not replace that source with an unpinned remote `master` URL: it would let an old marketplace tag install a newer runtime and break rollback. Codex and Claude metadata differ, but `skills/niche-hunter/` is the only research implementation.
 
+The uploadable Claude Desktop skill ZIP adds a Desktop entry point to the shared `SKILL.md`. It selects the extension even when its tools are missing in the current session. The remaining shared skill files are copied unchanged.
+
 The release ZIP is built from an explicit runtime allowlist and normalized ZIP metadata. It includes the manifests/marketplaces, client-specific MCP connection declarations, shared skill, README, privacy disclosure, public avatar, license and changelog, plus declared PDF requirements and licensed report fonts. Contributor-only README links resolve to the corresponding versioned source on GitHub. Research exports, machine instructions, repository tests, bytecode and credentials are excluded. Runtime components have no filesystem links outside the package root. The release also includes the Apple silicon `niche-hunter-desktop-MAJOR.MINOR.PATCH-macos-arm64.mcpb` and the uploadable `niche-hunter-skill-MAJOR.MINOR.PATCH.zip`. The published `SHA256SUMS` covers all three archives and verifies their contents against the published hashes.
 
 ## Prepare a release on develop

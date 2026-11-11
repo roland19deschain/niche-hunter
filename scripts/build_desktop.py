@@ -19,6 +19,11 @@ from release import NAME, ROOT, SKILL_FILES, require, validate
 
 DESKTOP = ROOT / "desktop"
 SKILL = ROOT / "skills" / NAME
+DESKTOP_ENTRY = (
+    "## Desktop companion entry point\n\n"
+    "This copy uses the Claude Desktop extension for collection and PDF export. "
+    "Follow the Desktop extension route below even when its tools are unavailable.\n\n"
+)
 
 
 def build(output):
@@ -60,7 +65,13 @@ def build(output):
                         archive.write(dist.locate_file(file), f"licenses/{file.as_posix()}")
         with zipfile.ZipFile(work / skill_zip.name, "w", zipfile.ZIP_DEFLATED) as archive:
             for file in SKILL_FILES:
-                archive.write(SKILL / file, f"{NAME}/{file}")
+                member = f"{NAME}/{file}"
+                if file != "SKILL.md":
+                    archive.write(SKILL / file, member)
+                    continue
+                header, separator, body = (SKILL / file).read_text(encoding="utf-8").partition("\n---\n")
+                require(bool(separator), "The Desktop companion needs the shared skill frontmatter")
+                archive.writestr(member, header + separator + "\n" + DESKTOP_ENTRY + body.lstrip("\n"))
         for path in (bundle, skill_zip):
             # The build workspace and output can live on different filesystems.
             shutil.copyfile(work / path.name, path)
