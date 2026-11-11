@@ -5,13 +5,14 @@ import json
 import re
 from datetime import date, datetime, time
 from email.utils import parsedate_to_datetime
+from itertools import zip_longest
 from pathlib import Path
 from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 from xml.etree import ElementTree
 
-from research import MAX_BYTES, UTC, iso, load_json, require, timestamp, window
+from research import MAX_BYTES, UTC, app_store_regions, iso, load_json, require, source_result, timestamp, window
 from youtube_trends import csv_queries, digest, metric, normalize_scopes
 
 
@@ -161,6 +162,53 @@ def trends_csv(data, run, source):
 
 
 def collect_public(run, source, csv_input=None):
+    run = {**run, **run.get("public_scope", {}).get(source["provider"], {})}
+    if source["provider"] != "app_store":
+        region = run["region"]
+        if (not region and csv_input is None) or (region and region.strip().lower() == "tier-1"):
+            region = "US"
+        if region and region.strip().upper() == "UK":
+            region = "GB"
+        run["region"] = region
+        return collect_public_scope(run, source, csv_input)
+
+    regions = app_store_regions(run["region"])
+    if len(regions) == 1 or run["offline"]:
+        return collect_public_scope({**run, "region": regions[0]}, source)
+
+    scoped = [collect_public_scope({**run, "region": region}, source_result("app_store", run)) for region in regions]
+    limit = min(run["limits"]["max_records_per_provider"], 20)
+    candidates = [row for pair in zip_longest(*(item["observations"] for item in scoped)) for row in pair if row is not None]
+    rows = candidates[:limit]
+    available = [item for item in scoped if item["status"] == "partial"]
+    failed = [item for item in scoped if item["status"] != "partial"]
+    source["counts"] = {key: sum(item["counts"][key] for item in scoped) for key in source["counts"]}
+    source["counts"].update(accepted=len(rows), limited=source["counts"]["limited"] + len(candidates) - len(rows))
+    source["usage"]["helper_http_attempts"] = sum(item["usage"]["helper_http_attempts"] for item in scoped)
+    listings = {key: metadata for item in available for key, metadata in item["provenance"].get("listings", {}).items()}
+    source["provenance"] = {"mode": "public_https", "storefronts": [
+        {"region": region, "status": item["status"], "reason": item["reason"],
+         "url": item["provenance"].get("url"), "retrieved_at": item["provenance"].get("retrieved_at")}
+        for region, item in zip(regions, scoped)],
+        "listings": {row["source_id"]: listings[row["source_id"]] for row in rows}}
+    source.update(adapter=scoped[0]["adapter"], observations=rows,
+                  effective_filters={"topic": run["topic"], "regions": [region for region, item in zip(regions, scoped)
+                                                                         if item in available], "language": None},
+                  unsupported_filters=["language"] if run["language"] else [])
+    if available:
+        reason = ("Current storefront sample. Prices, ratings and chart positions are storefront-specific."
+                  if rows else "No matching App Store listings in the available storefronts.")
+        source.update(status="partial", actual_window=available[0]["actual_window"], coverage="sampled",
+                      reason=reason,
+                      limitations=available[0]["limitations"] + ["Default US and UK samples use separate storefronts."])
+    else:
+        statuses = {item["status"] for item in failed}
+        source.update(status=statuses.pop() if len(statuses) == 1 else "unavailable",
+                      reason="The requested App Store storefront snapshots could not be collected.")
+    return source
+
+
+def collect_public_scope(run, source, csv_input=None):
     provider = source["provider"]
     region, topic = run["region"], run["topic"]
     use_csv = provider == "google_trends" and csv_input is not None

@@ -87,10 +87,16 @@ def provider_scope(args):
     return chosen
 
 
-def public_request_plan(providers, offline=False, trends_csv=False):
-    return {provider + "_requests": int(provider in providers and not offline
-                                         and not (provider == "google_trends" and trends_csv))
-            for provider in PUBLIC_ROUTES}
+def app_store_regions(region):
+    if not region or region.strip().lower() == "tier-1":
+        return ("US", "GB")
+    country = region.strip().upper()
+    return ("GB" if country == "UK" else country,)
+
+
+def public_request_plan(providers, offline=False, trends_csv=False, region=None):
+    return {"app_store_requests": len(app_store_regions(region)) if "app_store" in providers and not offline else 0,
+            "google_trends_requests": int("google_trends" in providers and not offline and not trends_csv)}
 
 
 def readiness(args, configured=()):
@@ -129,7 +135,7 @@ def readiness(args, configured=()):
             route = None
         states.append({"provider": provider, "ready": route is not None, "route": route,
                        "next_action": None if route else "Configure this selected provider or explicitly exclude it."})
-    attempts = public_request_plan(chosen, args.offline, bool(trends_file))
+    attempts = public_request_plan(chosen, args.offline, bool(trends_file), args.app_store_region or args.region)
     attempts["signals_downloads"] = 2 if "chatgpt" in chosen and not args.offline and not args.signals_file else 0
     return {"ready": all(item["ready"] for item in states), "providers": states,
             "public_attempt_ceiling": attempts}, imports
@@ -167,9 +173,19 @@ def parameters(args, now):
     require(1 <= args.max_records <= 10000, "--max-records must be between 1 and 10000")
     # Calendar boundaries stay aligned across DST; elapsed hours need not be identical.
     baseline_start = start - (end.replace(tzinfo=None) - start.replace(tzinfo=None))
+    app_store_region = getattr(args, "app_store_region", None) or args.region
+    app_store_topic = getattr(args, "app_store_topic", None)
+    google_trends_region = getattr(args, "google_trends_region", None)
+    public_scope = {
+        "app_store": {"region": app_store_region, "topic": args.topic if app_store_topic is None else app_store_topic},
+        "google_trends": {"region": args.region if google_trends_region is None else google_trends_region,
+                          "topic": args.topic},
+    }
     return {"id": str(uuid.uuid4()), "generated_at": iso(datetime.now(UTC)),
             "reference_at": iso(now), "providers": chosen, "original_request": args.request,
             "topic": args.topic.strip() if args.topic else None, "region": args.region,
+            "public_scope": {provider: {"region": scope["region"], "topic": (scope["topic"] or "").strip() or None}
+                             for provider, scope in public_scope.items() if provider in chosen},
             "language": args.language, "timezone": str(zone),
             "timezone_reason": "explicit_or_caller" if args.timezone else "disclosed_UTC_fallback",
             "requested_window": window(start, end, str(zone)),
@@ -177,7 +193,8 @@ def parameters(args, now):
             "includes_partial_day": end.astimezone(zone).date() == now.astimezone(zone).date()
                 and end.astimezone(zone).time() != day_time(),
             "limits": {"max_records_per_provider": args.max_records,
-                       "max_helper_http_attempts": (2 if "chatgpt" in chosen else 0) + len(set(chosen) & PUBLIC_ROUTES.keys()),
+                       "max_helper_http_attempts": (2 if "chatgpt" in chosen else 0) +
+                       sum(public_request_plan(chosen, args.offline, region=app_store_region).values()),
                        "max_external_calls": 10,
                        "new_paid_spending_usd": 0}, "offline": args.offline}
 
@@ -640,6 +657,9 @@ def parser():
     scope.add_argument("--providers", default=",".join(PROVIDERS))
     scope.add_argument("--exclude-providers", default="")
     scope.add_argument("--signals-file")
+    scope.add_argument("--region", help="Caller-selected market or storefront")
+    scope.add_argument("--app-store-region", help="Override App Store country or use tier-1")
+    scope.add_argument("--google-trends-region", help="Override the common region; empty text uses CSV scope or RSS Tier 1")
     scope.add_argument("--google-trends-file", help="Descriptor JSON for a local Google Trends Web Search related-queries CSV")
     scope.add_argument("--import-file", action="append", default=[])
     scope.add_argument("--offline", action="store_true")
@@ -652,7 +672,8 @@ def parser():
     command.add_argument("--start", help="ISO date in the selected time zone or timestamp with offset")
     command.add_argument("--end", help="Exclusive ISO date in the selected time zone or timestamp with offset")
     command.add_argument("--timezone", help="Caller IANA zone; disclosed UTC fallback if omitted")
-    for name in ("topic", "region", "language", "request", "as-of"):
+    command.add_argument("--app-store-topic", help="Override the common topic; empty text selects Top Free")
+    for name in ("topic", "language", "request", "as-of"):
         command.add_argument("--" + name)
     command.add_argument("--max-records", type=int, default=100)
     command.add_argument("--out", required=True, help="Fresh/empty output directory")

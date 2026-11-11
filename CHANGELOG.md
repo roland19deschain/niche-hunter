@@ -2,7 +2,10 @@
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-12
+
 - Add credential-free App Store competitor snapshots and Google Trends Web Search via Trending Now RSS or a related-queries CSV.
+- Confirm the selected public source scopes on every skill run. Tier 1 uses separate US and UK App Store snapshots and US Google Trends RSS. Allow individual provider overrides.
 
 ## [0.8.0] - 2026-11-11
 

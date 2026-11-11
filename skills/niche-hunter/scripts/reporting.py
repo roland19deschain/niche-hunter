@@ -172,10 +172,12 @@ def build_report(result):
                 selected = [row for row in selected if any(m["window"]["start_at"] == start for m in row["measurements"])]
             selected = selected[:6]
         rows = []
+        storefronts = source.get("provenance", {}).get("storefronts", []) if provider == "app_store" else []
         for row in selected:
             metrics = [metric_text(metric, labels) for metric in row["measurements"]]
             metrics = [value for value in metrics if value]
-            rows.append({"id": row["id"], "signal": compact(row["title"], 110), "url": row["url"],
+            title = f"{row['source_id'].split(':', 1)[0]} · {row['title']}" if storefronts else row["title"]
+            rows.append({"id": row["id"], "signal": compact(title, 110), "url": row["url"],
                          "data": "; ".join(metrics[:3]) if metrics else compact(row["summary"], 160),
                          "measurements": row["measurements"]})
         actual = source.get("actual_window")
@@ -187,7 +189,11 @@ def build_report(result):
                 coverage = labels["unknown"] + " (" + actual.get("semantics", "unknown") + ")"
         elif not actual:
             coverage = labels["unknown"]
-        if provider in {"app_store", "google_trends"} and actual:
+        if storefronts:
+            scopes = [scope["region"] if scope["status"] == "partial"
+                      else f"{scope['region']} ({scope['status']})" for scope in storefronts]
+            coverage = " · ".join([labels["current_snapshot"] if actual else labels["unknown"], *scopes])
+        elif provider in {"app_store", "google_trends"} and actual:
             region = source["effective_filters"].get("region")
             if actual["semantics"] == "snapshot":
                 coverage = f"{labels['current_snapshot']} · {region} · {source['provenance']['retrieved_at']}"

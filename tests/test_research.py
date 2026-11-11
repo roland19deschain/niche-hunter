@@ -289,10 +289,11 @@ class ResearchTests(unittest.TestCase):
                 "csv_file": "related.csv"}))
             output = root / "run"
             subprocess.run([sys.executable, str(SCRIPT), "collect", "--providers", "google_trends", "--offline",
-                            "--topic", "notes", "--region", "GB", "--google-trends-file", str(descriptor),
+                            "--topic", "notes", "--region", "CA", "--google-trends-region", "", "--google-trends-file", str(descriptor),
                             "--out", str(output)], check=True, capture_output=True)
             source, = json.loads((output / "results.json").read_text())["sources"]
             self.assertEqual(source["usage"]["helper_http_attempts"], 0)
+            self.assertEqual(source["effective_filters"]["region"], "GB")
             self.assertEqual(source["actual_window"]["end_at"], "2026-10-27T00:00:00Z")
             row, = source["observations"]
             self.assertNotIn("gprop", row["url"])

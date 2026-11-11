@@ -70,12 +70,12 @@ def injected_limits():
     return limits
 
 
-def plan_calls(providers, imported, limits, imported_attempts=0, trends_csv=False):
+def plan_calls(providers, imported, limits, imported_attempts=0, trends_csv=False, region=None):
     live = set(providers) - set(imported)
     plan = dict.fromkeys(QUOTA_CAPS, 0)
     plan["imported_attempts"] = imported_attempts
     plan["signals_downloads"] = 2 if "chatgpt" in live else 0
-    plan.update(research.public_request_plan(live, trends_csv=trends_csv))
+    plan.update(research.public_request_plan(live, trends_csv=trends_csv, region=region))
     remaining = 10 - sum(plan.values())
     if "tiktok" in live:
         plan["tokconnect_credits"] = limits["tokconnect_credits"]
@@ -151,7 +151,7 @@ class DesktopResearch:
             if any(candidate.encode() in data for candidate in {key, quote(key, safe=""), quote_plus(key)}):
                 raise ValueError("Provider credentials are accepted only through the extension settings")
 
-    def status(self, providers, imported=()):
+    def status(self, providers, imported=(), region=None, google_trends_csv_supplied=False):
         selected = research.selected_providers(providers)
         checks = []
         for provider in selected:
@@ -160,6 +160,8 @@ class DesktopResearch:
                 route = "normalized_import"
             elif provider == "chatgpt":
                 route = "public_openai_signals"
+            elif provider == "google_trends" and google_trends_csv_supplied:
+                route = "google_trends_web_csv"
             elif provider in research.PUBLIC_ROUTES:
                 route = research.PUBLIC_ROUTES[provider]
             elif provider == "tiktok":
@@ -181,19 +183,24 @@ class DesktopResearch:
             checks.append({"provider": provider, "ready": not missing, "route": route, "missing": missing})
         return {"ready": all(item["ready"] for item in checks), "providers": checks,
                 "extension_version": self.extension_version, "owner_limits": dict(self.limits),
-                "maximum_planned_attempts": plan_calls(selected, imported, self.limits),
+                "maximum_planned_attempts": plan_calls(selected, imported, self.limits, region=region,
+                                                       trends_csv=google_trends_csv_supplied),
                 "checks": "Configuration only. Confirm current free allowances and account for any imported attempts before collection.",
                 "report_directory": str(self.root)}
 
     async def collect(self, providers, days, start, end, timezone, topic, region, language,
                       free_tokconnect_credits, free_serpapi_searches, youtube_search_calls,
-                      youtube_comment_units, max_records, imports, youtube_seed=None, google_trends_csv=None):
-        self.check_content([providers, start, end, timezone, topic, region, language, imports, youtube_seed, google_trends_csv])
+                      youtube_comment_units, max_records, imports, youtube_seed=None, google_trends_csv=None,
+                      app_store_region=None, app_store_topic=None, google_trends_region=None):
+        self.check_content([providers, start, end, timezone, topic, region, language, imports, youtube_seed,
+                            google_trends_csv, app_store_region, app_store_topic, google_trends_region])
         research.require(1 <= max_records <= 100, "Use 1 to 100 records per provider")
         research.require(topic is None or 0 < len(topic.strip()) <= 100, "Use a topic of at most 100 characters")
         args = SimpleNamespace(providers=providers, exclude_providers=None, days=days, start=start, end=end,
                                timezone=timezone, topic=topic, region=region, language=language,
-                               max_records=max_records, request=None, offline=False, signals_file=None)
+                               max_records=max_records, request=None, offline=False, signals_file=None,
+                               app_store_region=app_store_region, app_store_topic=app_store_topic,
+                               google_trends_region=google_trends_region)
         run = research.parameters(args, now())
         research.require(google_trends_csv is None or "google_trends" in run["providers"],
                          "Use google_trends_csv only with the Google Trends provider")
@@ -206,7 +213,7 @@ class DesktopResearch:
             research.require(source["status"] in {"ok", "partial"},
                              "Supply a usable import matching the requested topic")
             sources[provider] = source
-        status = self.status(providers, sources)
+        status = self.status(providers, sources, app_store_region or region, google_trends_csv is not None)
         if not status["ready"]:
             return {"error": "Configure every selected provider before collection.", **status}
 
@@ -219,7 +226,7 @@ class DesktopResearch:
                      "youtube_search_calls": youtube_search_calls, "youtube_comment_units": youtube_comment_units}
         available = {name: min(limit, max(0, confirmed[name])) for name, limit in self.limits.items()}
         planned = plan_calls(run["providers"], sources, available, imported_attempts,
-                             trends_csv=google_trends_csv is not None)
+                             trends_csv=google_trends_csv is not None, region=app_store_region or region)
         research.require(sum(planned.values()) <= 10, "The selected routes exceed the 10-attempt run budget")
         if youtube_seed is not None:
             research.require(live_youtube and not run["topic"], "Use youtube_seed only with live YouTube and no topic")
@@ -355,11 +362,12 @@ def make_server(desktop):
 
     @server.tool(annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=False))
     def niche_hunter_status(providers: str = ",".join(research.PROVIDERS),
-                            imported_providers: list[str] | None = None) -> dict[str, Any]:
+                            imported_providers: list[str] | None = None, region: str | None = None,
+                            app_store_region: str | None = None, google_trends_csv_supplied: bool = False) -> dict[str, Any]:
         """Check selected provider configuration without making network requests. List only imports already available."""
         try:
-            desktop.check_content([providers, imported_providers])
-            return desktop.status(providers, imported_providers or [])
+            desktop.check_content([providers, imported_providers, region, app_store_region])
+            return desktop.status(providers, imported_providers or [], app_store_region or region, google_trends_csv_supplied)
         except ValueError:
             return {"error": "Use a comma-separated list of implemented providers and no credentials."}
 
@@ -370,12 +378,14 @@ def make_server(desktop):
                                    free_tokconnect_credits: int = 0, free_serpapi_searches: int = 0,
                                    youtube_search_calls: int = 0, youtube_comment_units: int = 0, max_records: int = 20,
                                    imports: list[dict] | None = None, youtube_seed: str | None = None,
-                                   google_trends_csv: dict | None = None) -> dict[str, Any]:
+                                   google_trends_csv: dict | None = None, app_store_region: str | None = None,
+                                   app_store_topic: str | None = None, google_trends_region: str | None = None) -> dict[str, Any]:
         """Collect one run after preflight. Use an exclusive end and only confirmed free allowance figures."""
         try:
             return await desktop.collect(providers, days, start, end, timezone, topic, region, language,
                                          free_tokconnect_credits, free_serpapi_searches, youtube_search_calls, youtube_comment_units,
-                                         max_records, imports or [], youtube_seed, google_trends_csv)
+                                         max_records, imports or [], youtube_seed, google_trends_csv,
+                                         app_store_region, app_store_topic, google_trends_region)
         except (ValueError, KeyError, TypeError, OSError) as error:
             message = str(error) if isinstance(error, ValueError) else ""
             if not message.startswith(("Use ", "Confirm ", "Leave ", "The selected ", "Supply ",

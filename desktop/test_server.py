@@ -7,6 +7,7 @@ import unittest
 from datetime import timedelta
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
+from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlsplit
 
 import httpx
@@ -58,9 +59,11 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
             <pubDate>Sun, 01 Nov 2026 12:00:00 GMT</pubDate><ht:approx_traffic>1,000+</ht:approx_traffic>
             </item></channel></rss>'''
         with patch("public_sources.fetch", side_effect=[json.dumps({"results": [app]}).encode(), rss]) as fetch:
-            result = await self.collect(providers=selected, topic="notes", region="GB")
+            result = await self.collect(providers=selected, topic="notes", region="CA",
+                                        app_store_region="GB", google_trends_region="AU")
         self.assertEqual([urlsplit(call.args[0]).hostname for call in fetch.call_args_list],
                          ["itunes.apple.com", "trends.google.com"])
+        self.assertEqual([source["effective_filters"]["region"] for source in result["sources"]], ["GB", "AU"])
         budget = result["run"]["desktop_budget"]
         self.assertEqual(sum(budget["planned_attempts"].values()), 2)
         self.assertEqual(budget["planned_attempts"], budget["actual_attempts"])
@@ -70,6 +73,40 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Current snapshot", report["markdown"])
         self.assertIn("Rating: 4.50/5", report["markdown"])
         self.assertIn("1,000+", report["markdown"])
+
+    async def test_app_store_defaults_to_two_separate_storefronts_and_keeps_available_results(self):
+        self.desktop = server.DesktopResearch({}, self.root)
+        self.assertEqual(self.desktop.status("app_store")["maximum_planned_attempts"]["app_store_requests"], 2)
+        self.assertEqual(self.desktop.status("app_store", region="GB")["maximum_planned_attempts"]["app_store_requests"], 1)
+        chart = json.dumps({"feed": {"results": [{"id": "123", "name": "Shared listing"}]}}).encode()
+        for british_result in (chart, HTTPError("https://rss.marketingtools.apple.com/", 429, "limited", {}, None)):
+            with patch("public_sources.fetch", side_effect=[chart, british_result]) as fetch:
+                result = await self.collect(providers="app_store", topic=None)
+            self.assertEqual([urlsplit(call.args[0]).path.split("/")[3] for call in fetch.call_args_list], ["us", "gb"])
+            source, = result["sources"]
+            self.assertEqual(source["usage"]["helper_http_attempts"], 2)
+            self.assertEqual(source["status"], "partial")
+            report = self.desktop.finalize(result["run"]["id"], ANALYSIS, None)["markdown"]
+            self.assertIn("US · Shared listing", report)
+            if isinstance(british_result, HTTPError):
+                self.assertIn("GB (rate_limited)", report)
+                self.assertEqual(len(source["observations"]), 1)
+            else:
+                self.assertIn("GB · Shared listing", report)
+                self.assertEqual([row["measurements"][0]["value"] for row in source["observations"]], [1, 1])
+                self.assertEqual(len({row["id"] for row in source["observations"]}), 2)
+
+    async def test_tier_1_defaults_are_separate_and_top_free_can_override_a_common_topic(self):
+        self.desktop = server.DesktopResearch({}, self.root)
+        chart = json.dumps({"feed": {"results": [{"id": "123", "name": "Synthetic listing"}]}}).encode()
+        rss = b"<rss><channel/></rss>"
+        with patch("public_sources.fetch", side_effect=[chart, chart, rss]) as fetch:
+            result = await self.collect(providers="app_store,google_trends", region="CA", app_store_region="tier-1",
+                                        app_store_topic="", google_trends_region="tier-1")
+        self.assertEqual([urlsplit(call.args[0]).path.split("/")[3] for call in fetch.call_args_list[:2]], ["us", "gb"])
+        self.assertEqual(parse_qs(urlsplit(fetch.call_args_list[2].args[0]).query), {"geo": ["US"]})
+        self.assertEqual([source["effective_filters"]["topic"] for source in result["sources"]], [None, "synthetic"])
+        self.assertEqual(sum(result["run"]["desktop_budget"]["actual_attempts"].values()), 3)
 
     async def test_provider_numbers_cannot_bypass_owner_settings(self):
         self.desktop = server.DesktopResearch(KEYS, self.root)

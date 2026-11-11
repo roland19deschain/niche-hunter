@@ -9,7 +9,7 @@
 
 Niche Hunter is a research skill for discovering niches for new digital products and refining existing products. Its decision chain is **distribution channel → reachable market and need → product or product change → validation experiment**. It collects available signals, analyzes needs and alternatives, and explains which combinations deserve testing and where evidence is still missing.
 
-> **Release 0.8.0 · November 11, 2026.** Reports add next steps for each provider and an overall comparison when multiple providers are selected. OpenAI Signals tables show changes from the previous month in percentage points.
+> **Release 0.9.0 · November 12, 2026.** App Store and Google Trends Web Search join the default provider set. Each run confirms its public source scope and offers Tier 1.
 
 [Install for Codex](#install-for-codex) · [Install for Claude Code](#install-for-claude-code) · [API-key setup](#api-key-setup) · [Update](#update) · [Rollback](#rollback) · [Releases](https://github.com/roland19deschain/niche-hunter/releases) · [Changelog](./CHANGELOG.md)
 
@@ -80,7 +80,7 @@ Keys stay in private local settings outside Git/plugin files. Saving them makes 
 
 ## Claude Desktop pilot
 
-On an Apple silicon Mac, download both Desktop assets from the [0.8.0 release](https://github.com/roland19deschain/niche-hunter/releases/tag/0.8.0). Install the `.mcpb` extension and upload `niche-hunter-skill-0.8.0.zip` in Claude Desktop. Set provider keys and authorized per-run limits in the extension settings. The pilot uses the Mac for collection and report export and needs no terminal setup. See the [Claude Desktop installation and workflow](./skills/niche-hunter/references/claude-desktop.md).
+On an Apple silicon Mac, download both Desktop assets from the [0.9.0 release](https://github.com/roland19deschain/niche-hunter/releases/tag/0.9.0). Install the `.mcpb` extension and upload `niche-hunter-skill-0.9.0.zip` in Claude Desktop. Set provider keys and authorized per-run limits in the extension settings. The pilot uses the Mac for collection and report export and needs no terminal setup. See the [Claude Desktop installation and workflow](./skills/niche-hunter/references/claude-desktop.md).
 
 ## Install for Codex
 
@@ -213,9 +213,9 @@ Use discovery mode for new products. When asking about an existing product, prov
 
 The caller can select one or several providers. Unavailable sources remain visible in the coverage table. Reddit/TikTok collection uses permitted tools connected to the calling agent or a normalized import. The Python helper automatically collects the public ChatGPT aggregate source.
 
-### App Store and Google Trends Web Search (unreleased)
+### App Store and Google Trends Web Search
 
-Both sources run without accounts or API keys. `app_store` searches a topic in the selected country or reads Apple's current Top Free chart. `google_trends` reads the regional Trending Now RSS feed. To analyze a specific Web Search topic and period, supply the related-queries CSV instead of RSS. See the [public source routes](./skills/niche-hunter/references/providers.md#app-store-and-google-trends-web-search) for scope and CSV inputs.
+Both sources run without accounts or API keys. Each skill run confirms the App Store region and topic and the Google Trends region when those providers are selected. Tier 1 means separate US and UK App Store storefronts and US Google Trends RSS. Choose a different country per provider or use Top Free for a broad App Store run. To analyze a specific Web Search topic and period, supply the related-queries CSV. See the [public source routes](./skills/niche-hunter/references/providers.md#app-store-and-google-trends-web-search) for scope and CSV inputs.
 
 ### Reddit: problems, workarounds, and unmet demand
 
