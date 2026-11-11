@@ -37,6 +37,8 @@ The helper configures **Codex**, including compatible local desktop hosts, not e
 
 ## Readiness and shared allowance
 
+The balance-check workflow here applies to caller-managed collection. For the packaged Claude Desktop extension, use [its per-run limits](claude-desktop.md) and report quota errors from the provider.
+
 After configuration, inspect client connection status and the supported tool catalog without printing headers. Saving a key proves only that settings were written; HTTP success, tool access, available credits and useful data remain distinct checks. Do not perform a research call just to verify installation. Reuse this connection in later preflight checks; request setup again only if missing, invalid or expired.
 
 A recipient need not access the owner's account page. Verify the current shared allowance using an available non-research account facility or a nonsecret, current confirmation from the owner, including the authorized per-run cap. Do not assume an advertised initial balance, a separate allowance per recipient, or that key sharing grants paid-spending permission. Concurrent users consume the same provider pool. The default free pilot, $0 new purchases/top-ups and ten-call run cap remain; an unverified balance is a budget gap, not a reason to request the owner's password or login. Existing import contracts retain `free_credits_before`; do not relabel paid credits as free or widen spending implicitly.

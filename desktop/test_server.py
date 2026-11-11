@@ -2,6 +2,7 @@
 
 import io
 import json
+import os
 import tempfile
 import unittest
 from datetime import timedelta
@@ -36,13 +37,13 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
                 "max_records": 20, "imports": []}
         return await self.desktop.collect(**{**args, **changes})
 
-    async def test_preflight_blocks_default_reddit_and_missing_free_allowance(self):
+    async def test_preflight_blocks_default_reddit_and_explicit_zero_overrides(self):
         with patch.object(server, "collect_tokconnect", new_callable=AsyncMock) as tiktok:
             result = await self.collect(providers="reddit,tiktok,youtube,chatgpt")
             self.assertFalse(result["ready"])
-            with self.assertRaisesRegex(ValueError, "remaining free SerpApi"):
+            with self.assertRaisesRegex(ValueError, "exclude YouTube"):
                 await self.collect(free_serpapi_searches=0)
-            with self.assertRaisesRegex(ValueError, "quota unit"):
+            with self.assertRaisesRegex(ValueError, "exclude YouTube"):
                 await self.collect(youtube_comment_units=0)
             with self.assertRaisesRegex(ValueError, "credentials"):
                 await self.collect(topic=KEYS["tokconnect"])
@@ -109,7 +110,7 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(sum(result["run"]["desktop_budget"]["actual_attempts"].values()), 3)
 
     async def test_provider_numbers_cannot_bypass_owner_settings(self):
-        self.desktop = server.DesktopResearch(KEYS, self.root)
+        self.desktop = server.DesktopResearch(KEYS, self.root, {"youtube_comment_units": 0})
         with patch.object(server.youtube, "collect_capture") as collect:
             result = await self.collect(providers="youtube", youtube_comment_units=8)
         self.assertFalse(result["ready"])
@@ -119,6 +120,20 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["extension_version"], json.loads(server.MANIFEST.read_text())["version"])
         collect.assert_not_called()
         self.assertFalse(self.root.exists())
+
+    def test_blank_limit_settings_use_defaults_and_explicit_values_take_precedence(self):
+        with patch.dict(os.environ, {"NICHE_HUNTER_TOKCONNECT_CREDITS_PER_RUN": "",
+                                    "NICHE_HUNTER_SERPAPI_SEARCHES_PER_RUN": "0",
+                                    "NICHE_HUNTER_YOUTUBE_COMMENT_UNITS_PER_RUN": "8"}, clear=True):
+            limits = server.injected_limits()
+        self.assertEqual(limits, {"tokconnect_credits": 1, "serpapi_searches": 0,
+                                  "youtube_search_calls": 1, "youtube_comment_units": 8})
+        self.desktop = server.DesktopResearch(KEYS, self.root)
+        status = self.desktop.status(",".join(server.research.PROVIDERS), ["reddit"])
+        self.assertTrue(status["ready"])
+        self.assertEqual(status["limit_defaults"]["youtube_comment_units"], 6)
+        self.assertEqual(sum(status["maximum_planned_attempts"].values()), 10)
+        self.assertEqual(status["maximum_planned_attempts"]["youtube_comment_units"], 2)
 
     async def test_tokconnect_protocol_uses_one_fixed_bearer_authenticated_tool_call(self):
         calls = []
@@ -155,6 +170,7 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn(KEYS["tokconnect"], json.dumps(capture))
 
     async def test_normalized_live_sources_finalize_with_review_and_no_second_collection(self):
+        self.desktop = server.DesktopResearch(KEYS, self.root)
         published = server.research.iso(server.now() - timedelta(days=2))
         capture = {"schema_version": "0.1.0", "external_calls": 1, "new_paid_spending_usd": 0,
                    "calls": [{"tool": "demand_find_topics", "arguments": {"method": "search"},
@@ -190,11 +206,14 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
 
         with patch.object(server, "collect_tokconnect", new_callable=AsyncMock, return_value=capture) as tiktok:
             with patch.object(server.youtube, "Network", side_effect=fixture_network):
-                result = await self.collect(youtube_comment_units=8)
+                result = await self.collect(free_tokconnect_credits=None, free_serpapi_searches=None,
+                                            youtube_search_calls=None, youtube_comment_units=None)
             tik, yt = result["sources"]
             self.assertTrue(tik["topic_review_pending"])
-            self.assertEqual(yt["usage"]["external_calls"], 3)
+            self.assertEqual(yt["usage"]["external_calls"], 4)
             self.assertEqual([row["signal_type"] for row in yt["observations"]].count("comment"), 1)
+            self.assertNotIn("free_credits_before", tik["provenance"]["collection"])
+            self.assertNotIn("free_trends_calls_confirmed", yt["provenance"]["collection"])
             chosen, discarded = [row["id"] for row in tik["observations"]]
             with self.assertRaisesRegex(ValueError, "reviewed TikTok"):
                 self.desktop.finalize(result["run"]["id"], ANALYSIS, None)
@@ -203,15 +222,16 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
                 self.desktop.finalize(result["run"]["id"], invalid, [chosen])
             report = self.desktop.finalize(result["run"]["id"], ANALYSIS, [chosen])
         tiktok.assert_awaited_once()
-        self.assertEqual(len(requests), 3)
+        self.assertEqual(len(requests), 4)
         self.assertIn("Synthetic review only.", report["markdown"])
         pdf = PdfReader(report["files"]["report.pdf"])
         self.assertIn("Synthetic review only.", pdf.pages[0].extract_text())
         saved = Path(report["files"]["results.json"]).read_text()
         self.assertEqual([row["id"] for row in json.loads(saved)["sources"][0]["observations"]], [chosen])
         budget = json.loads(saved)["run"]["desktop_budget"]
-        self.assertEqual(budget["planned_attempts"]["youtube_comment_units"], 1)
-        self.assertEqual(budget["actual_attempts"]["youtube_comment_units"], 1)
+        self.assertEqual(budget["requested_overrides"], {})
+        self.assertEqual(budget["planned_attempts"]["youtube_comment_units"], 6)
+        self.assertEqual(budget["actual_attempts"]["youtube_comment_units"], 2)
         self.assertEqual(budget["actual_attempts"]["serpapi_searches"], 1)
         self.assertEqual(budget["actual_attempts"]["youtube_search_calls"], 1)
         self.assertEqual(json.loads(saved)["run"]["extension_version"], self.desktop.status("youtube")["extension_version"])

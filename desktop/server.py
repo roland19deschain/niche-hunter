@@ -38,11 +38,14 @@ ENV_KEYS = {
     "youtube_api_key": "NICHE_HUNTER_YOUTUBE_KEY",
     "serpapi_api_key": "NICHE_HUNTER_SERPAPI_KEY",
 }
-QUOTA_CAPS = {"tokconnect_credits": 1, "serpapi_searches": 1,
-              "youtube_search_calls": 1, "youtube_comment_units": 8}
 PROVIDER_QUOTAS = {"tiktok": ("tokconnect_credits",),
                    "youtube": ("serpapi_searches", "youtube_search_calls", "youtube_comment_units")}
 MANIFEST = Path(__file__).resolve().with_name("manifest.json")
+DESKTOP_MANIFEST = json.loads(MANIFEST.read_text(encoding="utf-8"))
+QUOTA_SETTINGS = {name: DESKTOP_MANIFEST["user_config"][f"{name}_per_run"]
+                  for names in PROVIDER_QUOTAS.values() for name in names}
+QUOTA_DEFAULTS = {name: config["default"] for name, config in QUOTA_SETTINGS.items()}
+QUOTA_CAPS = {name: config["max"] for name, config in QUOTA_SETTINGS.items()}
 TOKCONNECT_URL = "https://mcp.tokconnect.com/mcp"
 TOKCONNECT_TOOL = "demand_find_topics"
 RUN_ID = re.compile(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}")
@@ -66,7 +69,10 @@ def injected_limits():
     limits = {}
     for name, maximum in QUOTA_CAPS.items():
         value = os.environ.pop(f"NICHE_HUNTER_{name.upper()}_PER_RUN", "").strip()
-        limits[name] = int(value) if re.fullmatch(r"[0-9]", value) and int(value) <= maximum else 0
+        if not value:
+            limits[name] = QUOTA_DEFAULTS[name]
+        else:
+            limits[name] = int(value) if re.fullmatch(r"[0-9]", value) and int(value) <= maximum else 0
     return limits
 
 
@@ -142,8 +148,8 @@ class DesktopResearch:
     def __init__(self, keys, root, limits=None):
         self.keys = keys
         self.root = root
-        self.extension_version = json.loads(MANIFEST.read_text(encoding="utf-8"))["version"]
-        self.limits = {name: (limits or {}).get(name, 0) for name in QUOTA_CAPS}
+        self.extension_version = DESKTOP_MANIFEST["version"]
+        self.limits = {name: (limits or {}).get(name, default) for name, default in QUOTA_DEFAULTS.items()}
 
     def check_content(self, value):
         data = check_size(value)
@@ -183,9 +189,10 @@ class DesktopResearch:
             checks.append({"provider": provider, "ready": not missing, "route": route, "missing": missing})
         return {"ready": all(item["ready"] for item in checks), "providers": checks,
                 "extension_version": self.extension_version, "owner_limits": dict(self.limits),
+                "limit_defaults": dict(QUOTA_DEFAULTS),
                 "maximum_planned_attempts": plan_calls(selected, imported, self.limits, region=region,
                                                        trends_csv=google_trends_csv_supplied),
-                "checks": "Configuration only. Confirm current free allowances and account for any imported attempts before collection.",
+                "checks": "Configuration and per-run limits only. Provider balances are not checked here.",
                 "report_directory": str(self.root)}
 
     async def collect(self, providers, days, start, end, timezone, topic, region, language,
@@ -220,11 +227,17 @@ class DesktopResearch:
         live_tiktok = "tiktok" in run["providers"] and "tiktok" not in sources
         live_youtube = "youtube" in run["providers"] and "youtube" not in sources
         imported_attempts = sum(source["usage"]["external_calls"] for source in sources.values())
-        if live_tiktok:
-            research.require(free_tokconnect_credits >= 1, "Confirm at least one remaining free TokConnect credit")
-        confirmed = {"tokconnect_credits": free_tokconnect_credits, "serpapi_searches": free_serpapi_searches,
+        overrides = {"tokconnect_credits": free_tokconnect_credits, "serpapi_searches": free_serpapi_searches,
                      "youtube_search_calls": youtube_search_calls, "youtube_comment_units": youtube_comment_units}
-        available = {name: min(limit, max(0, confirmed[name])) for name, limit in self.limits.items()}
+        research.require(all(value is None or type(value) is int and value >= 0 for value in overrides.values()),
+                         "Use a nonnegative whole number for an explicit per-run override")
+        available = {name: limit if overrides[name] is None else min(limit, overrides[name])
+                     for name, limit in self.limits.items()}
+        if live_tiktok:
+            research.require(available["tokconnect_credits"] > 0, "Use a TikTok import or exclude TikTok when its limit is zero")
+        if live_youtube:
+            research.require(all(available[name] > 0 for name in PROVIDER_QUOTAS["youtube"]),
+                             "Use a YouTube import or exclude YouTube when one of its limits is zero")
         planned = plan_calls(run["providers"], sources, available, imported_attempts,
                              trends_csv=google_trends_csv is not None, region=app_store_region or region)
         research.require(sum(planned.values()) <= 10, "The selected routes exceed the 10-attempt run budget")
@@ -234,9 +247,6 @@ class DesktopResearch:
             research.require(0 < len(youtube_seed) <= 100 and "," not in youtube_seed,
                              "Use a single YouTube Trends seed of at most 100 characters")
         if live_youtube:
-            research.require(free_serpapi_searches >= 1, "Confirm at least one remaining free SerpApi search")
-            research.require(youtube_search_calls >= 1 and youtube_comment_units >= 1,
-                             "Confirm one available YouTube search call and at least one comment quota unit")
             research.require(planned["youtube_comment_units"] >= 1,
                              "Leave at least three attempts for YouTube Trends, videos and comments")
             youtube_calls = 2 + planned["youtube_comment_units"]
@@ -263,9 +273,7 @@ class DesktopResearch:
                     source["usage"]["external_calls"] = capture["external_calls"]
                     actual["tokconnect_credits"] = capture["external_calls"]
                     self.check_content(capture)
-                    if "status" not in capture:
-                        capture["free_credits_before"] = free_tokconnect_credits
-                    payload = tiktok.normalize(capture)
+                    payload = tiktok.normalize(capture, desktop_credit_limit=planned["tokconnect_credits"])
                     run["generated_at"] = research.iso(now())
                     source = research.collect_import(payload, {**run, "topic": None}, max_records, source)
                     source["provenance"]["mode"] = "live_desktop_collection"
@@ -287,6 +295,7 @@ class DesktopResearch:
                         actual["youtube_search_calls"] = sum(call["method"] == "search" for call in network.calls)
                         actual["youtube_comment_units"] = network.used - actual["serpapi_searches"] - actual["youtube_search_calls"]
                     self.check_content(capture)
+                    capture["collection"].pop("free_trends_calls_confirmed", None)
                     payload = youtube.normalize(capture, maximum=max_records)
                     run["generated_at"] = research.iso(now())
                     source = research.collect_import(payload, run, max_records, source)
@@ -304,7 +313,9 @@ class DesktopResearch:
         run["extension_version"] = self.extension_version
         run["desktop_budget"] = {"planned_attempts": planned, "actual_attempts": actual}
         if live_tiktok or live_youtube:
-            run["desktop_budget"]["allowance_source"] = "caller_reported"
+            run["desktop_budget"]["limit_source"] = "extension_settings"
+            run["desktop_budget"]["requested_overrides"] = {name: value for name, value in overrides.items()
+                                                               if value is not None}
         result = {"schema_version": research.VERSION, "run": run,
                   "catalog": {"version": research.CATALOG["version"],
                               "categories": [item["id"] for item in research.CATALOG["categories"]],
@@ -375,12 +386,13 @@ def make_server(desktop):
     async def niche_hunter_collect(providers: str = ",".join(research.PROVIDERS), days: int | None = None,
                                    start: str | None = None, end: str | None = None, timezone: str | None = None,
                                    topic: str | None = None, region: str | None = None, language: str | None = None,
-                                   free_tokconnect_credits: int = 0, free_serpapi_searches: int = 0,
-                                   youtube_search_calls: int = 0, youtube_comment_units: int = 0, max_records: int = 20,
+                                   free_tokconnect_credits: int | None = None, free_serpapi_searches: int | None = None,
+                                   youtube_search_calls: int | None = None, youtube_comment_units: int | None = None,
+                                   max_records: int = 20,
                                    imports: list[dict] | None = None, youtube_seed: str | None = None,
                                    google_trends_csv: dict | None = None, app_store_region: str | None = None,
                                    app_store_topic: str | None = None, google_trends_region: str | None = None) -> dict[str, Any]:
-        """Collect one run after preflight. Use an exclusive end and only confirmed free allowance figures."""
+        """Collect one run after preflight. Omit limit arguments unless the caller explicitly requests a lower cap."""
         try:
             return await desktop.collect(providers, days, start, end, timezone, topic, region, language,
                                          free_tokconnect_credits, free_serpapi_searches, youtube_search_calls, youtube_comment_units,

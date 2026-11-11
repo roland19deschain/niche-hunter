@@ -58,7 +58,7 @@ def metric(name, value, unit, kind, period, methodology):
     return result
 
 
-def normalize(capture, now=None):
+def normalize(capture, now=None, *, desktop_credit_limit=None):
     now = now or datetime.now(UTC)
     require(isinstance(capture, dict), "Capture must be an object")
     require(capture.get("schema_version") == VERSION, "Unsupported capture schema_version")
@@ -77,9 +77,14 @@ def normalize(capture, now=None):
         output.update(status=status, reason=REASONS[status])
         return output
     require(status is None, "Use a documented failure status or omit status")
-    balance = capture.get("free_credits_before")
-    require(type(balance) is int and balance >= total, "Verify enough free credits before all external attempts")
-    output["collection"]["free_credits_before"] = balance
+    if desktop_credit_limit is None:
+        balance = capture.get("free_credits_before")
+        require(type(balance) is int and balance >= total, "Verify enough free credits before all external attempts")
+        output["collection"]["free_credits_before"] = balance
+    else:
+        require(type(desktop_credit_limit) is int and total <= desktop_credit_limit <= 10,
+                "TokConnect attempts exceed the Desktop limit")
+        output["collection"]["desktop_credit_limit"] = desktop_credit_limit
     # Optional source metadata is not a prerequisite for caller-directed local processing.
     rights = capture.get("rights")
     if isinstance(rights, dict):

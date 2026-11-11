@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-12
+
+- Use built-in per-run limits for Claude Desktop. Blank settings use the defaults, saved overrides remain in effect, and ordinary runs skip numeric quota questions.
+
 ## [0.10.0] - 2026-11-12
 
 - Use the bundled PDF exporter for the Claude Desktop companion. Guide users to the extension settings when its tools are missing.
