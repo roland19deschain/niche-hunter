@@ -1,4 +1,4 @@
-"""Offline Google Trends YouTube Search normalization; no credentials or network."""
+"""Offline Google Trends normalization for YouTube and Web Search scopes."""
 
 import csv
 import hashlib
@@ -17,9 +17,12 @@ def digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:24]
 
 
-def query_url(query, period, region=None, category=0):
+def query_url(query, period, region=None, category=0, property_name="youtube"):
     end = timestamp(period["end_at"]) - timedelta(microseconds=1)
-    args = {"q": query, "gprop": "youtube", "date": timestamp(period["start_at"]).strftime("%Y-%m-%d") + " " + end.strftime("%Y-%m-%d")}
+    args = {"q": query}
+    if property_name == "youtube":
+        args["gprop"] = "youtube"
+    args["date"] = timestamp(period["start_at"]).strftime("%Y-%m-%d") + " " + end.strftime("%Y-%m-%d")
     if region:
         args["geo"] = region
     if category:
@@ -99,11 +102,12 @@ def metric(name, value, unit, kind, period, group, methodology, missing=None):
     return result
 
 
-def normalize_scopes(scopes, now):
+def normalize_scopes(scopes, now, property_name="youtube"):
     require(isinstance(scopes, list) and len(scopes) <= 20, "Need bounded Trends scopes")
     records, scope_receipts = {}, []
     for scope in scopes:
-        require(isinstance(scope, dict) and scope.get("property") == "youtube", "Trends property must be youtube")
+        require(property_name in {"youtube", "web"} and isinstance(scope, dict) and scope.get("property") == property_name,
+                f"Trends property must be {property_name}")
         period = scope["actual_window"]
         validate_window(period)
         require(period["start_at"] and period["end_at"] and period["semantics"] == "calendar",
@@ -118,19 +122,26 @@ def normalize_scopes(scopes, now):
         region, category = scope.get("region"), scope.get("category", 0)
         require(region is None or isinstance(region, str), "Invalid Trends region")
         require(type(category) is int and category >= 0, "Invalid Trends category")
-        source = scope.get("source_url") or query_url(seed, period, region, category)
-        secure_url(source, "youtube")
+        expected_url = query_url(seed, period, region, category, property_name)
+        source = scope.get("source_url") or expected_url
+        if property_name == "youtube":
+            secure_url(source, "youtube")
+        else:
+            require(source == expected_url, "Web Search must use the scoped Google Trends Explore link")
         require(source.startswith("https://trends.google.com/trends/explore?"), "Trends needs its public Explore link")
-        require(parse_qs(urlsplit(source).query) == parse_qs(urlsplit(query_url(seed, period, region, category)).query),
+        require(parse_qs(urlsplit(source).query) == parse_qs(urlsplit(expected_url).query),
                 "Trends source link must match its seed, property, dates, region and category")
         data = scope.get("related_queries")
         require(isinstance(data, dict) and any(key in data for key in ("top", "rising")), "Unknown related-queries schema")
-        group = "trends_scope:" + digest([seed.casefold(), region, category, period])
+        scope_key = [seed.casefold(), region, category, period]
+        if property_name == "web":
+            scope_key.insert(0, property_name)
+        group = "trends_scope:" + digest(scope_key)
         duration = timestamp(period["end_at"]) - timestamp(period["start_at"])
         baseline = window(timestamp(period["start_at"]) - duration, timestamp(period["start_at"]))
         delivery = scope.get("delivery", "caller_export")
         require(delivery in {"serpapi", "google_trends_csv", "caller_export", "synthetic_fixture"}, "Unknown Trends delivery")
-        scope_receipts.append({"id": group, "seed": seed, "property": "youtube", "actual_window": period,
+        scope_receipts.append({"id": group, "seed": seed, "property": property_name, "actual_window": period,
             "baseline_window": baseline, "region": region, "category": category, "source_url": source,
             "retrieved_at": retrieved, "delivery": delivery})
         for kind in ("rising", "top"):

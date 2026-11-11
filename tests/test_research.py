@@ -5,6 +5,7 @@ import copy
 import importlib.util
 import io
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -94,7 +95,7 @@ class ResearchTests(unittest.TestCase):
 
     def test_default_complete_days_and_explicit_14_days(self):
         run = self.run_params("--timezone", "UTC")
-        self.assertEqual(run["providers"], ["reddit", "tiktok", "chatgpt", "youtube"])
+        self.assertEqual(run["providers"], ["reddit", "tiktok", "chatgpt", "youtube", "app_store", "google_trends"])
         self.assertEqual(run["requested_window"]["start_at"], "2026-10-25T00:00:00Z")
         self.assertEqual(run["requested_window"]["end_at"], "2026-11-01T00:00:00Z")
         self.assertFalse(run["includes_partial_day"])
@@ -262,6 +263,42 @@ class ResearchTests(unittest.TestCase):
             path.write_text(json.dumps(payload))
             with patch.object(research, "urlopen", side_effect=AssertionError("unexpected network")), self.assertRaises(ValueError):
                 research.collect(args)
+
+    def test_public_providers_share_the_existing_attempt_ceiling(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            args = self.args("--providers", "reddit,chatgpt,app_store,google_trends", "--region", "GB",
+                             "--out", str(root / "run"))
+            payload = envelope(research.parameters(args, NOW))
+            payload["collection"]["external_calls"] = 7
+            imported = root / "reddit.json"
+            imported.write_text(json.dumps(payload))
+            args.import_file = [str(imported)]
+            with patch.object(research, "urlopen", side_effect=AssertionError("unexpected network")):
+                with self.assertRaisesRegex(ValueError, "10 external-call run budget"):
+                    research.collect(args)
+            self.assertFalse((root / "run").exists())
+
+    def test_web_search_csv_is_offline_and_keeps_the_export_scope(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "related.csv").write_text('TOP\n"notes, shared",100\n\nRISING\n"notes, shared",Breakout\n')
+            descriptor = root / "trends.json"
+            descriptor.write_text(json.dumps({"property": "web", "seed": "notes", "region": "GB", "category": 5,
+                "start": "2026-10-20", "end": "2026-10-27", "retrieved_at": "2026-10-28T12:00:00Z",
+                "csv_file": "related.csv"}))
+            output = root / "run"
+            subprocess.run([sys.executable, str(SCRIPT), "collect", "--providers", "google_trends", "--offline",
+                            "--topic", "notes", "--region", "GB", "--google-trends-file", str(descriptor),
+                            "--out", str(output)], check=True, capture_output=True)
+            source, = json.loads((output / "results.json").read_text())["sources"]
+            self.assertEqual(source["usage"]["helper_http_attempts"], 0)
+            self.assertEqual(source["actual_window"]["end_at"], "2026-10-27T00:00:00Z")
+            row, = source["observations"]
+            self.assertNotIn("gprop", row["url"])
+            self.assertIn("cat=5", row["url"])
+            self.assertEqual({m["name"]: m["value"] for m in row["measurements"]},
+                             {"trends_top_index": 100, "trends_breakout_lower_bound": 5000})
 
     def test_analysis_ids_and_finalize_without_recollection(self):
         with tempfile.TemporaryDirectory() as directory, contextlib.redirect_stdout(io.StringIO()):

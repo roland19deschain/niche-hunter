@@ -29,6 +29,7 @@ if not getattr(sys, "frozen", False):
 import research
 import tiktok
 import youtube
+from public_sources import collect_public
 from report_pdf import pdf_bytes
 
 
@@ -69,12 +70,13 @@ def injected_limits():
     return limits
 
 
-def plan_calls(providers, imported, limits, imported_attempts=0):
+def plan_calls(providers, imported, limits, imported_attempts=0, trends_csv=False):
     live = set(providers) - set(imported)
     plan = dict.fromkeys(QUOTA_CAPS, 0)
     plan["imported_attempts"] = imported_attempts
     plan["signals_downloads"] = 2 if "chatgpt" in live else 0
-    remaining = 10 - imported_attempts - plan["signals_downloads"]
+    plan.update(research.public_request_plan(live, trends_csv=trends_csv))
+    remaining = 10 - sum(plan.values())
     if "tiktok" in live:
         plan["tokconnect_credits"] = limits["tokconnect_credits"]
         remaining -= plan["tokconnect_credits"]
@@ -158,6 +160,8 @@ class DesktopResearch:
                 route = "normalized_import"
             elif provider == "chatgpt":
                 route = "public_openai_signals"
+            elif provider in research.PUBLIC_ROUTES:
+                route = research.PUBLIC_ROUTES[provider]
             elif provider == "tiktok":
                 route = "tokconnect_mcp"
                 if "tokconnect" not in self.keys:
@@ -183,14 +187,16 @@ class DesktopResearch:
 
     async def collect(self, providers, days, start, end, timezone, topic, region, language,
                       free_tokconnect_credits, free_serpapi_searches, youtube_search_calls,
-                      youtube_comment_units, max_records, imports, youtube_seed=None):
-        self.check_content([providers, start, end, timezone, topic, region, language, imports, youtube_seed])
+                      youtube_comment_units, max_records, imports, youtube_seed=None, google_trends_csv=None):
+        self.check_content([providers, start, end, timezone, topic, region, language, imports, youtube_seed, google_trends_csv])
         research.require(1 <= max_records <= 100, "Use 1 to 100 records per provider")
         research.require(topic is None or 0 < len(topic.strip()) <= 100, "Use a topic of at most 100 characters")
         args = SimpleNamespace(providers=providers, exclude_providers=None, days=days, start=start, end=end,
                                timezone=timezone, topic=topic, region=region, language=language,
                                max_records=max_records, request=None, offline=False, signals_file=None)
         run = research.parameters(args, now())
+        research.require(google_trends_csv is None or "google_trends" in run["providers"],
+                         "Use google_trends_csv only with the Google Trends provider")
         sources = {}
         for payload in imports:
             provider = payload.get("provider")
@@ -212,7 +218,8 @@ class DesktopResearch:
         confirmed = {"tokconnect_credits": free_tokconnect_credits, "serpapi_searches": free_serpapi_searches,
                      "youtube_search_calls": youtube_search_calls, "youtube_comment_units": youtube_comment_units}
         available = {name: min(limit, max(0, confirmed[name])) for name, limit in self.limits.items()}
-        planned = plan_calls(run["providers"], sources, available, imported_attempts)
+        planned = plan_calls(run["providers"], sources, available, imported_attempts,
+                             trends_csv=google_trends_csv is not None)
         research.require(sum(planned.values()) <= 10, "The selected routes exceed the 10-attempt run budget")
         if youtube_seed is not None:
             research.require(live_youtube and not run["topic"], "Use youtube_seed only with live YouTube and no topic")
@@ -241,6 +248,9 @@ class DesktopResearch:
             try:
                 if provider == "chatgpt":
                     source = await asyncio.to_thread(research.collect_signals, run, args, out, source)
+                elif provider in research.PUBLIC_ROUTES:
+                    source = await asyncio.to_thread(collect_public, run, source, google_trends_csv)
+                    actual[provider + "_requests"] = source["usage"]["helper_http_attempts"]
                 elif provider == "tiktok":
                     capture = await collect_tokconnect(self.keys["tokconnect"], run["topic"], max_records)
                     source["usage"]["external_calls"] = capture["external_calls"]
@@ -256,7 +266,7 @@ class DesktopResearch:
                         source["topic_review_pending"] = True
                     if source["status"] == "auth_required":
                         source["reason"] = "TokConnect rejected the extension key. Check it in Claude Desktop settings."
-                else:
+                elif provider == "youtube":
                     options = SimpleNamespace(max_calls=youtube_calls, max_queries=1, max_videos=2,
                                               free_trends_calls=planned["serpapi_searches"], max_trends_calls=1,
                                               trends_file=None, seed=[youtube_seed] if youtube_seed else None,
@@ -359,12 +369,13 @@ def make_server(desktop):
                                    topic: str | None = None, region: str | None = None, language: str | None = None,
                                    free_tokconnect_credits: int = 0, free_serpapi_searches: int = 0,
                                    youtube_search_calls: int = 0, youtube_comment_units: int = 0, max_records: int = 20,
-                                   imports: list[dict] | None = None, youtube_seed: str | None = None) -> dict[str, Any]:
+                                   imports: list[dict] | None = None, youtube_seed: str | None = None,
+                                   google_trends_csv: dict | None = None) -> dict[str, Any]:
         """Collect one run after preflight. Use an exclusive end and only confirmed free allowance figures."""
         try:
             return await desktop.collect(providers, days, start, end, timezone, topic, region, language,
                                          free_tokconnect_credits, free_serpapi_searches, youtube_search_calls, youtube_comment_units,
-                                         max_records, imports or [], youtube_seed)
+                                         max_records, imports or [], youtube_seed, google_trends_csv)
         except (ValueError, KeyError, TypeError, OSError) as error:
             message = str(error) if isinstance(error, ValueError) else ""
             if not message.startswith(("Use ", "Confirm ", "Leave ", "The selected ", "Supply ",

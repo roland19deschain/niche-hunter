@@ -1018,3 +1018,10 @@ The owner installed the 0.6.0 MCPB (release checksums matched) and entered the Y
 
 - The compact report keeps each provider's table, short conclusion and up to two useful next steps together. The optional `presentation.providers[].suggestions` field works with existing analyses and all output formats.
 - Multiple selected providers get an Overall section that explains the best supported channel/product combination to validate, if there is one. A single-provider report omits Overall and still shows supported product ideas. Coverage gaps stay visible; profitability requires separate validation.
+
+## 36. Public App Store and Google Trends Web Search (unreleased)
+
+- `app_store` uses one Apple Search API request for a caller-supplied topic and country, or one Top Free request for a broad country sample. Record current listing metadata and any list prices, aggregate ratings or feed positions returned. Preserve release and update dates separately from observation time.
+- `google_trends` uses one regional Trending Now RSS request or an offline Web Search related-queries CSV with explicit scope. RSS is a current sample with unknown measurement dates and optional title filtering. CSV stores the actual export period and keeps Top indices, Rising percentages and Breakout bounds distinct.
+- Both are registered for default and explicit runs in the shared CLI and Desktop tool. They need no account or key. Public attempts are included in the existing run budget. App Store and RSS snapshots are shown separately from the requested research window. The operating contract is in [providers.md](../skills/niche-hunter/references/providers.md#app-store-and-google-trends-web-search).
+- Live acceptance on November 12, 2026 used one request per route. Apple Search retained 18 app listings, Top Free retained 20 chart entries, and Google Trends RSS retained 10 trend groups. Each was labeled as a snapshot. The Web Search CSV and Desktop report checks used synthetic inputs.

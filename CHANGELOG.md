@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Add credential-free App Store competitor snapshots and Google Trends Web Search via Trending Now RSS or a related-queries CSV.
+
 ## [0.8.0] - 2026-11-11
 
 - Add up to two short next steps per provider. For runs with multiple providers, compare the available evidence and identify which channel and product to validate first when the evidence supports a preference.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Niche Hunter v0.1: bounded public Signals collection, permitted imports, reporting."""
+"""Niche Hunter: bounded public collection, permitted imports, and reporting."""
 
 import argparse
 import csv
@@ -27,6 +27,7 @@ UTC = timezone.utc
 SKILL_DIR = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[1]))
 CATALOG = json.loads((SKILL_DIR / "references/catalog.json").read_text())
 PROVIDERS = CATALOG["default_providers"]
+PUBLIC_ROUTES = {"app_store": "public_apple_catalog", "google_trends": "public_google_trends_rss"}
 SIGNALS_URL = "https://cdn.openai.com/signals/data-download-csv.zip"
 SIGNALS_PAGE = "https://openai.com/signals/data-download/"
 SIGNALS_TABLE = "share_of_messages_by_topic_month.csv"
@@ -86,6 +87,12 @@ def provider_scope(args):
     return chosen
 
 
+def public_request_plan(providers, offline=False, trends_csv=False):
+    return {provider + "_requests": int(provider in providers and not offline
+                                         and not (provider == "google_trends" and trends_csv))
+            for provider in PUBLIC_ROUTES}
+
+
 def readiness(args, configured=()):
     chosen = provider_scope(args)
     imports = {}
@@ -93,9 +100,13 @@ def readiness(args, configured=()):
         payload = load_json(Path(filename))
         provider = payload["provider"]
         require(provider in chosen, "Import supplied for an unselected provider")
+        require(provider in {"reddit", "tiktok", "youtube"}, "This provider does not accept a normalized import envelope")
         require(provider not in imports, "Supply one combined import envelope per provider")
         imports[provider] = payload
     require(not args.signals_file or "chatgpt" in chosen, "--signals-file needs selected chatgpt provider")
+    trends_file = args.google_trends_file
+    require(not trends_file or "google_trends" in chosen, "--google-trends-file needs selected google_trends provider")
+    require(not trends_file or Path(trends_file).is_file(), "Google Trends CSV descriptor does not exist")
     states = []
     for provider in chosen:
         supplied = imports.get(provider)
@@ -108,13 +119,20 @@ def readiness(args, configured=()):
             route = "public_release_replay"
         elif provider == "chatgpt" and not args.offline:
             route = "public_release_no_credentials"
-        elif provider in configured and provider != "chatgpt":
+        elif provider == "google_trends" and trends_file:
+            route = "google_trends_web_csv"
+        elif provider in PUBLIC_ROUTES and not args.offline:
+            route = PUBLIC_ROUTES[provider]
+        elif provider in configured and provider not in {*PUBLIC_ROUTES, "chatgpt"}:
             route = "client_connection_checked_by_caller"
         else:
             route = None
         states.append({"provider": provider, "ready": route is not None, "route": route,
                        "next_action": None if route else "Configure this selected provider or explicitly exclude it."})
-    return {"ready": all(item["ready"] for item in states), "providers": states}, imports
+    attempts = public_request_plan(chosen, args.offline, bool(trends_file))
+    attempts["signals_downloads"] = 2 if "chatgpt" in chosen and not args.offline and not args.signals_file else 0
+    return {"ready": all(item["ready"] for item in states), "providers": states,
+            "public_attempt_ceiling": attempts}, imports
 
 
 def preflight(args):
@@ -159,7 +177,8 @@ def parameters(args, now):
             "includes_partial_day": end.astimezone(zone).date() == now.astimezone(zone).date()
                 and end.astimezone(zone).time() != day_time(),
             "limits": {"max_records_per_provider": args.max_records,
-                       "max_helper_http_attempts": 2, "max_external_calls": 10,
+                       "max_helper_http_attempts": (2 if "chatgpt" in chosen else 0) + len(set(chosen) & PUBLIC_ROUTES.keys()),
+                       "max_external_calls": 10,
                        "new_paid_spending_usd": 0}, "offline": args.offline}
 
 
@@ -498,9 +517,10 @@ def collect(args):
     require(state["ready"] or args.diagnostic,
             "Configure every selected provider before collection, or explicitly exclude it: " +
             ", ".join(item["provider"] for item in state["providers"] if not item["ready"]))
-    reserve = 2 if "chatgpt" in run["providers"] and not args.offline and not args.signals_file else 0
-    require(sum(item["collection"]["external_calls"] for item in imports.values()) + reserve <= 10,
-            "Imports and reserved Signals attempts exceed the total 10 external-call run budget")
+    planned = state["public_attempt_ceiling"]
+    require(sum(item["collection"]["external_calls"] for item in imports.values()) + sum(planned.values()) <= 10,
+            "Imports and reserved public attempts exceed the total 10 external-call run budget")
+    run["public_attempt_ceiling"] = planned
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     require(not any(out.iterdir()), "Output directory must be empty; choose a fresh run directory")
@@ -510,6 +530,11 @@ def collect(args):
         try:
             if provider == "chatgpt":
                 source = collect_signals(run, args, out, source)
+            elif provider in PUBLIC_ROUTES:
+                from public_sources import collect_public
+
+                csv_input = Path(args.google_trends_file) if args.google_trends_file else None
+                source = collect_public(run, source, csv_input)
             elif provider in imports:
                 source = collect_import(imports[provider], run, args.max_records, source)
         except (ValueError, KeyError, TypeError, OSError, zipfile.BadZipFile, UnicodeError, csv.Error) as error:
@@ -615,12 +640,13 @@ def parser():
     scope.add_argument("--providers", default=",".join(PROVIDERS))
     scope.add_argument("--exclude-providers", default="")
     scope.add_argument("--signals-file")
+    scope.add_argument("--google-trends-file", help="Descriptor JSON for a local Google Trends Web Search related-queries CSV")
     scope.add_argument("--import-file", action="append", default=[])
     scope.add_argument("--offline", action="store_true")
     command = commands.add_parser("preflight", parents=[scope], help="Check selected provider/output configuration; no research calls")
     command.add_argument("--configured-providers", default="", help="Client connections actually checked by the calling agent")
     command.add_argument("--native-pdf", action="store_true", help="Calling client has a configured native PDF exporter")
-    command = commands.add_parser("collect", parents=[scope], help="Collect public Signals and/or normalized imports")
+    command = commands.add_parser("collect", parents=[scope], help="Collect selected public sources and/or permitted imports")
     command.add_argument("--diagnostic", action="store_true", help="Explicit diagnostic run allowing unconfigured providers; not normal research")
     command.add_argument("--days", type=int)
     command.add_argument("--start", help="ISO date in the selected time zone or timestamp with offset")

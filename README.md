@@ -211,7 +211,11 @@ Use discovery mode for new products. When asking about an existing product, prov
 
 ## Providers: Reddit + TikTok + ChatGPT + YouTube
 
-Version 0.5.0 registers **four providers**. The caller can select one or several; unavailable sources remain visible in the coverage table. Reddit/TikTok collection uses permitted tools connected to the calling agent or a normalized import. The Python helper automatically collects the public ChatGPT aggregate source.
+The caller can select one or several providers. Unavailable sources remain visible in the coverage table. Reddit/TikTok collection uses permitted tools connected to the calling agent or a normalized import. The Python helper automatically collects the public ChatGPT aggregate source.
+
+### App Store and Google Trends Web Search (unreleased)
+
+Both sources run without accounts or API keys. `app_store` searches a topic in the selected country or reads Apple's current Top Free chart. `google_trends` reads the regional Trending Now RSS feed. To analyze a specific Web Search topic and period, supply the related-queries CSV instead of RSS. See the [public source routes](./skills/niche-hunter/references/providers.md#app-store-and-google-trends-web-search) for scope and CSV inputs.
 
 ### Reddit: problems, workarounds, and unmet demand
 
@@ -429,7 +433,7 @@ $niche-hunter only TikTok for 14 days, topic: horoscopes
 $niche-hunter Reddit and ChatGPT for the last 7 days
 ```
 
-Use `/niche-hunter` with the same request in Claude Code. The agent extracts parameters, checks available permitted connections, calls the helper and adds evidence-linked analysis. Default providers are all four (`reddit,tiktok,chatgpt,youtube`); default period is seven complete days in the caller's time zone. Unsupported sources/windows are disclosed. The bounded [resource catalog](./skills/niche-hunter/references/catalog.json) supplies discovery seeds, not observed demand.
+Use `/niche-hunter` with the same request in Claude Code. The agent extracts parameters, checks available permitted connections, calls the helper and adds evidence-linked analysis. The default provider set comes from the [resource catalog](./skills/niche-hunter/references/catalog.json). The default period is seven complete days in the caller's time zone. The report discloses unavailable sources and differences in coverage.
 
 Direct helper commands from the repository root (Python 3.10+ with IANA time-zone data):
 

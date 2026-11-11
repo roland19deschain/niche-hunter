@@ -8,7 +8,8 @@ from itertools import zip_longest
 from urllib.parse import parse_qs, urlsplit
 from zoneinfo import ZoneInfo
 
-NAMES = {"tiktok": "TikTok", "reddit": "Reddit", "chatgpt": "ChatGPT / OpenAI Signals", "youtube": "YouTube"}
+NAMES = {"tiktok": "TikTok", "reddit": "Reddit", "chatgpt": "ChatGPT / OpenAI Signals", "youtube": "YouTube",
+         "app_store": "App Store", "google_trends": "Google Trends / Web Search"}
 THEME = {"background": "#1D1E20", "surface": "#191C1E", "surface_alt": "#24282B",
          "border": "#3A4145", "text": "#F3F5F7", "muted": "#A3ABB0",
          "accent": "#01A4FE", "cyan": "#5FCCE9", "teal": "#22C6AB",
@@ -24,7 +25,9 @@ LABELS = {"signal": "Signal", "data": "Observed data", "overall": "Overall", "su
           "trends_seed": "Trends seed", "retained_comments": "Retained comments",
           "comment_videos": "Videos with retained comments", "research_first": "Research first",
           "cited_comments": "Cited comments", "cited_videos": "Videos with cited comments",
-          "month_change": "Change vs prior month (pp)"}
+          "month_change": "Change vs prior month (pp)", "current_snapshot": "Current snapshot",
+          "app_list_price": "List price", "app_rating": "Rating", "app_rating_count": "Ratings",
+          "app_chart_position": "Top Free position", "trends_rss_traffic": "Searches (published bucket)"}
 
 
 def compact(value, limit=420):
@@ -76,6 +79,16 @@ def validate_presentation(analysis, result):
 
 def metric_text(metric, labels):
     value = metric["value"]
+    name = metric["name"]
+    if name in {"app_list_price", "app_rating", "app_rating_count", "app_chart_position", "trends_rss_traffic"}:
+        if value is None:
+            return labels[name] + ": " + labels["unknown"]
+        if name == "app_list_price":
+            return f"{labels[name]}: {value:g} {metric['unit']}"
+        if name == "app_rating":
+            return f"{labels[name]}: {value:.2f}/5"
+        suffix = "+" if name == "trends_rss_traffic" else ""
+        return f"{labels[name]}: {value:,}{suffix}"
     if value is None:
         missing_names = {"comment_like_count": "likes_snapshot", "trends_top_index": "trends_index",
                          "trends_growth_percent": "trends_growth"}
@@ -174,6 +187,13 @@ def build_report(result):
                 coverage = labels["unknown"] + " (" + actual.get("semantics", "unknown") + ")"
         elif not actual:
             coverage = labels["unknown"]
+        if provider in {"app_store", "google_trends"} and actual:
+            region = source["effective_filters"].get("region")
+            if actual["semantics"] == "snapshot":
+                coverage = f"{labels['current_snapshot']} · {region} · {source['provenance']['retrieved_at']}"
+            elif source["effective_filters"].get("topic"):
+                scope = f"{labels['trends_seed']}: {source['effective_filters']['topic']}"
+                coverage = ". ".join(filter(None, (coverage, scope, region)))
         if provider == "youtube" and observations:
             scopes = source.get("provenance", {}).get("collection", {}).get("trends_scopes", [])
             ranges = list(dict.fromkeys(scope["actual_window"]["start_at"][:10] + " / "
@@ -224,7 +244,7 @@ def build_report(result):
                                    "formatted_value": row["delta"], "evidence_id": row["id"]})
             if len(candidates) >= 2 and any(item["value"] for item in candidates):
                 section["chart"] = candidates
-        else:
+        elif provider != "app_store" and source.get("adapter") != "google_trends_rss":
             # Compare compatible observations only, using their original units and windows.
             candidates, signatures = [], set()
             for row in rows:

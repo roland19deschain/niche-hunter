@@ -48,6 +48,29 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
         tiktok.assert_not_called()
         self.assertFalse(self.root.exists())
 
+    async def test_public_sources_need_no_keys_and_report_attempts_and_snapshot_coverage(self):
+        self.desktop = server.DesktopResearch({}, self.root)
+        selected = "app_store,google_trends"
+        self.assertTrue(self.desktop.status(selected)["ready"])
+        app = {"trackId": 123, "trackName": "Synthetic notes", "sellerName": "Synthetic publisher",
+               "price": 0, "currency": "GBP", "averageUserRating": 4.5, "userRatingCount": 42}
+        rss = b'''<rss xmlns:ht="urn:fixture"><channel><item><title>Synthetic notes</title>
+            <pubDate>Sun, 01 Nov 2026 12:00:00 GMT</pubDate><ht:approx_traffic>1,000+</ht:approx_traffic>
+            </item></channel></rss>'''
+        with patch("public_sources.fetch", side_effect=[json.dumps({"results": [app]}).encode(), rss]) as fetch:
+            result = await self.collect(providers=selected, topic="notes", region="GB")
+        self.assertEqual([urlsplit(call.args[0]).hostname for call in fetch.call_args_list],
+                         ["itunes.apple.com", "trends.google.com"])
+        budget = result["run"]["desktop_budget"]
+        self.assertEqual(sum(budget["planned_attempts"].values()), 2)
+        self.assertEqual(budget["planned_attempts"], budget["actual_attempts"])
+        self.assertTrue(all(source["status"] == "partial" and source["actual_window"]["semantics"] == "snapshot"
+                            for source in result["sources"]))
+        report = self.desktop.finalize(result["run"]["id"], ANALYSIS, None)
+        self.assertIn("Current snapshot", report["markdown"])
+        self.assertIn("Rating: 4.50/5", report["markdown"])
+        self.assertIn("1,000+", report["markdown"])
+
     async def test_provider_numbers_cannot_bypass_owner_settings(self):
         self.desktop = server.DesktopResearch(KEYS, self.root)
         with patch.object(server.youtube, "collect_capture") as collect:

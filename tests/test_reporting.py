@@ -48,7 +48,7 @@ class ConfigurationTests(unittest.TestCase):
         self.assertTrue(status["ready"])
 
     def test_exclusions_apply_before_configuration_and_unknown_providers_are_not_substituted(self):
-        args = research.parser().parse_args(["preflight", "--exclude-providers", "reddit,tiktok,youtube", "--native-pdf"])
+        args = research.parser().parse_args(["preflight", "--exclude-providers", "reddit,tiktok,youtube,app_store,google_trends", "--native-pdf"])
         status, _ = research.readiness(args)
         self.assertEqual([item["provider"] for item in status["providers"]], ["chatgpt"])
         self.assertTrue(status["ready"])
