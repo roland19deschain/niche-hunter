@@ -1,6 +1,6 @@
 {
   "version": "0.1.0",
-  "default_providers": ["reddit", "tiktok", "chatgpt", "youtube", "app_store", "google_trends"],
+  "default_providers": ["reddit", "tiktok", "chatgpt", "youtube", "app_store", "google_trends", "meta"],
   "scope": "Bounded discovery seeds; not observed demand, a complete taxonomy, or validated source access. Community names and relevance must be checked through a permitted adapter.",
   "seed_language": "en",
   "region": null,
@@ -21,7 +21,8 @@
     "chatgpt": "https://openai.com/signals/data-download/",
     "youtube": "https://www.youtube.com/",
     "app_store": "https://apps.apple.com/",
-    "google_trends": "https://trends.google.com/trending"
+    "google_trends": "https://trends.google.com/trending",
+    "meta": "https://www.facebook.com/ads/library/"
   },
   "signals_topics": {
     "Multimedia": ["multimedia"],

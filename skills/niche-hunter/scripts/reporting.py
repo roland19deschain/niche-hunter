@@ -9,7 +9,7 @@ from urllib.parse import parse_qs, urlsplit
 from zoneinfo import ZoneInfo
 
 NAMES = {"tiktok": "TikTok", "reddit": "Reddit", "chatgpt": "ChatGPT / OpenAI Signals", "youtube": "YouTube",
-         "app_store": "App Store", "google_trends": "Google Trends / Web Search"}
+         "app_store": "App Store", "google_trends": "Google Trends / Web Search", "meta": "Meta Ad Library"}
 THEME = {"background": "#1D1E20", "surface": "#191C1E", "surface_alt": "#24282B",
          "border": "#3A4145", "text": "#F3F5F7", "muted": "#A3ABB0",
          "accent": "#01A4FE", "cyan": "#5FCCE9", "teal": "#22C6AB",
@@ -145,7 +145,7 @@ def trend_collection_scope(run, source, labels):
     provider = source["provider"]
     requested = run.get("public_scope", {}).get(provider, run)
     topic = requested.get("topic")
-    region = requested.get("region")
+    region = run.get("meta_region", requested.get("region")) if provider == "meta" else requested.get("region")
     effective = source.get("effective_filters", {})
     provenance = source.get("provenance", {})
     collection = provenance.get("collection") or {}
@@ -163,7 +163,7 @@ def trend_collection_scope(run, source, labels):
         if isinstance(calls, list):
             inputs.extend(call["arguments"].get("keyword") for call in calls
                           if isinstance(call, dict) and isinstance(call.get("arguments"), dict))
-    if provider == "reddit":
+    if provider in {"reddit", "meta"}:
         for field in ("search_terms", "communities"):
             if isinstance(collection.get(field), list):
                 inputs.extend(collection[field])
@@ -270,6 +270,16 @@ def build_report(result):
             else:
                 details.append(labels["no_comments"])
             coverage = ". ".join(details)
+        if provider == "meta":
+            collection = source.get("provenance", {}).get("collection", {})
+            counts = collection.get("new_ads_in_sample")
+            if isinstance(counts, dict) and all(type(counts.get(key)) is int for key in ("current", "baseline")):
+                detail = f"{counts['current']} current-period starts in the sample"
+                if collection.get("comparison_requested"):
+                    detail += f"; {counts['baseline']} baseline starts in the sample"
+                    if not collection.get("comparable_periods"):
+                        detail += "; incomplete comparison"
+                coverage = ". ".join(filter(None, (coverage, detail)))
         conclusion = custom.get("conclusion")
         if not conclusion and len(sources) == 1 and observations and not trend_hunt:
             conclusion = analysis.get("summary")

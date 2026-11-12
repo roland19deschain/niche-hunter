@@ -136,11 +136,72 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(limits, {"tokconnect_credits": 1, "serpapi_searches": 0,
                                   "youtube_search_calls": 1, "youtube_comment_units": 8})
         self.desktop = server.DesktopResearch(KEYS, self.root)
-        status = self.desktop.status(",".join(server.research.PROVIDERS), ["reddit"])
+        status = self.desktop.status(",".join(server.research.PROVIDERS), ["reddit", "meta"])
         self.assertTrue(status["ready"])
         self.assertEqual(status["limit_defaults"]["youtube_comment_units"], 6)
         self.assertEqual(sum(status["maximum_planned_attempts"].values()), 10)
         self.assertEqual(status["maximum_planned_attempts"]["youtube_comment_units"], 2)
+
+    async def test_meta_requires_private_token_and_passes_independent_region_and_mode(self):
+        self.assertFalse(self.desktop.status("meta")["ready"])
+        with patch.object(server.meta_ads, "fetch", side_effect=AssertionError("unexpected provider call")):
+            blocked = await self.collect(providers="meta")
+        self.assertFalse(blocked["ready"])
+        self.assertFalse(self.root.exists())
+        key = "synthetic-meta-access-token"
+        self.desktop = server.DesktopResearch({"meta_token": key}, self.root)
+        started = server.research.iso(server.now() - timedelta(days=2))
+        with patch.object(server.meta_ads, "fetch", return_value={"data": [{"id": "123", "page_name": "Synthetic ad",
+                "ad_delivery_start_time": started, "ad_creative_bodies": ["Fixture copy"]}]}) as fetch:
+            result = await self.collect(providers="meta", region="US", meta_region="IE", hunt_mode="trend_hunt")
+        source, = result["sources"]
+        evidence, = source["observations"]
+        self.assertEqual(result["run"]["desktop_budget"]["actual_attempts"]["meta_requests"], 1)
+        self.assertEqual(parse_qs(urlsplit(fetch.call_args.args[0].full_url).query)["ad_reached_countries"], ['["IE"]'])
+        self.assertTrue(source["provenance"]["collection"]["comparison_requested"])
+        report = self.desktop.finalize(result["run"]["id"], {**ANALYSIS, "presentation": {"providers": [
+            {"provider": "meta", "conclusion": "One creative in the sample.", "evidence_ids": [evidence["id"]]}]}}, None)
+        self.assertIn("Meta Ad Library", report["markdown"])
+        self.assertIn("Fixture copy", report["markdown"])
+        self.assertNotIn(key, json.dumps(result))
+
+    def test_meta_rejects_unsupported_markets_and_keeps_baseline_and_paging_separate(self):
+        run = {"topic": "notes", "region": None, "timezone": "UTC", "hunt_mode": "trend_hunt",
+               "requested_window": {"start_at": "2026-10-24T00:00:00Z", "end_at": "2026-10-31T00:00:00Z"},
+               "baseline_window": {"start_at": "2026-10-17T00:00:00Z"}}
+        key = "synthetic-meta-token"
+        response = {"data": [
+            {"id": "123", "page_name": "Synthetic advertiser", "ad_delivery_start_time": "2026-10-24T00:00:00Z",
+             "ad_creative_bodies": ["Echo " + key]},
+            {"id": "124", "page_name": "Synthetic advertiser", "ad_delivery_start_time": "2026-10-23T00:00:00Z"},
+            {"id": "125", "ad_delivery_start_time": "2026-10-31T00:00:00Z"},
+        ], "paging": {"next": "https://example.org/?access_token=" + key}}
+        with patch.object(server.meta_ads, "fetch", return_value=response) as fetch:
+            blocked = server.meta_ads.collect(run, key, region="US")
+            self.assertEqual(blocked["status"], "not_supported")
+            fetch.assert_not_called()
+            result = server.meta_ads.collect(run, key, region="tier-1", clock=lambda: server.now())
+        fetch.assert_called_once()
+        collection = result["collection"]
+        self.assertEqual(collection["reached_countries"], ["DE", "FR", "IE", "NL"])
+        self.assertEqual(collection["new_ads_in_sample"], {"current": 1, "baseline": 1})
+        self.assertFalse(collection["comparable_periods"])
+        self.assertNotIn(key, json.dumps(result))
+        self.assertNotIn("example.org", json.dumps(result))
+
+    def test_meta_quota_and_token_errors_are_reported_without_provider_text(self):
+        run = {"topic": "notes", "region": "IE", "timezone": "UTC", "hunt_mode": "product_hunt",
+               "requested_window": {"start_at": "2026-10-24T00:00:00Z", "end_at": "2026-10-31T00:00:00Z"},
+               "baseline_window": {"start_at": "2026-10-17T00:00:00Z"}}
+        for code, status in ((190, "auth_required"), (613, "rate_limited")):
+            with self.subTest(code=code), patch.object(server.meta_ads, "fetch",
+                    return_value={"error": {"code": code, "message": "Do not retain this provider text"}}) as fetch:
+                result = server.meta_ads.collect(run, "synthetic-meta-token")
+                self.assertEqual(result["status"], status)
+                self.assertEqual(result["collection"]["external_calls"], 1)
+                self.assertEqual(result["collection"]["delivery_date_min"], "2026-10-24")
+                self.assertNotIn("Do not retain", json.dumps(result))
+                fetch.assert_called_once()
 
     async def test_tokconnect_protocol_uses_one_fixed_bearer_authenticated_tool_call(self):
         calls = []

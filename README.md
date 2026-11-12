@@ -257,6 +257,10 @@ Source and license: [OpenAI Signals, CC BY 4.0](https://openai.com/signals/data-
 
 The YouTube adapter combines Google Trends **YouTube Search Top/Rising** with relevant videos and comments originally published in the selected interval. It can discover fresh comments on older videos and keeps query → video → comment links. Current likes order only the fetched sample; source-relative indices and growth labels retain their scope. The caller chooses automatic SerpApi delivery or a native Trends CSV; Google Data API supplies public videos/comments. No absolute searches, historical likes or global maximum is claimed. Live authentication, quotas and intended analytics acceptance remain pending. [Portable reference](./skills/niche-hunter/references/youtube.md).
 
+### Meta Ad Library (unreleased)
+
+Select `meta` to sample ads and compare advertiser offers and creative copy in either mode. Meta Tier 1 covers Germany, France, Ireland and the Netherlands. Use an authorized token in Claude Desktop's private extension settings or the direct collector's hidden setup prompt. See the [Meta provider guide](./skills/niche-hunter/references/meta.md).
+
 ### Product Hunt and Trend Hunt
 
 At the start of a run, Niche Hunter asks which mode to use. **Product Hunt** looks for a new product idea or refinements to an existing one. **Trend Hunt** reports current signals and changes by provider, for a supplied topic or a broad sample. It includes what was searched, observed data, and a short conclusion for each provider. Both modes use the same collection routes and limits.

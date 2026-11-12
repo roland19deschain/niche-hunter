@@ -16,11 +16,11 @@ MARKETPLACES = (".agents/plugins/marketplace.json", ".claude-plugin/marketplace.
 PACKAGE_FILES = (*MANIFESTS, *MARKETPLACES, "mcp.json", ".claude-plugin/mcp.json",
                  "README.md", "LICENSE", "PRIVACY.md", "CHANGELOG.md", "avatar.png")
 SKILL_FILES = ("SKILL.md", "scripts/research.py", "scripts/tiktok.py", "scripts/youtube.py",
-               "scripts/youtube_trends.py", "scripts/public_sources.py", "scripts/setup_access.py", "scripts/reporting.py", "scripts/report_pdf.py",
+               "scripts/youtube_trends.py", "scripts/public_sources.py", "scripts/meta_ads.py", "scripts/setup_access.py", "scripts/reporting.py", "scripts/report_pdf.py",
                "requirements-pdf.txt", "assets/fonts/NotoSans-Regular.ttf", "assets/fonts/NotoSans-Bold.ttf",
                "assets/fonts/OFL.txt", "assets/fonts/NOTICE.md", "references/catalog.json",
                "references/providers.md", "references/contracts.md", "references/analysis.md",
-               "references/tiktok.md", "references/youtube.md", "references/access.md", "references/claude-desktop.md",
+               "references/tiktok.md", "references/youtube.md", "references/meta.md", "references/access.md", "references/claude-desktop.md",
                "references/reporting.md", "agents/openai.yaml")
 
 

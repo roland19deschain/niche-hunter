@@ -43,12 +43,12 @@ class ConfigurationTests(unittest.TestCase):
         args = research.parser().parse_args(["preflight", "--native-pdf"])
         with patch.object(research, "urlopen", side_effect=AssertionError("preflight must not collect")):
             status, _ = research.readiness(args)
-            self.assertEqual([item["provider"] for item in status["providers"] if not item["ready"]], ["reddit", "tiktok", "youtube"])
-            status, _ = research.readiness(args, ["reddit", "tiktok", "youtube"])
+            self.assertEqual([item["provider"] for item in status["providers"] if not item["ready"]], ["reddit", "tiktok", "youtube", "meta"])
+            status, _ = research.readiness(args, ["reddit", "tiktok", "youtube", "meta"])
         self.assertTrue(status["ready"])
 
     def test_exclusions_apply_before_configuration_and_unknown_providers_are_not_substituted(self):
-        args = research.parser().parse_args(["preflight", "--exclude-providers", "reddit,tiktok,youtube,app_store,google_trends", "--native-pdf"])
+        args = research.parser().parse_args(["preflight", "--exclude-providers", "reddit,tiktok,youtube,app_store,google_trends,meta", "--native-pdf"])
         status, _ = research.readiness(args)
         self.assertEqual([item["provider"] for item in status["providers"]], ["chatgpt"])
         self.assertTrue(status["ready"])

@@ -95,7 +95,7 @@ class ResearchTests(unittest.TestCase):
 
     def test_default_complete_days_and_explicit_14_days(self):
         run = self.run_params("--timezone", "UTC")
-        self.assertEqual(run["providers"], ["reddit", "tiktok", "chatgpt", "youtube", "app_store", "google_trends"])
+        self.assertEqual(run["providers"], ["reddit", "tiktok", "chatgpt", "youtube", "app_store", "google_trends", "meta"])
         self.assertEqual(run["requested_window"]["start_at"], "2026-10-25T00:00:00Z")
         self.assertEqual(run["requested_window"]["end_at"], "2026-11-01T00:00:00Z")
         self.assertFalse(run["includes_partial_day"])
@@ -300,6 +300,17 @@ class ResearchTests(unittest.TestCase):
             self.assertIn("cat=5", row["url"])
             self.assertEqual({m["name"]: m["value"] for m in row["measurements"]},
                              {"trends_top_index": 100, "trends_breakout_lower_bound": 5000})
+
+    def test_meta_import_rejects_credential_bearing_snapshot_links(self):
+        run = self.run_params("--providers", "meta")
+        payload = envelope(run)
+        payload["provider"] = "meta"
+        row = payload["observations"][0]
+        row.update(signal_type="ad_creative", url="https://www.facebook.com/ads/library/?id=123&access_token=synthetic")
+        with self.assertRaisesRegex(ValueError, "containing only its ID"):
+            research.collect_import(payload, run, 20)
+        row["url"] = "https://www.facebook.com/ads/library/?id=123"
+        self.assertEqual(len(research.collect_import(payload, run, 20)["observations"]), 1)
 
     def test_analysis_ids_and_finalize_without_recollection(self):
         with tempfile.TemporaryDirectory() as directory, contextlib.redirect_stdout(io.StringIO()):

@@ -27,6 +27,7 @@ if not getattr(sys, "frozen", False):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "skills/niche-hunter/scripts"))
 
 import research
+import meta_ads
 import tiktok
 import youtube
 from public_sources import collect_public
@@ -37,7 +38,9 @@ ENV_KEYS = {
     "tokconnect": "NICHE_HUNTER_TOKCONNECT_KEY",
     "youtube_api_key": "NICHE_HUNTER_YOUTUBE_KEY",
     "serpapi_api_key": "NICHE_HUNTER_SERPAPI_KEY",
+    "meta_token": "NICHE_HUNTER_META_TOKEN",
 }
+PROVIDER_KEY = re.compile(r"[A-Za-z0-9._~+/-]{8,500}=*")
 PROVIDER_QUOTAS = {"tiktok": ("tokconnect_credits",),
                    "youtube": ("serpapi_searches", "youtube_search_calls", "youtube_comment_units")}
 MANIFEST = Path(__file__).resolve().with_name("manifest.json")
@@ -60,7 +63,7 @@ def injected_keys():
     keys = {}
     for name, variable in ENV_KEYS.items():
         value = os.environ.pop(variable, "").strip()
-        if re.fullmatch(r"[A-Za-z0-9._~+/-]{8,500}=*", value):
+        if (meta_ads.TOKEN if name == "meta_token" else PROVIDER_KEY).fullmatch(value):
             keys[name] = value
     return keys
 
@@ -81,6 +84,7 @@ def plan_calls(providers, imported, limits, imported_attempts=0, trends_csv=Fals
     plan = dict.fromkeys(QUOTA_CAPS, 0)
     plan["imported_attempts"] = imported_attempts
     plan["signals_downloads"] = 2 if "chatgpt" in live else 0
+    plan["meta_requests"] = int("meta" in live)
     plan.update(research.public_request_plan(live, trends_csv=trends_csv, region=region))
     remaining = 10 - sum(plan.values())
     if "tiktok" in live:
@@ -180,6 +184,10 @@ class DesktopResearch:
                     missing.append("YouTube Data API v3 key")
                 if "serpapi_api_key" not in self.keys:
                     missing.append("SerpApi API key")
+            elif provider == "meta":
+                route = "meta_ads_archive"
+                if "meta_token" not in self.keys:
+                    missing.append("Meta Ad Library access token")
             else:
                 route = "normalized_import"
                 missing.append("permitted Reddit import")
@@ -198,17 +206,20 @@ class DesktopResearch:
     async def collect(self, providers, days, start, end, timezone, topic, region, language,
                       free_tokconnect_credits, free_serpapi_searches, youtube_search_calls,
                       youtube_comment_units, max_records, imports, youtube_seed=None, google_trends_csv=None,
-                      app_store_region=None, app_store_topic=None, google_trends_region=None, hunt_mode="product_hunt"):
+                      app_store_region=None, app_store_topic=None, google_trends_region=None, hunt_mode="product_hunt",
+                      meta_region=None):
         self.check_content([providers, start, end, timezone, topic, region, language, imports, youtube_seed,
-                            google_trends_csv, app_store_region, app_store_topic, google_trends_region, hunt_mode])
+                            google_trends_csv, app_store_region, app_store_topic, google_trends_region, hunt_mode, meta_region])
         research.require(1 <= max_records <= 100, "Use 1 to 100 records per provider")
         research.require(topic is None or 0 < len(topic.strip()) <= 100, "Use a topic of at most 100 characters")
         args = SimpleNamespace(providers=providers, exclude_providers=None, days=days, start=start, end=end,
                                timezone=timezone, topic=topic, region=region, language=language,
                                max_records=max_records, request=None, offline=False, signals_file=None,
                                app_store_region=app_store_region, app_store_topic=app_store_topic,
-                               google_trends_region=google_trends_region, hunt_mode=hunt_mode)
+                               google_trends_region=google_trends_region, hunt_mode=hunt_mode, meta_region=meta_region)
         run = research.parameters(args, now())
+        if "meta" not in run["providers"]:
+            research.require(meta_region is None, "Use meta_region only with the Meta provider")
         research.require(google_trends_csv is None or "google_trends" in run["providers"],
                          "Use google_trends_csv only with the Google Trends provider")
         sources = {}
@@ -268,6 +279,14 @@ class DesktopResearch:
                 elif provider in research.PUBLIC_ROUTES:
                     source = await asyncio.to_thread(collect_public, run, source, google_trends_csv)
                     actual[provider + "_requests"] = source["usage"]["helper_http_attempts"]
+                elif provider == "meta":
+                    payload = await asyncio.to_thread(meta_ads.collect, run, self.keys["meta_token"],
+                                                      region=run["meta_region"], maximum=max_records)
+                    actual["meta_requests"] = source["usage"]["external_calls"] = payload["collection"]["external_calls"]
+                    self.check_content(payload)
+                    run["generated_at"] = research.iso(now())
+                    source = research.collect_import(payload, run, max_records, source)
+                    source["provenance"]["mode"] = "live_desktop_collection"
                 elif provider == "tiktok":
                     capture = await collect_tokconnect(self.keys["tokconnect"], run["topic"], max_records)
                     source["usage"]["external_calls"] = capture["external_calls"]
@@ -392,13 +411,14 @@ def make_server(desktop):
                                    imports: list[dict] | None = None, youtube_seed: str | None = None,
                                    google_trends_csv: dict | None = None, app_store_region: str | None = None,
                                    app_store_topic: str | None = None, google_trends_region: str | None = None,
-                                   hunt_mode: Literal["product_hunt", "trend_hunt"] = "product_hunt") -> dict[str, Any]:
+                                   hunt_mode: Literal["product_hunt", "trend_hunt"] = "product_hunt",
+                                   meta_region: str | None = None) -> dict[str, Any]:
         """Collect one run after preflight. Omit limit arguments unless the caller explicitly requests a lower cap."""
         try:
             return await desktop.collect(providers, days, start, end, timezone, topic, region, language,
                                          free_tokconnect_credits, free_serpapi_searches, youtube_search_calls, youtube_comment_units,
                                          max_records, imports or [], youtube_seed, google_trends_csv,
-                                         app_store_region, app_store_topic, google_trends_region, hunt_mode)
+                                         app_store_region, app_store_topic, google_trends_region, hunt_mode, meta_region)
         except (ValueError, KeyError, TypeError, OSError) as error:
             message = str(error) if isinstance(error, ValueError) else ""
             if not message.startswith(("Use ", "Confirm ", "Leave ", "The selected ", "Supply ",

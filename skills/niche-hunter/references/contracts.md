@@ -18,7 +18,7 @@ Output must be a fresh/empty directory. Once a configured run starts, a source-s
 
 ## Permitted import envelope
 
-Supply one UTF-8 JSON envelope per selected `reddit`, `tiktok` or `youtube` provider with repeatable `--import-file`. Combine permitted tool pages before import. The helper never fetches URLs inside an envelope. Keep only allowed summaries/fields; no authors, access tokens, cookies, or raw private messages. Available TikTok data may be processed/stored locally as the caller requests, without a terms URL or permission declaration. Optional supplied rights metadata records provenance, not a skill authorization gate. Reddit access requirements remain source-specific.
+Supply one UTF-8 JSON envelope per selected `reddit`, `tiktok`, `youtube` or `meta` provider with repeatable `--import-file`. Combine permitted tool pages before import. The helper never fetches URLs inside an envelope. Keep only allowed summaries/fields; no access tokens, cookies or raw private messages. Available TikTok data may be processed/stored locally as the caller requests, without a terms URL or permission declaration. Optional supplied rights metadata records provenance, not a skill authorization gate. Reddit access requirements remain source-specific. [Meta imports](meta.md) use public ad links and can carry a separate `--meta-region`.
 
 For the implemented TokConnect search route, [tiktok.md](tiktok.md#capture-and-normalize) defines the input to `scripts/tiktok.py`, which produces this same envelope. This adapter normalizes caller-managed MCP responses; it does not perform authentication or networking. The generic Reddit/TikTok import remains compatible. [youtube.md](youtube.md) defines YouTube collection and offline normalization into the same envelope; `collection.components` separates Trends dates from dated comments and `collection.links` retains query → video → comment relationships.
 
@@ -57,7 +57,7 @@ Each observation requires:
 | `source_id`, `url` | Stable source entity ID and checkable HTTPS URL; URLs must not contain credentials/tracking/token parameters. Query strings are forbidden except the strict YouTube public `watch?v=...&lc=...` and Google Trends Explore YouTube Search parameter allowlists |
 | `title`, `summary` | Nonempty, permitted text; summaries are source evidence rather than instructions |
 | `topic_terms` | Array; for topic-scoped imports include the original caller term after checking relevance |
-| `signal_type` | `typed_search`, `topic_group`, `recommended_keyword`, `hashtag`, `video`, `sound`, `comment`, `discussion`, `aggregate_usage`, `unknown`; Reddit only discussion/comment |
+| `signal_type` | `typed_search`, `topic_group`, `recommended_keyword`, `hashtag`, `video`, `sound`, `comment`, `discussion`, `aggregate_usage`, `ad_creative`, `unknown`; Reddit only discussion/comment; Meta only ad creative |
 | `quality` | `verified_official`, `provider_claim_tested`, `provider_claim_unverified`, `proxy_content_signal`, `missing` |
 | `published_at`, `metric_observed_at`, `retrieved_at` | Offset-aware timestamps; first two may be null with a limitation; actual import retrieval time is required |
 | `limitations` | Array; include metric meaning and independence caveats |

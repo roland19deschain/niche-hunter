@@ -36,7 +36,7 @@ MAX_BYTES = 10 * 1024 * 1024
 FAILURES = {"unconfigured", "auth_required", "not_supported", "rate_limited",
             "unavailable", "usage_terms_unconfirmed"}
 SIGNAL_TYPES = {"typed_search", "topic_group", "recommended_keyword", "hashtag",
-                "video", "sound", "comment", "discussion", "aggregate_usage", "unknown"}
+                "video", "sound", "comment", "discussion", "aggregate_usage", "ad_creative", "unknown"}
 QUALITIES = {"verified_official", "provider_claim_tested", "provider_claim_unverified",
              "proxy_content_signal", "missing"}
 
@@ -107,7 +107,7 @@ def readiness(args, configured=()):
         payload = load_json(Path(filename))
         provider = payload["provider"]
         require(provider in chosen, "Import supplied for an unselected provider")
-        require(provider in {"reddit", "tiktok", "youtube"}, "This provider does not accept a normalized import envelope")
+        require(provider in {"reddit", "tiktok", "youtube", "meta"}, "This provider does not accept a normalized import envelope")
         require(provider not in imports, "Supply one combined import envelope per provider")
         imports[provider] = payload
     require(not args.signals_file or "chatgpt" in chosen, "--signals-file needs selected chatgpt provider")
@@ -187,6 +187,7 @@ def parameters(args, now):
     return {"id": str(uuid.uuid4()), "generated_at": iso(datetime.now(UTC)),
             "reference_at": iso(now), "providers": chosen, "original_request": args.request, "hunt_mode": hunt_mode,
             "topic": args.topic.strip() if args.topic else None, "region": args.region,
+            **({"meta_region": getattr(args, "meta_region", None) or args.region} if "meta" in chosen else {}),
             "public_scope": {provider: {"region": scope["region"], "topic": (scope["topic"] or "").strip() or None}
                              for provider, scope in public_scope.items() if provider in chosen},
             "language": args.language, "timezone": str(zone),
@@ -390,6 +391,9 @@ def secure_url(value, provider=None):
                     and set(query) <= {"q", "date", "gprop", "geo", "cat"}
                     and query.get("gprop") == ["youtube"],
                     "Only YouTube Search Trends evidence parameters are allowed")
+    elif provider == "meta":
+        require(re.fullmatch(r"https://www\.facebook\.com/ads/library/\?id=[0-9]{1,30}", value),
+                "Use a public Meta Ad Library ad link containing only its ID")
     else:
         require(not parsed.query, "Evidence URL must not contain query tokens")
 
@@ -397,7 +401,7 @@ def secure_url(value, provider=None):
 def collect_import(payload, run, max_records, source=None):
     require(payload.get("schema_version") == VERSION, "Unsupported import schema_version")
     provider = payload["provider"]
-    require(provider in {"reddit", "tiktok", "youtube"}, "Unsupported import provider")
+    require(provider in {"reddit", "tiktok", "youtube", "meta"}, "Unsupported import provider")
     source = source if source is not None else source_result(provider, run)
     source["adapter"] = payload.get("adapter")
     text_field(payload, "adapter")
@@ -427,6 +431,16 @@ def collect_import(payload, run, max_records, source=None):
     source["effective_filters"] = payload["effective_filters"]
     source["unsupported_filters"] = [key for key in ("topic", "region", "language")
         if run[key] and payload["effective_filters"].get(key) != run[key]]
+    if provider == "meta":
+        expected = run.get("meta_region", run["region"])
+        if expected is not None:
+            actual = payload["effective_filters"].get("region")
+            require(actual is None or isinstance(actual, str), "Invalid Meta archive region metadata")
+            source["unsupported_filters"] = [key for key in source["unsupported_filters"] if key != "region"]
+            expected_codes = {code.strip().upper() for code in expected.split(",")}
+            actual_codes = {code.strip().upper() for code in (actual or "").split(",")}
+            if expected_codes != {"TIER-1"} and expected_codes != actual_codes:
+                source["unsupported_filters"].append("region")
     if "topic" in source["unsupported_filters"]:
         source.update(status="not_supported", reason="Import did not apply the requested topic filter.")
         return source
@@ -448,6 +462,8 @@ def collect_import(payload, run, max_records, source=None):
             text_field(row, key)
         secure_url(row["url"], provider)
         require(row["signal_type"] in SIGNAL_TYPES, "Invalid signal_type")
+        if provider == "meta":
+            require(row["signal_type"] == "ad_creative", "Meta evidence must be an ad creative")
         if provider == "reddit":
             require(row["signal_type"] in {"discussion", "comment"}, "Reddit import must be discussion/comment evidence")
         if provider == "youtube":
@@ -679,6 +695,7 @@ def parser():
     command.add_argument("--native-pdf", action="store_true", help="Calling client has a configured native PDF exporter")
     command = commands.add_parser("collect", parents=[scope], help="Collect selected public sources and/or permitted imports")
     command.add_argument("--hunt-mode", choices=HUNT_MODES, default="product_hunt")
+    command.add_argument("--meta-region", help="Override the shared region for the Meta import")
     command.add_argument("--diagnostic", action="store_true", help="Explicit diagnostic run allowing unconfigured providers; not normal research")
     command.add_argument("--days", type=int)
     command.add_argument("--start", help="ISO date in the selected time zone or timestamp with offset")
