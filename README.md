@@ -257,6 +257,10 @@ Source and license: [OpenAI Signals, CC BY 4.0](https://openai.com/signals/data-
 
 The YouTube adapter combines Google Trends **YouTube Search Top/Rising** with relevant videos and comments originally published in the selected interval. It can discover fresh comments on older videos and keeps query → video → comment links. Current likes order only the fetched sample; source-relative indices and growth labels retain their scope. The caller chooses automatic SerpApi delivery or a native Trends CSV; Google Data API supplies public videos/comments. No absolute searches, historical likes or global maximum is claimed. Live authentication, quotas and intended analytics acceptance remain pending. [Portable reference](./skills/niche-hunter/references/youtube.md).
 
+### Product Hunt and Trend Hunt
+
+At the start of a run, Niche Hunter asks which mode to use. **Product Hunt** looks for a new product idea or refinements to an existing one. **Trend Hunt** reports current signals and changes by provider, for a supplied topic or a broad sample. It includes what was searched, observed data, and a short conclusion for each provider. Both modes use the same collection routes and limits.
+
 ### Combined analysis
 
 Reddit and TikTok should complement each other. For example, discussions may reveal a recurring manual task, while videos may show how clearly and visually its solution can be demonstrated.

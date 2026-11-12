@@ -74,6 +74,7 @@ def pdf_bytes(document, regular=None, bold=None):
                 *document["attributions"]]
     for section in document["providers"]:
         contents += [section["name"], section["coverage"], section["conclusion"], section["status"], *section["suggestions"]]
+        contents.append(section.get("collection_scope", ""))
         contents.append(section.get("delta_column", ""))
         contents += [row[key] for row in section["rows"] for key in ("signal", "data")]
         contents += [row.get("delta", "") for row in section["rows"]]
@@ -117,6 +118,8 @@ def pdf_bytes(document, regular=None, bold=None):
     for section in document["providers"]:
         section_start = len(story)
         story.append(paragraph(section["name"], "heading"))
+        if section.get("collection_scope"):
+            story.append(paragraph(labels["collection_scope"] + ": " + section["collection_scope"], "small"))
         if section["coverage"]:
             story.append(paragraph(labels["coverage"] + ": " + section["coverage"], "small"))
         delta_column = section.get("delta_column")

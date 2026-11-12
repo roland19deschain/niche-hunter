@@ -1036,3 +1036,8 @@ The owner installed the 0.6.0 MCPB (release checksums matched) and entered the Y
 
 - The Desktop extension uses one TokConnect credit, one SerpApi search, one YouTube search, and up to six YouTube comment requests when settings are blank. Saved settings apply automatically. Zero disables the live route. An explicit request can reduce the cap for that run without changing settings.
 - Desktop uses configured provider accounts within the ten-attempt ceiling, stops at a quota rejection, and never buys or renews allowance. The report records planned and attempted use without claiming that account balances were checked. Direct helper routes retain their free-allowance checks.
+
+## 39. Product Hunt and Trend Hunt (unreleased)
+
+- Ask the caller to confirm a mode for every research run. `run.hunt_mode` distinguishes the report intent from Product Hunt's existing discovery/refinement context. Direct CLI and Desktop callers and old saved runs default to Product Hunt for compatibility.
+- Trend Hunt reuses collection routes and budgets. It can run with a topic or with a bounded broad sample. Each provider section shows its collection scope, observed signals and short conclusion. Product hypotheses, next steps and overall synthesis are excluded. History, snapshots and missing coverage remain distinct.

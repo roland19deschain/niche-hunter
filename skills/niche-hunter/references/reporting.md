@@ -22,6 +22,8 @@ In ChatGPT/Claude desktop clients, style available chart/artifact panels with th
 
 ## Structure
 
+Trend Hunt uses the same compact provider tables and compatible charts. Include collection scope and actual coverage, then selected evidence and a short conclusion for each provider. For a broad scan, show sampled inputs when available and keep snapshot signals distinct from measured change. Trend Hunt has no overall section, product ideas or next steps. The structure below applies to Product Hunt.
+
 For every selected provider, in selected order:
 
 1. Provider heading and a short coverage line only if the actual interval differs or is unknown.

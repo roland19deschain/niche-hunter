@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Ask callers to choose Product Hunt or Trend Hunt. Trend Hunt summarizes current signals and changes by provider without product ideas or an overall conclusion.
+
 ## [0.11.0] - 2026-11-12
 
 - Use built-in per-run limits for Claude Desktop. Blank settings use the defaults, saved overrides remain in effect, and ordinary runs skip numeric quota questions.

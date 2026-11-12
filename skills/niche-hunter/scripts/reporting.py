@@ -27,7 +27,12 @@ LABELS = {"signal": "Signal", "data": "Observed data", "overall": "Overall", "su
           "cited_comments": "Cited comments", "cited_videos": "Videos with cited comments",
           "month_change": "Change vs prior month (pp)", "current_snapshot": "Current snapshot",
           "app_list_price": "List price", "app_rating": "Rating", "app_rating_count": "Ratings",
-          "app_chart_position": "Top Free position", "trends_rss_traffic": "Searches (published bucket)"}
+          "app_chart_position": "Top Free position", "trends_rss_traffic": "Searches (published bucket)",
+          "trend_hunt": "Trend Hunt", "collection_scope": "Collection scope", "scope_topic": "Topic",
+          "scope_region": "Region", "scope_broad": "Broad sample", "scope_queries": "Search inputs",
+          "scope_top_free": "Top Free", "scope_signals": "Monthly topic shares",
+          "scope_rss": "Trending Now feed", "scope_unsupported": "Unsupported filters",
+          "scope_requested_region": "Requested region"}
 
 
 def compact(value, limit=420):
@@ -37,7 +42,10 @@ def compact(value, limit=420):
 
 def validate_presentation(analysis, result):
     presentation = analysis.get("presentation")
+    trend_hunt = result.get("run", {}).get("hunt_mode") == "trend_hunt"
     if presentation is None:
+        if trend_hunt:
+            raise ValueError("Trend Hunt needs a conclusion for every selected provider")
         return
     if not isinstance(presentation, dict):
         raise ValueError("presentation must be an object")
@@ -69,6 +77,8 @@ def validate_presentation(analysis, result):
         if (not isinstance(suggestions, list) or len(suggestions) > 2
                 or any(not isinstance(text, str) or not text.strip() or len(text) > 180 for text in suggestions)):
             raise ValueError("Provider suggestions must contain at most two short actions (180 characters each)")
+        if trend_hunt and suggestions:
+            raise ValueError("Trend Hunt reports omit provider suggestions")
         selected = item.get("row_ids")
         if selected is not None and (not isinstance(selected, list) or not 1 <= len(selected) <= 6
                                      or len(set(selected)) != len(selected) or any(ref not in known for ref in selected)):
@@ -131,23 +141,67 @@ def requested_period(run, labels):
     return f"{first} – {last} ({run['timezone']}, {labels['end_exclusive']})"
 
 
+def trend_collection_scope(run, source, labels):
+    provider = source["provider"]
+    requested = run.get("public_scope", {}).get(provider, run)
+    topic = requested.get("topic")
+    region = requested.get("region")
+    effective = source.get("effective_filters", {})
+    provenance = source.get("provenance", {})
+    collection = provenance.get("collection") or {}
+    parts = [f"{labels['scope_topic']}: {topic}" if topic else labels["scope_broad"]]
+    if provider == "chatgpt":
+        parts.append(labels["scope_signals"])
+    elif provider == "app_store" and not topic:
+        parts.append(labels["scope_top_free"])
+    elif source.get("adapter") == "google_trends_rss":
+        parts.append(labels["scope_rss"])
+    scopes = collection.get("trends_scopes", []) if provider == "youtube" else provenance.get("scopes", [])
+    inputs = [scope.get("seed") for scope in scopes if isinstance(scope, dict)] if isinstance(scopes, list) else []
+    if provider == "tiktok":
+        calls = collection.get("calls", [])
+        if isinstance(calls, list):
+            inputs.extend(call["arguments"].get("keyword") for call in calls
+                          if isinstance(call, dict) and isinstance(call.get("arguments"), dict))
+    if provider == "reddit":
+        for field in ("search_terms", "communities"):
+            if isinstance(collection.get(field), list):
+                inputs.extend(collection[field])
+    inputs = list(dict.fromkeys(value for value in inputs if isinstance(value, str) and value.strip()))
+    if inputs:
+        parts.append(f"{labels['scope_queries']}: " + ", ".join(inputs[:3]))
+    markets = effective.get("regions")
+    if not isinstance(markets, list):
+        markets = [effective.get("region")]
+    markets = [market for market in markets if isinstance(market, str) and market.strip()]
+    if markets:
+        parts.append(f"{labels['scope_region']}: " + ", ".join(markets))
+    elif region:
+        parts.append(f"{labels['scope_requested_region']}: {region}")
+    if source.get("unsupported_filters"):
+        parts.append(f"{labels['scope_unsupported']}: " + ", ".join(source["unsupported_filters"]))
+    return compact(" · ".join(parts), 320)
+
+
 def build_report(result):
     analysis, run = result["analysis"], result["run"]
+    trend_hunt = run.get("hunt_mode") == "trend_hunt"
     presentation = analysis.get("presentation", {})
     labels = {**LABELS, **presentation.get("labels", {})}
     supplied = {item["provider"]: item for item in presentation.get("providers", [])}
     requested = run["requested_window"]
-    hypotheses = [item for item in analysis.get("hypotheses", [])
-                  if item.get("opportunity", {}).get("priority") != "defer"][:3]
+    hypotheses = [] if trend_hunt else [item for item in analysis.get("hypotheses", [])
+                                        if item.get("opportunity", {}).get("priority") != "defer"][:3]
     need_refs = {ref for item in hypotheses for ref in
                  item.get("opportunity", {}).get("demand_evidence_ids", item["evidence_ids"])}
     youtube_evidence = {}
     sources = result["sources"]
-    document = {"title": compact(presentation.get("title") or "Niche Hunter", 100),
+    title = "Niche Hunter · " + labels["trend_hunt"] if trend_hunt else "Niche Hunter"
+    document = {"title": compact(presentation.get("title") or title, 100),
                 "period": requested_period(run, labels),
                 "theme": dict(THEME),
                 "labels": labels, "providers": [],
-                "overall": compact(analysis.get("summary", labels["pending"])) if len(sources) > 1 else "",
+                "overall": compact(analysis.get("summary", labels["pending"])) if len(sources) > 1 and not trend_hunt else "",
                 "products": [], "attributions": []}
     for source in sources:
         provider = source["provider"]
@@ -217,19 +271,21 @@ def build_report(result):
                 details.append(labels["no_comments"])
             coverage = ". ".join(details)
         conclusion = custom.get("conclusion")
-        if not conclusion and len(sources) == 1 and observations:
+        if not conclusion and len(sources) == 1 and observations and not trend_hunt:
             conclusion = analysis.get("summary")
         if not conclusion:
             known = set(by_id)
             findings = [item["text"] for item in analysis.get("findings", [])
                         if known.intersection(item["evidence_ids"])]
             conclusion = " ".join(findings[:2]) or source["reason"]
-            if len(sources) == 1 and analysis.get("status") == "pending":
+            if (trend_hunt or len(sources) == 1) and analysis.get("status") == "pending":
                 conclusion = f"{labels['pending']} {conclusion}"
         section = {"provider": provider, "name": NAMES.get(provider, provider), "rows": rows,
                    "coverage": coverage, "conclusion": compact(conclusion), "status": source["status"],
-                   "suggestions": [compact(text, 180) for text in custom.get("suggestions", [])],
+                   "suggestions": [] if trend_hunt else [compact(text, 180) for text in custom.get("suggestions", [])],
                    "chart": None}
+        if trend_hunt:
+            section["collection_scope"] = trend_collection_scope(run, source, labels)
         if provider == "chatgpt" and rows:
             section["delta_column"] = labels["month_change"]
             changes = {}
@@ -312,6 +368,8 @@ def markdown_report(document):
     lines = ["# " + escape_md(document["title"]), "", labels["requested"] + ": " + document["period"], ""]
     for section in document["providers"]:
         lines += ["## " + section["name"], ""]
+        if section.get("collection_scope"):
+            lines += [labels["collection_scope"] + ": " + escape_md(section["collection_scope"]), ""]
         if section["coverage"]:
             lines += [labels["coverage"] + ": " + section["coverage"], ""]
         headers = [labels["signal"], labels["data"]]
@@ -359,6 +417,8 @@ def text_report(document, width=96):
     lines = [document["title"], "=" * min(width, len(document["title"])), labels["requested"] + ": " + document["period"], ""]
     for section in document["providers"]:
         lines += [section["name"], "-" * len(section["name"])]
+        if section.get("collection_scope"):
+            lines += textwrap.wrap(labels["collection_scope"] + ": " + section["collection_scope"], width)
         if section["coverage"]:
             lines += [labels["coverage"] + ": " + section["coverage"]]
         headers = [labels["signal"], labels["data"]]

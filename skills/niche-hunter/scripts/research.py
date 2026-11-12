@@ -23,6 +23,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from reporting import build_report, markdown_report, text_report, validate_presentation
 
 VERSION = "0.1.0"
+HUNT_MODES = ("product_hunt", "trend_hunt")
 UTC = timezone.utc
 SKILL_DIR = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[1]))
 CATALOG = json.loads((SKILL_DIR / "references/catalog.json").read_text())
@@ -154,6 +155,8 @@ def preflight(args):
 
 def parameters(args, now):
     chosen = provider_scope(args)
+    hunt_mode = getattr(args, "hunt_mode", "product_hunt")
+    require(hunt_mode in HUNT_MODES, "Use product_hunt or trend_hunt as the hunt mode")
     zone = ZoneInfo(args.timezone or "UTC")
     require(bool(args.start) == bool(args.end), "Supply both --start and --end (exclusive)")
     require(not (args.start and args.days is not None), "Use dates or --days, not both")
@@ -182,7 +185,7 @@ def parameters(args, now):
                           "topic": args.topic},
     }
     return {"id": str(uuid.uuid4()), "generated_at": iso(datetime.now(UTC)),
-            "reference_at": iso(now), "providers": chosen, "original_request": args.request,
+            "reference_at": iso(now), "providers": chosen, "original_request": args.request, "hunt_mode": hunt_mode,
             "topic": args.topic.strip() if args.topic else None, "region": args.region,
             "public_scope": {provider: {"region": scope["region"], "topic": (scope["topic"] or "").strip() or None}
                              for provider, scope in public_scope.items() if provider in chosen},
@@ -565,7 +568,8 @@ def collect(args):
               "catalog": {"version": CATALOG["version"], "categories": [item["id"] for item in CATALOG["categories"]],
                           "scope": CATALOG["scope"]},
               "sources": sources, "analysis": {"status": "pending", "findings": [], "hypotheses": [],
-                  "gaps": ["Calling-agent analysis pending; broad aggregates alone do not validate product problems."]}}
+                  "gaps": ["Calling-agent analysis pending." if run["hunt_mode"] == "trend_hunt"
+                           else "Calling-agent analysis pending; broad aggregates alone do not validate product problems."]}}
     save_run(out, result)
     print(json.dumps({"run": str(out.resolve()), "sources": [
         {"provider": item["provider"], "status": item["status"], "observations": item["counts"]["accepted"]} for item in sources]}))
@@ -573,7 +577,12 @@ def collect(args):
 
 def validate_analysis(analysis, result):
     require(analysis.get("schema_version") == VERSION, "Unsupported analysis schema_version")
-    text_field(analysis, "summary")
+    trend_hunt = result.get("run", {}).get("hunt_mode") == "trend_hunt"
+    if not trend_hunt:
+        text_field(analysis, "summary")
+    else:
+        require(analysis.get("hypotheses", []) == [], "Trend Hunt analysis must omit product hypotheses")
+        require("research_context" not in analysis, "Trend Hunt does not use product research context")
     require(isinstance(analysis.get("gaps"), list) and all(isinstance(x, str) for x in analysis["gaps"]), "gaps must be text array")
     if "research_context" in analysis:
         context = analysis["research_context"]
@@ -588,6 +597,8 @@ def validate_analysis(analysis, result):
                     all(isinstance(value, str) and value.strip() for value in context[key]), f"{key} must be text array")
     known = {row["id"] for source in result["sources"] for row in source["observations"]}
     for group in ("findings", "hypotheses"):
+        if trend_hunt and group == "hypotheses":
+            continue
         require(isinstance(analysis.get(group), list), f"{group} must be array")
         for item in analysis[group]:
             refs = item.get("evidence_ids")
@@ -667,6 +678,7 @@ def parser():
     command.add_argument("--configured-providers", default="", help="Client connections actually checked by the calling agent")
     command.add_argument("--native-pdf", action="store_true", help="Calling client has a configured native PDF exporter")
     command = commands.add_parser("collect", parents=[scope], help="Collect selected public sources and/or permitted imports")
+    command.add_argument("--hunt-mode", choices=HUNT_MODES, default="product_hunt")
     command.add_argument("--diagnostic", action="store_true", help="Explicit diagnostic run allowing unconfigured providers; not normal research")
     command.add_argument("--days", type=int)
     command.add_argument("--start", help="ISO date in the selected time zone or timestamp with offset")

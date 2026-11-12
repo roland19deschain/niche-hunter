@@ -4,6 +4,8 @@ Version: `0.1.0`. The standard-library helper is deterministic for dates, normal
 
 ## Collection CLI
 
+Pass `--hunt-mode product_hunt` or `--hunt-mode trend_hunt` for a confirmed skill run. Desktop uses `hunt_mode`. The run records the choice in `run.hunt_mode` and reuses it for preview and finalization. Existing runs and direct callers that omit the field use Product Hunt. Provider routes and collection parameters are the same for both modes.
+
 Run `scripts/research.py collect --help` for flags. Pass all relevant request parameters explicitly; natural-language extraction belongs to the calling agent. Use Python 3.10+ and available IANA time-zone data. Collection/normalization need no external Python packages or client SDKs. PDF finalization uses the optional ReportLab requirements or a PDF from the calling client; see reporting.md.
 
 Dates are `[start_at, end_at)`. `--days` counts calendar days in the selected time zone, including DST transitions. `--start/--end` accept ISO dates interpreted in that zone or timestamps **with offsets**; naive time-of-day strings are rejected. `--as-of` sets the reference instant for reproducible historical runs, not the actual collection timestamp. The preceding baseline uses the same calendar duration in the selected zone and may differ in elapsed UTC hours around DST. Future end boundaries, invalid zones, reversed windows, unknown providers, and conflicting date/duration inputs fail before networking.
@@ -83,6 +85,8 @@ Evidence IDs are assigned by the helper. Signals IDs include the release SHA-256
 The public raw ZIP is saved under `raw/signals.zip`, with its hash, table path, mode, and known retrieval time. It can be replayed with `--signals-file`. Imported source snapshots are **not copied automatically**; result summaries and rights metadata are retained. Replay also needs the original permitted import envelopes, CLI parameters (including `--as-of`) and compatible script/catalog version. Calling-agent prose is not deterministic; preserve the submitted analysis for reproducing the report. Remove local artifacts according to applicable retention terms; do not commit research exports by default.
 
 ## Analysis and finalization
+
+For Trend Hunt, supply `schema_version`, `findings`, `gaps`, and `presentation` with an evidence-linked conclusion for every selected provider. Omit product `research_context`, `summary`, and provider `suggestions`. `hypotheses` can be absent or empty. The collection scope line uses recorded inputs, such as `collection.search_terms` or `collection.communities` from a permitted Reddit import. Record only inputs actually used and omit unsupported or unavailable detail. Product Hunt keeps the existing analysis contract below.
 
 Write `analysis.json` separately, then run `scripts/research.py finalize --run RUN_DIR --analysis RUN_DIR/analysis.json`. It reads existing evidence, validates references/required fields, and regenerates compact `report.md`, styled `report.pdf`, and detailed `results.json` without network calls. PDF preparation must succeed before outputs are replaced. It cannot validate factual accuracy or logical independence of model-written claims.
 

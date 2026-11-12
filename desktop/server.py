@@ -9,7 +9,7 @@ import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import quote, quote_plus
 
 import anyio
@@ -198,16 +198,16 @@ class DesktopResearch:
     async def collect(self, providers, days, start, end, timezone, topic, region, language,
                       free_tokconnect_credits, free_serpapi_searches, youtube_search_calls,
                       youtube_comment_units, max_records, imports, youtube_seed=None, google_trends_csv=None,
-                      app_store_region=None, app_store_topic=None, google_trends_region=None):
+                      app_store_region=None, app_store_topic=None, google_trends_region=None, hunt_mode="product_hunt"):
         self.check_content([providers, start, end, timezone, topic, region, language, imports, youtube_seed,
-                            google_trends_csv, app_store_region, app_store_topic, google_trends_region])
+                            google_trends_csv, app_store_region, app_store_topic, google_trends_region, hunt_mode])
         research.require(1 <= max_records <= 100, "Use 1 to 100 records per provider")
         research.require(topic is None or 0 < len(topic.strip()) <= 100, "Use a topic of at most 100 characters")
         args = SimpleNamespace(providers=providers, exclude_providers=None, days=days, start=start, end=end,
                                timezone=timezone, topic=topic, region=region, language=language,
                                max_records=max_records, request=None, offline=False, signals_file=None,
                                app_store_region=app_store_region, app_store_topic=app_store_topic,
-                               google_trends_region=google_trends_region)
+                               google_trends_region=google_trends_region, hunt_mode=hunt_mode)
         run = research.parameters(args, now())
         research.require(google_trends_csv is None or "google_trends" in run["providers"],
                          "Use google_trends_csv only with the Google Trends provider")
@@ -391,13 +391,14 @@ def make_server(desktop):
                                    max_records: int = 20,
                                    imports: list[dict] | None = None, youtube_seed: str | None = None,
                                    google_trends_csv: dict | None = None, app_store_region: str | None = None,
-                                   app_store_topic: str | None = None, google_trends_region: str | None = None) -> dict[str, Any]:
+                                   app_store_topic: str | None = None, google_trends_region: str | None = None,
+                                   hunt_mode: Literal["product_hunt", "trend_hunt"] = "product_hunt") -> dict[str, Any]:
         """Collect one run after preflight. Omit limit arguments unless the caller explicitly requests a lower cap."""
         try:
             return await desktop.collect(providers, days, start, end, timezone, topic, region, language,
                                          free_tokconnect_credits, free_serpapi_searches, youtube_search_calls, youtube_comment_units,
                                          max_records, imports or [], youtube_seed, google_trends_csv,
-                                         app_store_region, app_store_topic, google_trends_region)
+                                         app_store_region, app_store_topic, google_trends_region, hunt_mode)
         except (ValueError, KeyError, TypeError, OSError) as error:
             message = str(error) if isinstance(error, ValueError) else ""
             if not message.startswith(("Use ", "Confirm ", "Leave ", "The selected ", "Supply ",

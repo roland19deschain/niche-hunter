@@ -89,6 +89,37 @@ class ConfigurationTests(unittest.TestCase):
 
 
 class CompactReportTests(unittest.TestCase):
+    def test_trend_hunt_outputs_provider_scope_and_conclusions_in_all_formats(self):
+        from pypdf import PdfReader
+
+        result = fixture()
+        result["run"]["hunt_mode"] = "trend_hunt"
+        reddit = result["sources"][0]
+        reddit["provenance"]["collection"]["search_terms"] = ["shared notes"]
+        result["sources"].append(research.source_result("youtube", result["run"]))
+        analysis = {"schema_version": research.VERSION, "findings": [], "gaps": [], "presentation": {"providers": [
+            {"provider": "reddit", "conclusion": "Recent discussions mention shared notes.",
+             "evidence_ids": [reddit["observations"][0]["id"]]},
+            {"provider": "youtube", "conclusion": "YouTube data unavailable."},
+        ]}}
+        with self.assertRaisesRegex(ValueError, "product hypotheses"):
+            research.validate_analysis({**analysis, "hypotheses": result["analysis"]["hypotheses"]}, result)
+        analysis["presentation"]["providers"][0]["suggestions"] = ["Synthetic next step."]
+        with self.assertRaisesRegex(ValueError, "omit provider suggestions"):
+            research.validate_analysis(analysis, result)
+        del analysis["presentation"]["providers"][0]["suggestions"]
+        result["analysis"] = research.validate_analysis(analysis, result)
+        model = build_report(result)
+        pdf = PdfReader(io.BytesIO(pdf_bytes(model)))
+        for report in (markdown_report(model), text_report(model), " ".join(page.extract_text() for page in pdf.pages)):
+            expected = ("Trend Hunt", "Reddit", "Search inputs: shared notes", "Observed data",
+                        "Recent discussions mention shared notes.", "YouTube", "YouTube data unavailable.")
+            report = " ".join(report.split())
+            positions = [report.index(value) if value != "YouTube" else report.index(value, report.index(expected[4]))
+                         for value in expected]
+            self.assertEqual(positions, sorted(positions))
+            self.assertNotRegex(report, r"Overall|Product ideas|Next steps")
+
     def test_signals_table_and_chart_use_signed_percentage_point_changes(self):
         from pypdf import PdfReader
         rows = ("2026-09-01,Decline,0.35\n2026-10-01,Decline,0.31\n"

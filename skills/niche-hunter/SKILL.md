@@ -1,14 +1,14 @@
 ---
 name: niche-hunter
-description: Find evidence-backed channel, audience, and product opportunities using Reddit, TikTok, YouTube, public ChatGPT usage data, App Store listings, and Google Trends Web Search. Use to discover niches for new digital products or refine an existing product's positioning, workflow, features, or acquisition strategy.
+description: Find product opportunities or track current trends using Reddit, TikTok, YouTube, public ChatGPT usage data, App Store listings, and Google Trends Web Search. Use Product Hunt for product discovery or refinement, and Trend Hunt for provider-by-provider changes and current signals.
 ---
 
 # Niche Hunter
 
-Find testable combinations using **Distribution First**:
+In Product Hunt, find testable combinations using **Distribution First**:
 `distribution channel → reachable market (audience, intent, unmet need) → product or product change → experiment`.
 
-Support both new-product discovery and refinement of an existing product. The deliverable is a reasoned opportunity and a way to test it, not just a trend list. Stable recurring needs can support an opportunity even without measurable growth.
+Product Hunt supports both new-product discovery and refinement of an existing product. Trend Hunt reports current signals and changes by provider for an existing product or a general market scan.
 
 This is a shared skill for Codex, Claude Code and Claude Desktop. Use the calling agent's tools and reasoning. Respond in the caller's language. Resolve paths relative to this skill's directory, including when loaded through a symlink. Python 3.10+ with standard-library `zoneinfo` data is required when calling the helper directly.
 
@@ -22,7 +22,7 @@ Installed plugin invocation is `$niche-hunter:niche-hunter` in Codex or `/niche-
 
 ## Connection setup
 
-An invocation with no additional task or parameters starts the default research workflow, including preflight for every selected provider. No separate setup prompt is required. First use is determined by missing access in this client, not by a persistent first-run flag: a new chat with valid connections must not ask for authentication again.
+An invocation with no additional task or parameters starts with the mode question below, then preflight for the selected providers. A new chat reuses valid provider access.
 
 For an explicit setup/connect request or plugin onboarding, inspect existing connections first. If the caller has an owner-supplied TokConnect API key, follow [references/access.md](references/access.md): offer hidden terminal entry for Codex/Claude Code or a supported native connector credential field. Never request the key in chat or require a recipient to create a provider account or log into the owner's account. The user enters the key personally outside the agent's tools; `scripts/setup_access.py` performs one-time private configuration and makes no network requests. Prefer the configured `niche-hunter-tokconnect` key connection over an unauthenticated bundled duplicate. Browser OAuth remains available through [references/tiktok.md](references/tiktok.md#one-time-setup).
 
@@ -30,7 +30,13 @@ Check the current connection. For direct helper and caller-managed routes, check
 
 ## Interpret the request
 
-- Default mode: `discovery`. For a request to improve an existing product, use `refinement`: capture the caller-provided product, audience, constraints, and desired decision; propose relevant changes to that product. Ask only when missing product context would materially change the research. Record this context in analysis; it is not collected market evidence.
+Before each research run, ask the caller to choose or confirm one mode and wait for their reply before collecting. If they named a mode, propose it in the confirmation. An explicit connection-only request does not start a run.
+
+- **Product Hunt** (`product_hunt`) finds a new product idea or improvements to an existing product. Within this mode, default to `discovery`. For product refinement, use `refinement` and capture the existing product, audience, constraints, and decision in `research_context`.
+- **Trend Hunt** (`trend_hunt`) shows current signals and changes by provider. Use it for research that can inform an existing product's ads, creatives, or features, or for a general scan. If no topic is given, sample broad trends using each provider's supported route. A product or topic is optional.
+
+Use the same provider configuration, windows, quotas and collection rules in both modes. Pass the confirmed choice as `hunt_mode` in Desktop or `--hunt-mode` to `research.py collect`.
+
 - Distribution channels may be caller-selected; otherwise propose candidates from the evidence. A **provider is an evidence source**, not automatically an acquisition channel. A Reddit complaint may support a need without proving Reddit acquisition; aggregate ChatGPT usage does not establish a way to reach those users. Keep any channel outside the selected evidence sources explicitly untested.
 - Default providers: every implemented provider in the catalog, currently `reddit,tiktok,chatgpt,youtube,app_store,google_trends`. Apply explicit inclusions and exclusions before setup or collection. An instruction to omit a provider excludes its setup, requests and report section. An explicit only-list selects exactly those implemented providers. For an unknown/unimplemented provider, explain the gap and resolve scope before running; do not invent an adapter or silently substitute another source.
 - Default window: last **seven complete calendar days**, excluding today, in the explicit or caller's available IANA time zone. Pass that zone to the helper. If none is available, disclose UTC fallback. Explicit duration/dates override the default. The helper's `--end` is exclusive; convert a natural-language inclusive end date to the following midnight. Preserve original wording via `--request`.
@@ -102,7 +108,7 @@ Use a fresh output directory; existing results are protected from overwriting. T
 
 ## Analyze without overstating the evidence
 
-Read the generated `results.json`, [references/analysis.md](references/analysis.md) for the channel-to-product reasoning process, and [references/contracts.md](references/contracts.md) for finalization fields.
+Read `results.json` and [the analysis contract](references/contracts.md#analysis-and-finalization). For Product Hunt, also read [the channel-to-product workflow](references/analysis.md).
 
 - Separate `observed_fact`, `estimate`, `inference`, `hypothesis`, and `test_needed`. Every finding and hypothesis must reference existing evidence IDs. A verified public aggregate still has methodological limitations.
 - Search phrases, generated topic groups, recommendations, hashtags, videos, comments, and discussions are distinct entities. Shares, views, engagement, and search volumes are distinct measurements. Missing values remain `null` with a reason.
@@ -110,13 +116,15 @@ Read the generated `results.json`, [references/analysis.md](references/analysis.
 - For YouTube, retain Top/Rising metrics within their exact seed/date/region scope. Breakout is only a lower bound. New comments on old videos may reveal current needs; current likes do not measure growth during the requested interval. Inspect semantic relevance and query → video → comment links, keep unsupported acquisition/payment claims explicit, and show any Trends/comment coverage mismatch briefly. Verify source-specific retention and additional-analytics requirements before live deployment.
 - Deduplicate reposts/cross-posts semantically during analysis: source-ID deduplication alone does not establish independence. Note spam, campaign concentration, small samples, seasonality, and platform bias.
 - Classify `emerging`, `sustained`, `declining`, or `spike-only` only with sufficient comparable history; otherwise use `unassessed`. Treat latest snapshots as snapshots. Signals broad monthly categories cannot establish weekly or narrow-topic demand.
-- Keep only the **best zero to three product combinations** in the short report; no idea is required when evidence is weak. Each must connect a concrete channel/entry point to a reachable market and a product or product change. Explain the evidence for the need separately from channel fit, why this solution improves the current alternative, and how attention could become first product value. Include the `opportunity` assessment defined in the contract; label unsupported links and counterevidence. Do not fill a weak run with invented opportunities.
-- Include the evidence supporting the need in any explicit report row selection. For YouTube, describe retained comments as a sample and state how many videos supplied the cited comments. Use the `research_more` decision when the same-video evidence still needs independent corroboration.
+- Include cited evidence in the report rows. For YouTube, describe retained comments as a sample and state how many videos supplied the cited comments.
 - Explain doubts about comment quality using observable patterns such as repeated wording or repeated promotional links. Cite the corresponding observations. Attribute comments to automation only when evidence establishes authorship.
-- Prioritize the next decision (`test_next`, `research_more`, or `defer`) with a reason, confidence, and critical unknowns. Use an experiment that tests the weakest link in the channel → need → solution chain, with a defined funnel/denominator and proposed success/stop criteria. Keep any score and independent evidence count separate from confidence. Do not infer CAC/LTV/profitability from engagement.
 - Competitor checks outside the selected provider set are pending unless separately requested. Do not silently call future roadmap providers. Experiments are proposals, not authorization to contact users, publish pages, run ads, or spend money.
 
-Keep deep analysis, evidence IDs, confidence, comparisons and detailed product reasoning in `analysis.json` / `results.json`, not in the main answer. For new runs, include `presentation` with a short conclusion, selected evidence rows and any useful next steps for every selected provider; see [references/reporting.md](references/reporting.md). Use its labels and narrative fields for the caller's language; do not translate IDs or change numbers.
+**Product Hunt:** select up to three supported channel → need → product combinations. Keep demand and acquisition evidence separate. Explain the advantage over the current alternative, the path to first product value, and any unsupported links or counterevidence. For each hypothesis include `opportunity`, a next decision (`test_next`, `research_more`, or `defer`) with a reason, confidence and critical unknowns, and an experiment for the weakest link with a denominator and success/stop criteria. Use `research_more` when same-video evidence needs independent corroboration. Keep zero ideas when evidence is weak. Keep any score and independent evidence count separate from confidence. Do not infer CAC, LTV or profitability from engagement.
+
+**Trend Hunt:** select the most informative comparable changes, popular or rising queries, and current interests per provider. Use current rankings and snapshots when history is unavailable, with the actual window and caveats. For broad runs state which feeds, seeds or communities were sampled. Report measured changes and evidence-backed context. Omit `summary`, `research_context`, product hypotheses, and provider suggestions.
+
+For either mode, use `presentation` with evidence-linked provider conclusions and selected rows. Product Hunt can include useful next steps. Retain full reasoning, evidence IDs, confidence and comparisons in JSON. Use [report labels](references/reporting.md) in the caller's language and preserve IDs and numbers.
 
 Finalize **without collecting again**. For Desktop, call `niche_hunter_finalize` with the saved run ID. For the direct helper:
 
@@ -129,11 +137,13 @@ Finalization creates matching `report.md`, `report.pdf` and detailed `results.js
 
 ## Deliver a short, data-first report
 
-Use this order and no detailed product cards or evidence appendix in the initial answer:
+**Product Hunt** uses this order:
 
 1. **Each selected provider:** its name, a compact table of useful signals/values, a chart when useful, a one- or two-sentence conclusion about the audience/need and relevant channel, and up to two actionable next steps. A provider is not automatically a distribution channel: aggregate usage context does not prove an acquisition route.
 2. **Overall, only with multiple selected providers:** briefly compare what the available evidence supports, name the most promising channel/product combination to validate and explain why, or state why there is no supported preference.
 3. **Best ideas, only if supported:** up to three numbered `distribution channel / reachable market -> problem or desire -> product or change` combinations, under Overall when present. Give each product at most two short sentences and keep untested channel fit explicit.
+
+**Trend Hunt** repeats one section per selected provider. Show what was searched and the actual coverage, a linked table of current or changing signals, an optional comparable chart, and a short conclusion about the provider's situation. End after the provider sections and any required attribution. Omit overall synthesis, product ideas and next steps.
 
 Aim for roughly 300–500 words, with only the useful rows (up to six per provider by default). Link signal titles to their sources; retain full evidence/provenance and analysis in JSON for follow-up. Expand a provider, method, product or validation plan only when the caller asks. Missing windows and incompatible units still cannot be disguised as precise growth.
 

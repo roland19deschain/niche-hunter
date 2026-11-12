@@ -61,6 +61,7 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
             </item></channel></rss>'''
         with patch("public_sources.fetch", side_effect=[json.dumps({"results": [app]}).encode(), rss]) as fetch:
             result = await self.collect(providers=selected, topic="notes", region="CA",
+                                        hunt_mode="trend_hunt",
                                         app_store_region="GB", google_trends_region="AU")
         self.assertEqual([urlsplit(call.args[0]).hostname for call in fetch.call_args_list],
                          ["itunes.apple.com", "trends.google.com"])
@@ -70,7 +71,13 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(budget["planned_attempts"], budget["actual_attempts"])
         self.assertTrue(all(source["status"] == "partial" and source["actual_window"]["semantics"] == "snapshot"
                             for source in result["sources"]))
-        report = self.desktop.finalize(result["run"]["id"], ANALYSIS, None)
+        self.assertEqual(result["run"]["hunt_mode"], "trend_hunt")
+        analysis = {**ANALYSIS, "presentation": {"providers": [
+            {"provider": source["provider"], "conclusion": "Synthetic provider conclusion.",
+             "evidence_ids": [source["observations"][0]["id"]]} for source in result["sources"]]}}
+        report = self.desktop.finalize(result["run"]["id"], analysis, None)
+        self.assertIn("Collection scope: Topic: notes", report["markdown"])
+        self.assertNotIn("## Overall", report["markdown"])
         self.assertIn("Current snapshot", report["markdown"])
         self.assertIn("Rating: 4.50/5", report["markdown"])
         self.assertIn("1,000+", report["markdown"])
