@@ -30,14 +30,14 @@ The adapter maps publicly documented compact `topics`/`topic` fields (`queryId`,
 
 ## Reddit
 
-No embedded Reddit crawler or tokens. Use an already permitted official/licensed tool or a clearly licensed export. Content search finds publications matching **our** terms; it is not a log of users' search queries. Preserve publication dates separately from current counters.
+Use the [approved Reddit Data API route](reddit.md) or an independently permitted normalized import. Content search finds publications matching the research terms. Preserve publication dates separately from current counters and from search activity.
 
 - [Access rules](https://support.reddithelp.com/hc/en-us/articles/14945211791892-Developer-Platform-Accessing-Reddit-Data), [migration](https://developers.reddit.com/docs/guides/migrate/public-api), [search schema](https://www.reddit.com/dev/api/#GET_search). Commercial rights and usable current access must be established; do not assume a newly created free OAuth app is available.
 - Public JSON was blocked in prior checks; RSS was capped and incomplete. Do not switch hosts, use proxies, or scrape around access failures.
 - [Reddit Pro Trends](https://support.reddithelp.com/hc/en-us/articles/47619216411284-Reddit-Pro-Feature-Trends) does not authorize downloading others' posts/comments manually or automatically. A browser screenshot is not a permitted bulk export.
 - [Arctic Shift](https://github.com/ArthurHeitmann/arctic_shift) is a technically accessible archive candidate, with incomplete coverage and stale counters. Commercial-use permission was not established. It is **disabled as an automatic route**; a prior 200 response is insufficient.
 
-Once suitable access is established, sample relevant catalog communities and queries with publication filters and bounded pagination. Include recurring questions/workarounds/alternatives and permitted comments; minimize author data. Record received/retained counts, time gaps, community selection, cursor completion, and limits. Preserve current counter observation time; never infer historical engagement from it. One viral thread or repost cluster is weak evidence of growth. Use `discussion` or `comment`, not `typed_search`.
+The collector uses one bounded page and can sample comments from one thread if budget permits. Use `discussion` or `comment` evidence. In Product Hunt, inspect repeated questions, workarounds and alternatives across independent threads. In Trend Hunt, describe current themes and qualify the comparable prior window by listing depth. One viral thread or repost cluster is weak evidence of growth.
 
 ## YouTube
 

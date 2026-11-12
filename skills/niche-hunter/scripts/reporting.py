@@ -32,7 +32,9 @@ LABELS = {"signal": "Signal", "data": "Observed data", "overall": "Overall", "su
           "scope_region": "Region", "scope_broad": "Broad sample", "scope_queries": "Search inputs",
           "scope_top_free": "Top Free", "scope_signals": "Monthly topic shares",
           "scope_rss": "Trending Now feed", "scope_unsupported": "Unsupported filters",
-          "scope_requested_region": "Requested region"}
+          "scope_requested_region": "Requested region", "reddit_sample_posts": "Posts in sample",
+          "reddit_prior_posts": "Prior-window posts", "reddit_sample_depth": "Page did not reach the start of the window",
+          "reddit_comment_sample": "Comments from one thread", "reddit_no_comments": "No comments sampled"}
 
 
 def compact(value, limit=420):
@@ -164,9 +166,12 @@ def trend_collection_scope(run, source, labels):
             inputs.extend(call["arguments"].get("keyword") for call in calls
                           if isinstance(call, dict) and isinstance(call.get("arguments"), dict))
     if provider in {"reddit", "meta"}:
-        for field in ("search_terms", "communities"):
-            if isinstance(collection.get(field), list):
-                inputs.extend(collection[field])
+        terms = collection.get("search_terms")
+        if isinstance(terms, list):
+            inputs.extend(terms)
+    communities = collection.get("communities")
+    if provider == "reddit" and isinstance(communities, list):
+        inputs.extend(f"r/{name.removeprefix('r/')}" for name in communities if isinstance(name, str) and name.strip())
     inputs = list(dict.fromkeys(value for value in inputs if isinstance(value, str) and value.strip()))
     if inputs:
         parts.append(f"{labels['scope_queries']}: " + ", ".join(inputs[:3]))
@@ -227,13 +232,18 @@ def build_report(result):
             selected = selected[:6]
         rows = []
         storefronts = source.get("provenance", {}).get("storefronts", []) if provider == "app_store" else []
+        live_reddit = provider == "reddit" and source.get("adapter") == "reddit_data_api"
+        zone = ZoneInfo(run["timezone"]) if live_reddit else None
         for row in selected:
             metrics = [metric_text(metric, labels) for metric in row["measurements"]]
             metrics = [value for value in metrics if value]
             title = f"{row['source_id'].split(':', 1)[0]} · {row['title']}" if storefronts else row["title"]
+            data = "; ".join(metrics[:3]) if metrics else compact(row["summary"], 160)
+            if live_reddit and row["published_at"]:
+                published = datetime.fromisoformat(row["published_at"].replace("Z", "+00:00")).astimezone(zone)
+                data = published.date().isoformat() + " · " + data
             rows.append({"id": row["id"], "signal": compact(title, 110), "url": row["url"],
-                         "data": "; ".join(metrics[:3]) if metrics else compact(row["summary"], 160),
-                         "measurements": row["measurements"]})
+                         "data": data, "measurements": row["measurements"]})
         actual = source.get("actual_window")
         coverage = ""
         if actual and actual != requested:
@@ -280,6 +290,18 @@ def build_report(result):
                     if not collection.get("comparable_periods"):
                         detail += "; incomplete comparison"
                 coverage = ". ".join(filter(None, (coverage, detail)))
+        if live_reddit:
+            collection = source["provenance"]["collection"]
+            counts = collection.get("new_posts_in_sample")
+            if isinstance(counts, dict) and all(type(counts.get(key)) is int for key in ("current", "baseline")):
+                details = [coverage, f"{labels['reddit_sample_posts']}: {counts['current']}"]
+                if trend_hunt and collection.get("comparison_requested"):
+                    details.append(f"{labels['reddit_prior_posts']}: {counts['baseline']}")
+                if not collection.get("listing_reached_window_start"):
+                    details.append(labels["reddit_sample_depth"])
+                comments = sum(row["signal_type"] == "comment" for row in observations)
+                details.append(f"{labels['reddit_comment_sample']}: {comments}" if comments else labels["reddit_no_comments"])
+                coverage = ". ".join(filter(None, details))
         conclusion = custom.get("conclusion")
         if not conclusion and len(sources) == 1 and observations and not trend_hunt:
             conclusion = analysis.get("summary")

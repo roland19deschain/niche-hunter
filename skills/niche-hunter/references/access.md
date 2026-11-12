@@ -1,6 +1,6 @@
 # Provider access and owner-supplied API keys
 
-Read this reference for API-key setup or when a caller has received a provider key from its owner. The implemented key route is **TikTok through TokConnect**. It does not configure Reddit, whose adapter/access remains separate. Public OpenAI Signals needs no key. Reuse an already working connection and never require the recipient to create a TokConnect account or log into the owner's account just to use a supplied valid key.
+Read this reference for API-key setup or when a caller has received a provider key from its owner. The implemented key route is **TikTok through TokConnect**. For Reddit, use the separate [approved OAuth setup](reddit.md#access). Public OpenAI Signals needs no key. Reuse an already working connection and never require the recipient to create a TokConnect account or log into the owner's account just to use a supplied valid key.
 
 ## First-run choice
 

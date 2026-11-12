@@ -248,6 +248,12 @@ class ResearchTests(unittest.TestCase):
             self.assertIsNone(research.fetch_signals(source))
         self.assertEqual(call.call_count, 2)
         self.assertEqual(source["usage"]["helper_http_attempts"], 2)
+        source = research.source_result("chatgpt", run)
+        with patch.object(research, "urlopen", side_effect=URLError("offline")) as call, patch.object(research.time, "sleep") as sleep:
+            self.assertIsNone(research.fetch_signals(source, max_attempts=1))
+        self.assertEqual(call.call_count, 1)
+        self.assertEqual(source["usage"]["helper_http_attempts"], 1)
+        sleep.assert_not_called()
 
     def test_budget_and_unselected_import_fail_before_network(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -278,6 +284,26 @@ class ResearchTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "10 external-call run budget"):
                     research.collect(args)
             self.assertFalse((root / "run").exists())
+
+    def test_reddit_attempt_leaves_room_for_one_signals_download(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            args = self.args("--providers", "reddit,tiktok,youtube,meta,chatgpt,app_store,google_trends",
+                             "--out", str(root / "run"))
+            base = envelope(research.parameters(args, NOW))
+            for provider, calls in (("reddit", 1), ("tiktok", 1), ("youtube", 3), ("meta", 1)):
+                payload = copy.deepcopy(base)
+                payload["provider"] = provider
+                payload["collection"]["external_calls"] = calls
+                if provider == "reddit":
+                    payload["adapter"] = "reddit_data_api"
+                imported = root / f"{provider}.json"
+                imported.write_text(json.dumps(payload))
+                args.import_file.append(str(imported))
+            state, _ = research.readiness(args)
+            self.assertTrue(state["ready"])
+            self.assertEqual(state["public_attempt_ceiling"],
+                             {"app_store_requests": 2, "google_trends_requests": 1, "signals_downloads": 1})
 
     def test_web_search_csv_is_offline_and_keeps_the_export_scope(self):
         with tempfile.TemporaryDirectory() as directory:

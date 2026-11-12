@@ -138,6 +138,11 @@ def readiness(args, configured=()):
                        "next_action": None if route else "Configure this selected provider or explicitly exclude it."})
     attempts = public_request_plan(chosen, args.offline, bool(trends_file), args.app_store_region or args.region)
     attempts["signals_downloads"] = 2 if "chatgpt" in chosen and not args.offline and not args.signals_file else 0
+    reddit = imports.get("reddit", {})
+    if (attempts["signals_downloads"] == 2 and reddit.get("adapter") == "reddit_data_api"
+            and reddit["collection"]["external_calls"] > 0
+            and sum(attempts.values()) + sum(payload["collection"]["external_calls"] for payload in imports.values()) == 11):
+        attempts["signals_downloads"] = 1
     return {"ready": all(item["ready"] for item in states), "providers": states,
             "public_attempt_ceiling": attempts}, imports
 
@@ -221,8 +226,8 @@ def load_json(path):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def fetch_signals(source):
-    for attempt in range(2):
+def fetch_signals(source, max_attempts=2):
+    for attempt in range(max_attempts):
         source["usage"]["helper_http_attempts"] += 1
         try:
             request = Request(SIGNALS_URL, headers={"User-Agent": "NicheHunter/0.1 public-data research"})
@@ -231,9 +236,10 @@ def fetch_signals(source):
             require(len(data) <= MAX_BYTES, "Signals ZIP exceeds 10 MiB limit")
             return data
         except HTTPError as error:
+            error.close()
             source["status"] = {401: "auth_required", 403: "auth_required", 429: "rate_limited"}.get(
                 error.code, "unavailable")
-            if attempt == 0 and error.code in {429, 500, 502, 503, 504}:
+            if attempt + 1 < max_attempts and error.code in {429, 500, 502, 503, 504}:
                 delay = error.headers.get("Retry-After", "1")
                 if delay.isdigit() and int(delay) <= 2:
                     time.sleep(int(delay))
@@ -241,10 +247,10 @@ def fetch_signals(source):
             source["reason"] = f"Signals HTTP {error.code}; stopped within retry budget."
             return None
         except (URLError, TimeoutError, OSError):
-            if attempt == 0:
+            if attempt + 1 < max_attempts:
                 time.sleep(1)
                 continue
-            source.update(status="unavailable", reason="Signals network failure after two bounded attempts.")
+            source.update(status="unavailable", reason="Signals network failure within the reserved attempt budget.")
             return None
 
 
@@ -264,7 +270,7 @@ def change(current, baseline):
             "reason": "zero_baseline" if baseline == 0 else None}
 
 
-def collect_signals(run, args, out, source=None):
+def collect_signals(run, args, out, source=None, max_attempts=2):
     source = source if source is not None else source_result("chatgpt", run)
     source["adapter"] = "openai_signals_csv"
     canonical_topic = None
@@ -283,7 +289,7 @@ def collect_signals(run, args, out, source=None):
         require(path.stat().st_size <= MAX_BYTES, "Signals ZIP exceeds 10 MiB limit")
         data = path.read_bytes()
     else:
-        data = fetch_signals(source)
+        data = fetch_signals(source, max_attempts)
         if data is None:
             return source
     digest = hashlib.sha256(data).hexdigest()
@@ -565,7 +571,7 @@ def collect(args):
         source = source_result(provider, run)
         try:
             if provider == "chatgpt":
-                source = collect_signals(run, args, out, source)
+                source = collect_signals(run, args, out, source, max_attempts=planned["signals_downloads"])
             elif provider in PUBLIC_ROUTES:
                 from public_sources import collect_public
 

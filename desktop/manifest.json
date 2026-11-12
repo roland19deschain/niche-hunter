@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "niche-hunter-desktop",
   "display_name": "Niche Hunter",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Collect research evidence and create Niche Hunter reports in Claude Desktop on Apple silicon Macs.",
   "author": {"name": "Niche Hunter contributors"},
   "homepage": "https://github.com/roland19deschain/niche-hunter",
@@ -12,7 +12,8 @@
     "https://policies.google.com/privacy",
     "https://serpapi.com/privacy",
     "https://openai.com/policies/privacy-policy/",
-    "https://www.facebook.com/privacy/policy/"
+    "https://www.facebook.com/privacy/policy/",
+    "https://www.reddit.com/policies/privacy-policy"
   ],
   "server": {
     "type": "binary",
@@ -24,6 +25,9 @@
         "NICHE_HUNTER_YOUTUBE_KEY": "${user_config.youtube_key}",
         "NICHE_HUNTER_SERPAPI_KEY": "${user_config.serpapi_key}",
         "NICHE_HUNTER_META_TOKEN": "${user_config.meta_token}",
+        "NICHE_HUNTER_REDDIT_TOKEN": "${user_config.reddit_token}",
+        "NICHE_HUNTER_REDDIT_USER_AGENT": "${user_config.reddit_user_agent}",
+        "NICHE_HUNTER_REDDIT_APPROVED": "${user_config.reddit_approved}",
         "NICHE_HUNTER_TOKCONNECT_CREDITS_PER_RUN": "${user_config.tokconnect_credits_per_run}",
         "NICHE_HUNTER_SERPAPI_SEARCHES_PER_RUN": "${user_config.serpapi_searches_per_run}",
         "NICHE_HUNTER_YOUTUBE_SEARCH_CALLS_PER_RUN": "${user_config.youtube_search_calls_per_run}",
@@ -56,6 +60,23 @@
       "title": "Meta Ad Library access token",
       "description": "Required for live Meta Ad Library collection.",
       "sensitive": true
+    },
+    "reddit_token": {
+      "type": "string",
+      "title": "Reddit OAuth access token",
+      "description": "Read access token for an approved Reddit Data API connection.",
+      "sensitive": true
+    },
+    "reddit_user_agent": {
+      "type": "string",
+      "title": "Reddit API User-Agent",
+      "description": "Identify your approved app using Reddit's platform:app-id:version (by /u/username) format."
+    },
+    "reddit_approved": {
+      "type": "boolean",
+      "title": "Reddit access approved",
+      "description": "Enable only if your Reddit approval covers this use, AI processing and retention.",
+      "default": false
     },
     "tokconnect_credits_per_run": {
       "type": "number",

@@ -1,6 +1,8 @@
 # Changelog
 
-## [Unreleased]
+## [0.12.0] - 2026-11-13
+
+- Add approved Reddit Data API collection for both hunt modes, with private OAuth setup, bounded post and comment sampling, and normalized import support.
 
 - Add Meta Ad Library creative research with private token setup, an EU Tier 1 scope and support for both hunt modes.
 - Ask callers to choose Product Hunt or Trend Hunt. Trend Hunt summarizes current signals and changes by provider without product ideas or an overall conclusion.

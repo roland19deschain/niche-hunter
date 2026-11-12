@@ -9,7 +9,7 @@
 
 Niche Hunter is a research skill for discovering niches for new digital products and refining existing products. Its decision chain is **distribution channel → reachable market and need → product or product change → validation experiment**. It collects available signals, analyzes needs and alternatives, and explains which combinations deserve testing and where evidence is still missing.
 
-> **Release 0.11.0 · November 12, 2026.** Claude Desktop uses built-in per-run limits when the quota fields are left blank. Saved overrides take precedence.
+> **Release 0.12.0 · November 13, 2026.** Choose Product Hunt or Trend Hunt, sample Meta Ad Library creatives, and collect Reddit discussions with approved Data API access or a permitted import.
 
 [Install for Codex](#install-for-codex) · [Install for Claude Code](#install-for-claude-code) · [API-key setup](#api-key-setup) · [Update](#update) · [Rollback](#rollback) · [Releases](https://github.com/roland19deschain/niche-hunter/releases) · [Changelog](./CHANGELOG.md)
 
@@ -21,7 +21,7 @@ TikTok v1 covers search topics, topic detail/related topics and autocomplete. Se
 
 Ask: **"Use Niche Hunter to set up TikTok."** Reuse a working connection, choose an owner-supplied API key, or sign in to your own TokConnect account through the browser. A key recipient does not need to register with TokConnect or use the owner's login. Passwords and tokens do not ship with the skill and must not be pasted into a chat. The API-key workflow below is included in 0.4.0 and later; older installations need an update.
 
-A bare skill invocation also checks all selected providers before research. If access is missing, it presents the supported setup choices without needing a separate setup prompt: TokConnect browser sign-in or an owner-supplied API key where the client supports it. It waits for the selection, reuses configured providers and continues the original research request once ready. Reddit currently needs an existing supported connection/export; public Signals requires no login. The YouTube route asks for a YouTube API key plus either a SerpApi key with confirmed free allowance or a native Trends related-query CSV. Existing fresh imports can be reused. Explicitly excluded providers are not configured.
+A bare skill invocation also checks all selected providers before research. If access is missing, it presents the supported setup choices without needing a separate setup prompt: TokConnect browser sign-in or an owner-supplied API key where the client supports it. It waits for the selection, reuses configured providers and continues the original research request once ready. Reddit supports approved Data API access or a permitted normalized import; public Signals requires no login. The YouTube route asks for a YouTube API key plus either a SerpApi key with confirmed free allowance or a native Trends related-query CSV. Existing fresh imports can be reused. Explicitly excluded providers are not configured.
 
 #### API-key setup
 
@@ -80,7 +80,7 @@ Keys stay in private local settings outside Git/plugin files. Saving them makes 
 
 ## Claude Desktop pilot
 
-On an Apple silicon Mac, download both Desktop assets from the [0.11.0 release](https://github.com/roland19deschain/niche-hunter/releases/tag/0.11.0). Install the `.mcpb` extension and upload `niche-hunter-skill-0.11.0.zip` in Claude Desktop. Set the provider keys in the extension settings. The pilot uses the Mac for collection and report export and needs no terminal setup. See the [Claude Desktop installation and workflow](./skills/niche-hunter/references/claude-desktop.md).
+On an Apple silicon Mac, download both Desktop assets from the [0.12.0 release](https://github.com/roland19deschain/niche-hunter/releases/tag/0.12.0). Install the `.mcpb` extension and upload `niche-hunter-skill-0.12.0.zip` in Claude Desktop. Set the provider keys in the extension settings. The pilot uses the Mac for collection and report export and needs no terminal setup. See the [Claude Desktop installation and workflow](./skills/niche-hunter/references/claude-desktop.md).
 
 ## Install for Codex
 
@@ -211,7 +211,7 @@ Use discovery mode for new products. When asking about an existing product, prov
 
 ## Providers: Reddit + TikTok + ChatGPT + YouTube
 
-The caller can select one or several providers. Unavailable sources remain visible in the coverage table. Reddit/TikTok collection uses permitted tools connected to the calling agent or a normalized import. The Python helper automatically collects the public ChatGPT aggregate source.
+The caller can select one or several providers. Unavailable sources remain visible in the coverage table. Reddit uses approved Data API access or a permitted normalized import. TikTok uses a permitted connection or normalized import. The Python helper automatically collects the public ChatGPT aggregate source.
 
 ### App Store and Google Trends Web Search
 
@@ -219,7 +219,7 @@ Both sources run without accounts or API keys. Each skill run confirms the App S
 
 ### Reddit: problems, workarounds, and unmet demand
 
-The plan is to collect relevant posts and available comments by topic, query, and selected community. Observations need links, identifiers, dates, and available activity metrics.
+The Reddit Data API collector samples public posts by topic or community and can sample comments from one thread. Product Hunt looks for repeated problems and workarounds. Trend Hunt compares observed discussions across the requested and preceding periods when sample depth allows. See [Reddit setup](./skills/niche-hunter/references/reddit.md) for commercial approval, OAuth and import options.
 
 What to look for:
 
@@ -257,7 +257,7 @@ Source and license: [OpenAI Signals, CC BY 4.0](https://openai.com/signals/data-
 
 The YouTube adapter combines Google Trends **YouTube Search Top/Rising** with relevant videos and comments originally published in the selected interval. It can discover fresh comments on older videos and keeps query → video → comment links. Current likes order only the fetched sample; source-relative indices and growth labels retain their scope. The caller chooses automatic SerpApi delivery or a native Trends CSV; Google Data API supplies public videos/comments. No absolute searches, historical likes or global maximum is claimed. Live authentication, quotas and intended analytics acceptance remain pending. [Portable reference](./skills/niche-hunter/references/youtube.md).
 
-### Meta Ad Library (unreleased)
+### Meta Ad Library
 
 Select `meta` to sample ads and compare advertiser offers and creative copy in either mode. Meta Tier 1 covers Germany, France, Ireland and the Netherlands. Use an authorized token in Claude Desktop's private extension settings or the direct collector's hidden setup prompt. See the [Meta provider guide](./skills/niche-hunter/references/meta.md).
 

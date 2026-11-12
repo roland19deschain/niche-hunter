@@ -28,6 +28,7 @@ if not getattr(sys, "frozen", False):
 
 import research
 import meta_ads
+import reddit
 import tiktok
 import youtube
 from public_sources import collect_public
@@ -39,8 +40,10 @@ ENV_KEYS = {
     "youtube_api_key": "NICHE_HUNTER_YOUTUBE_KEY",
     "serpapi_api_key": "NICHE_HUNTER_SERPAPI_KEY",
     "meta_token": "NICHE_HUNTER_META_TOKEN",
+    "reddit_token": "NICHE_HUNTER_REDDIT_TOKEN",
 }
 PROVIDER_KEY = re.compile(r"[A-Za-z0-9._~+/-]{8,500}=*")
+TOKEN_FORMATS = {"meta_token": meta_ads.TOKEN, "reddit_token": reddit.TOKEN}
 PROVIDER_QUOTAS = {"tiktok": ("tokconnect_credits",),
                    "youtube": ("serpapi_searches", "youtube_search_calls", "youtube_comment_units")}
 MANIFEST = Path(__file__).resolve().with_name("manifest.json")
@@ -63,7 +66,7 @@ def injected_keys():
     keys = {}
     for name, variable in ENV_KEYS.items():
         value = os.environ.pop(variable, "").strip()
-        if (meta_ads.TOKEN if name == "meta_token" else PROVIDER_KEY).fullmatch(value):
+        if TOKEN_FORMATS.get(name, PROVIDER_KEY).fullmatch(value):
             keys[name] = value
     return keys
 
@@ -85,15 +88,22 @@ def plan_calls(providers, imported, limits, imported_attempts=0, trends_csv=Fals
     plan["imported_attempts"] = imported_attempts
     plan["signals_downloads"] = 2 if "chatgpt" in live else 0
     plan["meta_requests"] = int("meta" in live)
+    plan["reddit_requests"] = int("reddit" in live)
     plan.update(research.public_request_plan(live, trends_csv=trends_csv, region=region))
-    remaining = 10 - sum(plan.values())
     if "tiktok" in live:
         plan["tokconnect_credits"] = limits["tokconnect_credits"]
-        remaining -= plan["tokconnect_credits"]
-    if "youtube" in live and remaining >= 3:
+    if "youtube" in live:
         for name in PROVIDER_QUOTAS["youtube"]:
             plan[name] = limits[name]
-        plan["youtube_comment_units"] = min(plan["youtube_comment_units"], remaining - 2)
+        plan["youtube_comment_units"] = min(limits["youtube_comment_units"], 1)
+    # Give every live provider one usable collection route before reserving optional calls.
+    if sum(plan.values()) == 11 and "reddit" in live and "chatgpt" in live:
+        plan["signals_downloads"] = 1
+    if "reddit" in live and sum(plan.values()) < 10:
+        plan["reddit_requests"] += 1
+    if "youtube" in live:
+        plan["youtube_comment_units"] += min(max(0, 10 - sum(plan.values())),
+                                             limits["youtube_comment_units"] - plan["youtube_comment_units"])
     return plan
 
 
@@ -149,11 +159,13 @@ async def collect_tokconnect(key, topic, limit):
 
 
 class DesktopResearch:
-    def __init__(self, keys, root, limits=None):
+    def __init__(self, keys, root, limits=None, reddit_user_agent=None, reddit_approved=False):
         self.keys = keys
         self.root = root
         self.extension_version = DESKTOP_MANIFEST["version"]
         self.limits = {name: (limits or {}).get(name, default) for name, default in QUOTA_DEFAULTS.items()}
+        self.reddit_user_agent = reddit_user_agent
+        self.reddit_approved = reddit_approved
 
     def check_content(self, value):
         data = check_size(value)
@@ -189,17 +201,18 @@ class DesktopResearch:
                 if "meta_token" not in self.keys:
                     missing.append("Meta Ad Library access token")
             else:
-                route = "normalized_import"
-                missing.append("permitted Reddit import")
+                route = reddit.ROUTE
+                missing.extend(reddit.access_missing(self.keys.get("reddit_token"), self.reddit_user_agent,
+                                                    self.reddit_approved))
             if provider not in imported:
                 missing.extend(name + " per-run limit" for name in PROVIDER_QUOTAS.get(provider, ())
                                if self.limits[name] == 0)
             checks.append({"provider": provider, "ready": not missing, "route": route, "missing": missing})
+        planned = plan_calls(selected, imported, self.limits, region=region, trends_csv=google_trends_csv_supplied)
         return {"ready": all(item["ready"] for item in checks), "providers": checks,
                 "extension_version": self.extension_version, "owner_limits": dict(self.limits),
                 "limit_defaults": dict(QUOTA_DEFAULTS),
-                "maximum_planned_attempts": plan_calls(selected, imported, self.limits, region=region,
-                                                       trends_csv=google_trends_csv_supplied),
+                "maximum_planned_attempts": planned,
                 "checks": "Configuration and per-run limits only. Provider balances are not checked here.",
                 "report_directory": str(self.root)}
 
@@ -207,9 +220,10 @@ class DesktopResearch:
                       free_tokconnect_credits, free_serpapi_searches, youtube_search_calls,
                       youtube_comment_units, max_records, imports, youtube_seed=None, google_trends_csv=None,
                       app_store_region=None, app_store_topic=None, google_trends_region=None, hunt_mode="product_hunt",
-                      meta_region=None):
+                      meta_region=None, reddit_community=None):
         self.check_content([providers, start, end, timezone, topic, region, language, imports, youtube_seed,
-                            google_trends_csv, app_store_region, app_store_topic, google_trends_region, hunt_mode, meta_region])
+                            google_trends_csv, app_store_region, app_store_topic, google_trends_region, hunt_mode,
+                            meta_region, reddit_community])
         research.require(1 <= max_records <= 100, "Use 1 to 100 records per provider")
         research.require(topic is None or 0 < len(topic.strip()) <= 100, "Use a topic of at most 100 characters")
         args = SimpleNamespace(providers=providers, exclude_providers=None, days=days, start=start, end=end,
@@ -237,6 +251,10 @@ class DesktopResearch:
 
         live_tiktok = "tiktok" in run["providers"] and "tiktok" not in sources
         live_youtube = "youtube" in run["providers"] and "youtube" not in sources
+        live_reddit = "reddit" in run["providers"] and "reddit" not in sources
+        research.require(reddit_community is None or live_reddit, "Use reddit_community only with live Reddit")
+        if live_reddit:
+            reddit_community = reddit.scope(run["topic"], reddit_community)
         imported_attempts = sum(source["usage"]["external_calls"] for source in sources.values())
         overrides = {"tokconnect_credits": free_tokconnect_credits, "serpapi_searches": free_serpapi_searches,
                      "youtube_search_calls": youtube_search_calls, "youtube_comment_units": youtube_comment_units}
@@ -251,7 +269,8 @@ class DesktopResearch:
                              "Use a YouTube import or exclude YouTube when one of its limits is zero")
         planned = plan_calls(run["providers"], sources, available, imported_attempts,
                              trends_csv=google_trends_csv is not None, region=app_store_region or region)
-        research.require(sum(planned.values()) <= 10, "The selected routes exceed the 10-attempt run budget")
+        research.require(sum(planned.values()) <= 10,
+                         "The selected routes exceed 10 attempts. Use a narrower storefront scope, an offline import, or fewer providers.")
         if youtube_seed is not None:
             research.require(live_youtube and not run["topic"], "Use youtube_seed only with live YouTube and no topic")
             youtube_seed = youtube_seed.strip()
@@ -275,10 +294,21 @@ class DesktopResearch:
             source = research.source_result(provider, run)
             try:
                 if provider == "chatgpt":
-                    source = await asyncio.to_thread(research.collect_signals, run, args, out, source)
+                    source = await asyncio.to_thread(research.collect_signals, run, args, out, source,
+                                                     planned["signals_downloads"])
                 elif provider in research.PUBLIC_ROUTES:
                     source = await asyncio.to_thread(collect_public, run, source, google_trends_csv)
                     actual[provider + "_requests"] = source["usage"]["helper_http_attempts"]
+                elif provider == "reddit":
+                    payload = await asyncio.to_thread(reddit.collect, run, self.keys["reddit_token"],
+                                                      self.reddit_user_agent, self.reddit_approved,
+                                                      community=reddit_community, maximum=max_records,
+                                                      attempts=planned["reddit_requests"])
+                    actual["reddit_requests"] = source["usage"]["external_calls"] = payload["collection"]["external_calls"]
+                    self.check_content(payload)
+                    run["generated_at"] = research.iso(now())
+                    source = research.collect_import(payload, run, max_records, source)
+                    source["provenance"]["mode"] = "live_desktop_collection"
                 elif provider == "meta":
                     payload = await asyncio.to_thread(meta_ads.collect, run, self.keys["meta_token"],
                                                       region=run["meta_region"], maximum=max_records)
@@ -412,13 +442,15 @@ def make_server(desktop):
                                    google_trends_csv: dict | None = None, app_store_region: str | None = None,
                                    app_store_topic: str | None = None, google_trends_region: str | None = None,
                                    hunt_mode: Literal["product_hunt", "trend_hunt"] = "product_hunt",
-                                   meta_region: str | None = None) -> dict[str, Any]:
+                                   meta_region: str | None = None,
+                                   reddit_community: str | None = None) -> dict[str, Any]:
         """Collect one run after preflight. Omit limit arguments unless the caller explicitly requests a lower cap."""
         try:
             return await desktop.collect(providers, days, start, end, timezone, topic, region, language,
                                          free_tokconnect_credits, free_serpapi_searches, youtube_search_calls, youtube_comment_units,
                                          max_records, imports or [], youtube_seed, google_trends_csv,
-                                         app_store_region, app_store_topic, google_trends_region, hunt_mode, meta_region)
+                                         app_store_region, app_store_topic, google_trends_region, hunt_mode,
+                                         meta_region, reddit_community)
         except (ValueError, KeyError, TypeError, OSError) as error:
             message = str(error) if isinstance(error, ValueError) else ""
             if not message.startswith(("Use ", "Confirm ", "Leave ", "The selected ", "Supply ",
@@ -454,5 +486,7 @@ async def run_stdio(server):
 if __name__ == "__main__":
     logging.disable(logging.CRITICAL)
     os.environ.setdefault("SSL_CERT_FILE", certifi.where())
-    desktop = DesktopResearch(injected_keys(), Path.home() / "Niche Hunter Reports", injected_limits())
+    desktop = DesktopResearch(injected_keys(), Path.home() / "Niche Hunter Reports", injected_limits(),
+                              reddit_user_agent=os.environ.pop("NICHE_HUNTER_REDDIT_USER_AGENT", "").strip(),
+                              reddit_approved=os.environ.pop("NICHE_HUNTER_REDDIT_APPROVED", "").lower() == "true")
     anyio.run(run_stdio, make_server(desktop))

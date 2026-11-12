@@ -142,6 +142,77 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(sum(status["maximum_planned_attempts"].values()), 10)
         self.assertEqual(status["maximum_planned_attempts"]["youtube_comment_units"], 2)
 
+    async def test_reddit_setup_and_collection_in_both_modes(self):
+        key = "synthetic-reddit-access-token"
+        agent = "desktop:fixture-app:0.1 (by /u/fixture_user)"
+        self.desktop = server.DesktopResearch({"reddit_token": key}, self.root, reddit_user_agent=agent)
+        with patch.object(server.reddit, "fetch") as fetch:
+            blocked = await self.collect(providers="reddit")
+        self.assertFalse(blocked["ready"])
+        fetch.assert_not_called()
+        self.assertFalse(self.root.exists())
+        self.assertTrue(self.desktop.status("reddit", ["reddit"])["ready"])
+
+        self.desktop = server.DesktopResearch({"reddit_token": key}, self.root,
+                                              reddit_user_agent=agent, reddit_approved=True)
+
+        def listing(kind, items, after=None):
+            return {"kind": "Listing", "data": {"children": [{"kind": kind, "data": item} for item in items],
+                                               "after": after}}
+
+        def post(post_id, days_ago, **extra):
+            return {"id": post_id, "created_utc": (server.now() - timedelta(days=days_ago)).timestamp(),
+                    "subreddit": "fixture", "subreddit_type": "public", "title": "Synthetic title",
+                    "selftext": key, "author": "private-fixture-author", "num_comments": 3, **extra}
+
+        posts = listing("t3", [post("a1", 2), post("a1", 2), post("b2", 8),
+                               {**post("c3", 3), "subreddit_type": "private"},
+                               {**post("d4", 3), "selftext": "[removed]"}], after=key)
+        comments = listing("t1", [{"id": "e5", "body": "Synthetic reply",
+                                    "created_utc": (server.now() - timedelta(days=1)).timestamp(),
+                                    "score": -2, "link_id": "t3_a1", "parent_id": "t3_a1"}])
+        for mode, ids in (("product_hunt", ["t3_a1", "t1_e5"]), ("trend_hunt", ["t3_a1", "t3_b2", "t1_e5"])):
+            with self.subTest(mode=mode), patch.object(server.reddit, "fetch", side_effect=[posts, [None, comments]]) as fetch:
+                result = await self.collect(providers="reddit", region="CA", hunt_mode=mode, reddit_community="r/fixture")
+                requests = [call.args[0] for call in fetch.call_args_list]
+            self.assertEqual([urlsplit(req.full_url).path for req in requests], ["/r/fixture/search", "/comments/a1"])
+            self.assertTrue(all(urlsplit(req.full_url).netloc == "oauth.reddit.com" and key not in req.full_url
+                                and req.get_header("Authorization") == "Bearer " + key for req in requests))
+            self.assertEqual(requests[0].get_header("User-agent"), agent)
+            source, = result["sources"]
+            self.assertEqual([row["source_id"] for row in source["observations"]], ids)
+            self.assertEqual(source["unsupported_filters"], ["region"])
+            self.assertEqual(result["run"]["desktop_budget"]["actual_attempts"]["reddit_requests"], 2)
+            self.assertNotIn(key, json.dumps(result))
+            self.assertNotIn("private-fixture-author", json.dumps(result))
+            if mode == "trend_hunt":
+                report = self.desktop.finalize(result["run"]["id"], {**ANALYSIS, "presentation": {"providers": [
+                    {"provider": "reddit", "conclusion": "Sampled discussions.",
+                     "evidence_ids": [row["id"] for row in source["observations"]]}]}}, None)
+                self.assertIn("Prior-window posts: 1", report["markdown"])
+                self.assertIn("Page did not reach the start", report["markdown"])
+
+    def test_reddit_limits_and_connection_error(self):
+        default = server.plan_calls(server.research.PROVIDERS, [], server.QUOTA_DEFAULTS)
+        self.assertEqual(sum(default.values()), 10)
+        self.assertEqual(default["reddit_requests"], 1)
+        self.assertEqual(default["signals_downloads"], 1)
+        self.assertEqual(default["youtube_comment_units"], 1)
+        scoped = server.plan_calls(server.research.PROVIDERS, [], server.QUOTA_DEFAULTS, region="US")
+        self.assertEqual(sum(scoped.values()), 10)
+        self.assertEqual(scoped["signals_downloads"], 2)
+
+        args = server.research.parser().parse_args(["collect", "--providers", "reddit", "--out", str(self.root)])
+        run = server.research.parameters(args, server.now())
+        with patch.object(server.reddit, "fetch", side_effect=HTTPError(
+                server.reddit.ENDPOINT, 429, "private body", {}, None)) as fetch:
+            result = server.reddit.collect(run, "synthetic-token", "cli:fixture:1 (by /u/fixture)", True)
+        self.assertEqual(result["status"], "rate_limited")
+        self.assertEqual(result["collection"]["external_calls"], 1)
+        self.assertEqual(urlsplit(fetch.call_args.args[0].full_url).path,
+                         "/r/" + server.research.CATALOG["categories"][0]["reddit"][0] + "/new")
+        self.assertNotIn("private body", json.dumps(result))
+
     async def test_meta_requires_private_token_and_passes_independent_region_and_mode(self):
         self.assertFalse(self.desktop.status("meta")["ready"])
         with patch.object(server.meta_ads, "fetch", side_effect=AssertionError("unexpected provider call")):
