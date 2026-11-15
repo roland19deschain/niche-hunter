@@ -5,6 +5,7 @@ import copy
 import importlib.util
 import io
 import json
+import struct
 import subprocess
 import sys
 import tempfile
@@ -14,6 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 from urllib.error import HTTPError, URLError
+from zoneinfo import ZoneInfo
 
 SCRIPT = Path(__file__).resolve().parents[1] / "skills/niche-hunter/scripts/research.py"
 SPEC = importlib.util.spec_from_file_location("research", SCRIPT)
@@ -104,8 +106,16 @@ class ResearchTests(unittest.TestCase):
         self.assertEqual(run["timezone_reason"], "disclosed_UTC_fallback")
 
     def test_calendar_days_across_dst_and_nonoverlapping_baseline(self):
-        run = research.parameters(self.args("--timezone", "CET"),
-                                  datetime(2026, 11, 1, 12, tzinfo=timezone.utc))
+        # A TZif v1 fixture with spring-forward and fall-back transitions.
+        transitions = (datetime(2026, 3, 29, 1, tzinfo=timezone.utc),
+                       datetime(2026, 10, 25, 1, tzinfo=timezone.utc))
+        abbreviations = b"STD\0DST\0"
+        header = b"TZif" + b"\0" * 16 + struct.pack(">6I", 0, 0, 0, 2, 2, len(abbreviations))
+        transition_data = struct.pack(">2i2B", *(int(value.timestamp()) for value in transitions), 1, 0)
+        offsets = struct.pack(">iBBiBB", 3600, 0, 0, 7200, 1, 4)
+        zone = ZoneInfo.from_file(io.BytesIO(header + transition_data + offsets + abbreviations), key="Test/DST")
+        with patch.object(research, "ZoneInfo", return_value=zone):
+            run = self.run_params("--timezone", zone.key)
         current = run["requested_window"]
         self.assertEqual(current["start_at"], "2026-10-24T22:00:00Z")
         self.assertEqual(current["end_at"], "2026-10-31T23:00:00Z")
