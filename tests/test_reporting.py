@@ -152,13 +152,13 @@ class CompactReportTests(unittest.TestCase):
     def test_requested_period_shows_inclusive_local_dates_and_partial_day_times(self):
         result = fixture()
         run = result["run"]
-        run["timezone"] = "Etc/GMT-3"
-        run["requested_window"].update(start_at="2026-10-24T21:00:00Z", end_at="2026-10-31T21:00:00Z")
-        self.assertEqual(build_report(result)["period"], "2026-10-25 – 2026-10-31 (Etc/GMT-3)")
-        run["requested_window"]["end_at"] = "2026-10-25T10:45:00Z"
+        run["timezone"] = "Etc/GMT+4"
+        run["requested_window"].update(start_at="2026-10-25T04:00:00Z", end_at="2026-11-01T04:00:00Z")
+        self.assertEqual(build_report(result)["period"], "2026-10-25 – 2026-10-31 (Etc/GMT+4)")
+        run["requested_window"]["end_at"] = "2026-10-25T17:45:00Z"
         self.assertEqual(build_report(result)["period"],
-                         "2026-10-25 00:00+03:00 – 2026-10-25 13:45+03:00 (Etc/GMT-3, end exclusive)")
-        self.assertEqual(run["requested_window"]["end_at"], "2026-10-25T10:45:00Z")
+                         "2026-10-25 00:00-04:00 – 2026-10-25 13:45-04:00 (Etc/GMT+4, end exclusive)")
+        self.assertEqual(run["requested_window"]["end_at"], "2026-10-25T17:45:00Z")
 
     def test_single_provider_keeps_its_conclusion_suggestions_and_ideas_without_overall(self):
         from pypdf import PdfReader

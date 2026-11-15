@@ -9,13 +9,9 @@
 
 Niche Hunter is a research skill for discovering niches for new digital products and refining existing products. Its decision chain is **distribution channel → reachable market and need → product or product change → validation experiment**. It collects available signals, analyzes needs and alternatives, and explains which combinations deserve testing and where evidence is still missing.
 
-> **Release 0.12.0 · November 13, 2026.** Choose Product Hunt or Trend Hunt, sample Meta Ad Library creatives, and collect Reddit discussions with approved Data API access or a permitted import.
+> **Release 0.13.0.** Check Google Search keywords with Semrush in Codex and Claude, using the official MCP connector, an approved API key, or a manual browser check.
 
-[Install for Codex](#install-for-codex) · [Install for Claude Code](#install-for-claude-code) · [API-key setup](#api-key-setup) · [Update](#update) · [Rollback](#rollback) · [Releases](https://github.com/roland19deschain/niche-hunter/releases) · [Changelog](./CHANGELOG.md)
-
-**YouTube since 0.5.0:** the `youtube` provider combines Google Trends **YouTube Search Top/Rising → relevant videos → comments published in the requested period → current-like ranking within that sample**. It produces a separate YouTube table and conclusion in chat, Markdown and PDF. The owner reports one successful authenticated Desktop run in the Code tab on November 10. Chat-tab invocation, confirmed quota and broader sampling remain pilot checks. [Setup, automatic/CSV routes and limits](./skills/niche-hunter/references/youtube.md).
-
-TikTok v1 covers search topics, topic detail/related topics and autocomplete. Seven-day popularity remains a supplier claim, with unknown source dates preserved; it does not provide verified exact query counts or arbitrary historical windows. Signals supplies broad monthly context, not weekly search logs.
+[Providers](#providers) · [Install for Codex](#install-for-codex) · [Install for Claude Code](#install-for-claude-code) · [Install for Claude Desktop](#claude-desktop-pilot) · [Update](#update) · [Rollback](#rollback) · [Releases](https://github.com/roland19deschain/niche-hunter/releases) · [Changelog](./CHANGELOG.md)
 
 ### TikTok connection setup
 
@@ -80,7 +76,7 @@ Keys stay in private local settings outside Git/plugin files. Saving them makes 
 
 ## Claude Desktop pilot
 
-On an Apple silicon Mac, download both Desktop assets from the [0.12.0 release](https://github.com/roland19deschain/niche-hunter/releases/tag/0.12.0). Install the `.mcpb` extension and upload `niche-hunter-skill-0.12.0.zip` in Claude Desktop. Set the provider keys in the extension settings. The pilot uses the Mac for collection and report export and needs no terminal setup. See the [Claude Desktop installation and workflow](./skills/niche-hunter/references/claude-desktop.md).
+On an Apple silicon Mac, download both Desktop assets from the [0.13.0 release](https://github.com/roland19deschain/niche-hunter/releases/tag/0.13.0). Install the `.mcpb` extension and upload `niche-hunter-skill-0.13.0.zip` in Claude Desktop. Set the keys for your selected providers in the extension settings. The pilot uses the Mac for collection and report export and needs no terminal setup. See the [Claude Desktop installation and workflow](./skills/niche-hunter/references/claude-desktop.md).
 
 ## Install for Codex
 
@@ -209,9 +205,19 @@ An idea should therefore include a concrete entry point, audience/intent, propos
 
 Use discovery mode for new products. When asking about an existing product, provide its purpose and relevant constraints; refinement mode evaluates positioning, workflow, features, or acquisition changes relative to that product. Both modes can return no hypotheses when available evidence is insufficient. A useful recurring need does not have to be a growing trend.
 
-## Providers: Reddit + TikTok + ChatGPT + YouTube
+## Providers
 
-The caller can select one or several providers. Unavailable sources remain visible in the coverage table. Reddit uses approved Data API access or a permitted normalized import. TikTok uses a permitted connection or normalized import. The Python helper automatically collects the public ChatGPT aggregate source.
+Niche Hunter checks these seven default providers before a run. You can select a subset. The report shows actual coverage for each selected source.
+
+| Provider | Evidence | Tools and setup |
+| --- | --- | --- |
+| Reddit (`reddit`) | Public posts and a bounded comment sample about recurring problems, workarounds and alternatives | [Reddit Data API](https://www.reddit.com/dev/api/#GET_search) with approved OAuth, or a permitted import. [Setup](./skills/niche-hunter/references/reddit.md) |
+| TikTok (`tiktok`) | Search topics, related topics and autocomplete suggestions | [TokConnect MCP](https://tokconnect.com/connect/) with OAuth or a privately configured key, or a permitted import. [Setup](./skills/niche-hunter/references/tiktok.md) |
+| ChatGPT (`chatgpt`) | Global monthly message shares by broad topic | Public [OpenAI Signals](https://openai.com/signals/data-download/), with no account or key. [Coverage](./skills/niche-hunter/references/providers.md#chatgpt--openai-signals) |
+| YouTube (`youtube`) | Relative search interest, relevant videos and dated public comments | [Google Trends export](https://support.google.com/trends/answer/4365538) or [SerpApi](https://serpapi.com/google-trends-related-queries) for YouTube Search interest, plus [YouTube Data API v3](https://developers.google.com/youtube/data/reference/rest/v3/search/list). [Setup](./skills/niche-hunter/references/youtube.md) |
+| App Store (`app_store`) | Current competitors, prices, ratings and rating counts where supplied | [Apple Search API](https://performance-partners.apple.com/search-api) for topic searches or [Apple Top Free](https://rss.marketingtools.apple.com/) for a storefront snapshot. No key. [Scope](./skills/niche-hunter/references/providers.md#app-store-and-google-trends-web-search) |
+| Google Trends (`google_trends`) | Regional trending searches or relative Top/Rising interest for a chosen topic | [Trending Now RSS](https://support.google.com/trends/answer/3076011) or [Web Search related-queries CSV](https://support.google.com/trends/answer/4365538). No key. [Scope](./skills/niche-hunter/references/providers.md#app-store-and-google-trends-web-search) |
+| Meta Ad Library (`meta`) | Sampled advertiser offers, creative copy, platforms and delivery dates | [Ads Archive API](https://developers.facebook.com/docs/graph-api/reference/ads_archive/) with an authorized token and supported EU scope. [Setup](./skills/niche-hunter/references/meta.md) |
 
 ### App Store and Google Trends Web Search
 
@@ -231,21 +237,9 @@ What to look for:
 
 The output should be verifiable problem statements with links to discussions. Analysis must account for duplicates, promotional posts, community characteristics, and sample size. One popular thread alone does not establish sustained market demand.
 
-### TikTok: topics, search signals, and product demonstrations
+### TikTok: search topics and keyword suggestions
 
-The plan is to research available topics and content: search recommendations, topic groups, hashtags, videos, product demonstrations, and comments. The specific dataset will depend on the verified source, region, and permissions.
-
-What to look for:
-
-- Recurring demonstrations of useful results: “before/after,” automation, or a quick solution to a task.
-- Viewer questions about which tool produced a result and how to reproduce it.
-- Topics that sustain interest across different creators and multiple time periods.
-- Search needs and gaps in suitable content where the source actually provides such data.
-- Creative approaches that can be used in a small test of a product hypothesis.
-
-Search queries, recommended keywords, topic groups, hashtags, and views will be treated as different signal types. Information about an exact search phrase must not be automatically replaced with a topic name, nor video views with search counts.
-
-TikTok data access options, including Business Discovery, Creator Search Insights, Creative Center, and third-party providers, must be verified before an integration is selected. A trends interface does not guarantee an available API or historical search volumes. If only content signals are available, the report must state this explicitly.
+The TokConnect route collects search topics, topic details, related topics and autocomplete. Seven-day popularity is a supplier metric with unverified search volumes. The report preserves unknown measurement windows and distinguishes keyword suggestions from measured activity. See the [TokConnect demand schema](https://tokconnect.com/docs/api/demand/) and the [TikTok scope and capture guide](./skills/niche-hunter/references/tiktok.md).
 
 ### ChatGPT: public OpenAI Signals
 
@@ -255,7 +249,7 @@ Source and license: [OpenAI Signals, CC BY 4.0](https://openai.com/signals/data-
 
 ### YouTube: search-interest changes and current questions
 
-The YouTube adapter combines Google Trends **YouTube Search Top/Rising** with relevant videos and comments originally published in the selected interval. It can discover fresh comments on older videos and keeps query → video → comment links. Current likes order only the fetched sample; source-relative indices and growth labels retain their scope. The caller chooses automatic SerpApi delivery or a native Trends CSV; Google Data API supplies public videos/comments. No absolute searches, historical likes or global maximum is claimed. Live authentication, quotas and intended analytics acceptance remain pending. [Portable reference](./skills/niche-hunter/references/youtube.md).
+The YouTube adapter combines Google Trends **YouTube Search Top/Rising** with relevant videos and comments originally published in the selected interval. It can discover fresh comments on older videos and keeps query → video → comment links. Current likes order only the fetched sample; source-relative indices and growth labels retain their scope. The caller chooses automatic SerpApi delivery or a native Trends CSV; Google Data API supplies public videos/comments. No absolute searches, historical likes or global maximum is claimed. One authenticated Claude Desktop run was owner-reported. Wider client coverage, quotas and intended analytics acceptance remain pilot checks. [YouTube provider guide](./skills/niche-hunter/references/youtube.md)
 
 ### Meta Ad Library
 
@@ -265,13 +259,17 @@ Select `meta` to sample ads and compare advertiser offers and creative copy in e
 
 At the start of a run, Niche Hunter asks which mode to use. **Product Hunt** looks for a new product idea or refinements to an existing one. **Trend Hunt** reports current signals and changes by provider, for a supplied topic or a broad sample. It includes what was searched, observed data, and a short conclusion for each provider. Both modes use the same collection routes and limits.
 
+### Optional Google Search check with Semrush
+
+Ask for an optional Semrush check to assess estimated monthly search volume, search intent, SEO difficulty, CPC and paid competition for one keyword and market. Codex on macOS, Codex CLI, Claude Code and Claude Desktop use the same lookup and reporting workflow. Connect [Semrush MCP](https://developer.semrush.com/api/v4/introduction/semrush-mcp/) or configure an approved [Keyword Metrics API](https://developer.semrush.com/api/v4/seo/keyword-reports/) key in private local settings or the Desktop extension. For free accounts, the skill suggests phrases for manual checks in [Keyword Overview](https://www.semrush.com/analytics/keywordoverview/). Semrush results are presented separately in the conversation. [Setup by client](./skills/niche-hunter/references/semrush.md)
+
 ### Combined analysis
 
 Reddit and TikTok should complement each other. For example, discussions may reveal a recurring manual task, while videos may show how clearly and visually its solution can be demonstrated.
 
 Overlapping topics will warrant deeper investigation. However, reposts, retellings of the same material, and related promotional posts must not be counted as independent corroboration. The absence of a signal in the second source will also be reflected in the report.
 
-## How the research will work
+## How research works
 
 1. **Define the scope.** Select sources, topics, languages, region, date range, time zone, and collection limits.
 2. **Check availability.** Determine which fields and periods are actually available and whether authorization or manual import is required.
@@ -284,17 +282,15 @@ Overlapping topics will warrant deeper investigation. However, reposts, retellin
 
 Competitor, pricing, and commercial demand validation will be a separate part of the evidence supporting each hypothesis. Until additional sources are connected, these questions will remain explicitly listed as items for further research.
 
-### Example future request
+### Example request
 
-> Research Reddit and TikTok over the last seven complete days on the topic of productivity. Look for recurring tasks, awkward workarounds, and demonstrations of useful tools. Compare with the previous seven days where history is available. Prepare five hypotheses for small products, with links, limitations, and a validation plan.
-
-This scenario can now be requested through the skill. Its usefulness depends on permitted connected evidence; the skill will return fewer hypotheses or none when support is insufficient.
+> Run Product Hunt for Reddit and TikTok over the last seven complete days on the topic of productivity. Look for recurring tasks, workarounds and related search topics. Compare with the previous seven days where history is available. Suggest up to three product ideas with evidence links and a small validation test.
 
 ### Research parameters
 
 | Parameter | Purpose |
 | --- | --- |
-| Sources | Selected subset of Reddit, TikTok, ChatGPT and YouTube |
+| Sources | Any subset of the [seven providers](#providers), plus optional Semrush keyword validation |
 | Decision and product context | New-product discovery, or refinement of a caller-described existing product |
 | Distribution constraints | Optional caller-selected channels; otherwise propose routes and label their evidence status |
 | Topics and filters | Queries, categories, subreddits, hashtags — depending on the source |
@@ -358,28 +354,23 @@ The versioned v0.1 contract separates normalized observations from calling-agent
 
 **Data access must be sustainable and permitted.** Current APIs, access rights, limits, and storage terms must be verified for each source. If programmatic access is unavailable, explicitly labeled manual import may be used. Secrets must not enter the repository or logs.
 
-## Proposed architecture
+## Architecture
 
 The skill coordinates collection and analysis. The helper performs deterministic normalization and reporting; semantic analysis runs in the calling agent.
 
 ```mermaid
 flowchart TD
-    Request["Research parameters"] --> Reddit["Reddit adapter"]
-    Request --> TikTok["TikTok adapter"]
-    Request --> ChatGPT["OpenAI Signals: monthly context"]
-    Request --> YouTube["YouTube: Trends, videos, dated comments"]
-    Reddit --> Observations["Normalization, deduplication, and provenance"]
-    TikTok --> Observations
-    ChatGPT --> Observations
-    YouTube --> Observations
+    Request["Research parameters"] --> Sources["Reddit, TikTok, OpenAI Signals, YouTube, App Store, Google Trends and Meta Ad Library"]
+    Sources --> Observations["Normalization, deduplication, and provenance"]
     Observations --> Analysis["Topic clustering, trends, and problems"]
-    Analysis --> Opportunities["Product hypotheses and validation plan"]
-    Opportunities --> Report["Compact chat, Markdown, PDF and detailed JSON"]
+    Analysis --> Report["Product Hunt or Trend Hunt report"]
+    Request --> Semrush["Optional Semrush keyword validation"]
+    Semrush --> Addendum["Google Search summary in chat"]
 ```
 
 Each adapter will describe its own capabilities and limitations. Shared analytics should work with normalized observations while preserving the meaning of the original metrics. This will allow new sources to be added without collapsing different signal types into a single popularity metric.
 
-The portable helper uses Python 3.10+ and its standard library. Connected MCP tools remain client-specific; the common skill has no dependency on one model supplier's SDK. There is no hosted backend or background collector.
+The portable helper collects and normalizes data with [Python](https://www.python.org/) 3.10+. The [ReportLab](https://pypi.org/project/reportlab/) PDF exporter is bundled with Claude Desktop and available through the PDF requirements file for other clients. Connected MCP tools are managed by the client. The skill runs on demand.
 
 ## First-iteration plan
 
@@ -401,7 +392,7 @@ Checks must cover date boundaries, deduplication, small and zero comparison base
 
 ## Future development
 
-After the first iteration, demand cross-validation can be expanded through search sources, App Store intelligence, competitor reviews and pricing, and ad libraries. Further directions include accumulating a permitted history of observations, analyzing topic persistence, and comparing hypotheses with real experiment results.
+The [development plan](./docs/development-plan.md) tracks candidate sources and access requirements. Further directions include richer store and creative data, a permitted history of observations, and comparing hypotheses with experiment results.
 
 Regular collection, additional integrations, and automation will be separate stages after the sources and core workflow have been verified.
 
@@ -449,10 +440,12 @@ Direct helper commands from the repository root (Python 3.10+ with IANA time-zon
 # In the chosen environment, configure PDF export and verify the selected connections:
 python3 -m pip install -r skills/niche-hunter/requirements-pdf.txt
 python3 skills/niche-hunter/scripts/research.py preflight \
+  --providers reddit,tiktok,youtube,chatgpt \
   --configured-providers reddit,tiktok,youtube
 
 # After the calling client collects the configured external sources:
 python3 skills/niche-hunter/scripts/research.py collect \
+  --providers reddit,tiktok,youtube,chatgpt \
   --import-file REDDIT_IMPORT_JSON --import-file TIKTOK_IMPORT_JSON \
   --import-file YOUTUBE_IMPORT_JSON \
   --out .nichehunter/runs/first-run
@@ -471,11 +464,11 @@ python3 -m pip install pypdf  # development PDF extraction checks
 python3 -m unittest discover -s tests -v
 ```
 
-Choose a fresh output directory for every collection. Local `.nichehunter/` runs are ignored by Git. `collect` alone produces evidence and a report with analysis pending; `finalize` adds the agent's checked analysis without recollecting. For offline replay use `--offline --signals-file PATH`; for permitted Reddit/TikTok/YouTube data use `--import-file PATH` following the [contract](./skills/niche-hunter/references/contracts.md). This does not turn an unlicensed export into permitted data. Collection/normalization needs no external packages. Signals/import processing needs no API key; live YouTube collection requires the separate private configuration described above. PDF finalization uses ReportLab from `skills/niche-hunter/requirements-pdf.txt` or an equivalent PDF exported by the calling client. Before collection, complete preflight for every selected provider or explicitly exclude missing ones; use `--diagnostic` only for a requested maintenance check. Supply `--timezone` from the caller's chosen zone when available; otherwise the helper explicitly reports its UTC fallback. Region and language filters are optional and have no market-specific defaults.
+Choose a fresh output directory for every collection. Local `.nichehunter/` runs are ignored by Git. `collect` alone produces evidence and a report with analysis pending; `finalize` adds the agent's checked analysis without recollecting. For offline replay use `--offline --signals-file PATH`; for permitted Reddit/TikTok/YouTube data use `--import-file PATH` following the [contract](./skills/niche-hunter/references/contracts.md). This does not turn an unlicensed export into permitted data. Collection/normalization needs no external packages. Signals/import processing needs no API key; live YouTube collection requires the separate private configuration described above. PDF finalization uses ReportLab from `skills/niche-hunter/requirements-pdf.txt` or an equivalent PDF exported by the calling client. Before collection, complete preflight for every selected provider or explicitly exclude missing ones; use `--diagnostic` only for a requested maintenance check. Supply `--timezone` from the caller's chosen zone when available; otherwise the helper explicitly reports its UTC fallback. Region and language filters depend on the provider. See the provider guides for available markets and scope defaults.
 
 Project working instructions: [AGENTS.md](./AGENTS.md).
 
-Current scope, source-access findings, implementation contracts, and next steps: [development plan](./docs/development-plan.md). It is the canonical handoff for Reddit, TikTok, ChatGPT and YouTube.
+See the [development plan](./docs/development-plan.md) for source-access findings, implementation contracts and next steps.
 
 ## License
 

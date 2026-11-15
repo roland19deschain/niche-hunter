@@ -12,6 +12,8 @@ The extension provides PDF export as soon as its tools are available. If the too
 
 The numeric fields are optional. Leaving them blank uses the standard limits: one TokConnect credit, one SerpApi search, one YouTube search, and up to six YouTube comment requests per run. The shared ten-attempt ceiling can reduce comment coverage when other providers are selected. Saved values override the defaults. An explicit zero disables the corresponding live provider. Change limits only when the caller explicitly asks.
 
+For optional Google Search validation, connect **Semrush** under **Customize → Connectors**, or enter a Semrush v4 SEO API key in the Niche Hunter extension settings when this integration is authorized. Check `optional_checks.semrush` and whether `niche_hunter_semrush_keyword` is callable before offering the extension key route. For plan requirements, the free browser option and reporting instructions, see [Semrush search validation](semrush.md).
+
 - [Claude Desktop local extension installation](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop)
 - [Custom skill upload](https://support.claude.com/en/articles/12512180-use-skills-in-claude)
 

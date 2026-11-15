@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "niche-hunter-desktop",
   "display_name": "Niche Hunter",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "Collect research evidence and create Niche Hunter reports in Claude Desktop on Apple silicon Macs.",
   "author": {"name": "Niche Hunter contributors"},
   "homepage": "https://github.com/roland19deschain/niche-hunter",
@@ -13,7 +13,8 @@
     "https://serpapi.com/privacy",
     "https://openai.com/policies/privacy-policy/",
     "https://www.facebook.com/privacy/policy/",
-    "https://www.reddit.com/policies/privacy-policy"
+    "https://www.reddit.com/policies/privacy-policy",
+    "https://www.semrush.com/company/legal/privacy-policy/"
   ],
   "server": {
     "type": "binary",
@@ -28,6 +29,8 @@
         "NICHE_HUNTER_REDDIT_TOKEN": "${user_config.reddit_token}",
         "NICHE_HUNTER_REDDIT_USER_AGENT": "${user_config.reddit_user_agent}",
         "NICHE_HUNTER_REDDIT_APPROVED": "${user_config.reddit_approved}",
+        "NICHE_HUNTER_SEMRUSH_KEY": "${user_config.semrush_api_key}",
+        "NICHE_HUNTER_SEMRUSH_APPROVED": "${user_config.semrush_approved}",
         "NICHE_HUNTER_TOKCONNECT_CREDITS_PER_RUN": "${user_config.tokconnect_credits_per_run}",
         "NICHE_HUNTER_SERPAPI_SEARCHES_PER_RUN": "${user_config.serpapi_searches_per_run}",
         "NICHE_HUNTER_YOUTUBE_SEARCH_CALLS_PER_RUN": "${user_config.youtube_search_calls_per_run}",
@@ -78,6 +81,18 @@
       "description": "Enable only if your Reddit approval covers this use, AI processing and retention.",
       "default": false
     },
+    "semrush_api_key": {
+      "type": "string",
+      "title": "Semrush API key",
+      "description": "Optional Semrush v4 SEO API key for an approved Niche Hunter connection.",
+      "sensitive": true
+    },
+    "semrush_approved": {
+      "type": "boolean",
+      "title": "Semrush extension access approved",
+      "description": "Enable when your Semrush terms authorize this API integration and use of its results in Claude.",
+      "default": false
+    },
     "tokconnect_credits_per_run": {
       "type": "number",
       "title": "TokConnect credits per run",
@@ -114,6 +129,7 @@
   "tools": [
     {"name": "niche_hunter_status", "description": "Check selected provider configuration without making network requests."},
     {"name": "niche_hunter_collect", "description": "Collect bounded research evidence for a single run."},
+    {"name": "niche_hunter_semrush_keyword", "description": "Fetch one Semrush Keyword Metrics snapshot using approved extension access."},
     {"name": "niche_hunter_finalize", "description": "Validate evidence-linked analysis and save Markdown and PDF reports."}
   ]
 }

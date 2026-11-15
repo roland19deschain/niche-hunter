@@ -104,12 +104,12 @@ class ResearchTests(unittest.TestCase):
         self.assertEqual(run["timezone_reason"], "disclosed_UTC_fallback")
 
     def test_calendar_days_across_dst_and_nonoverlapping_baseline(self):
-        run = research.parameters(self.args("--timezone", "America/New_York"),
-                                  datetime(2026, 11, 2, 12, tzinfo=timezone.utc))
+        run = research.parameters(self.args("--timezone", "CET"),
+                                  datetime(2026, 11, 1, 12, tzinfo=timezone.utc))
         current = run["requested_window"]
-        self.assertEqual(current["start_at"], "2026-10-26T04:00:00Z")
-        self.assertEqual(current["end_at"], "2026-11-02T05:00:00Z")
-        self.assertEqual(run["baseline_window"]["start_at"], "2026-10-19T04:00:00Z")
+        self.assertEqual(current["start_at"], "2026-10-24T22:00:00Z")
+        self.assertEqual(current["end_at"], "2026-10-31T23:00:00Z")
+        self.assertEqual(run["baseline_window"]["start_at"], "2026-10-17T22:00:00Z")
         self.assertEqual(run["baseline_window"]["end_at"], current["start_at"])
 
     def test_custom_dates_and_partial_day(self):

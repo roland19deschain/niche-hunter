@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.13.0] - 2026-11-15
+
+- Offer the same optional Semrush keyword workflow in Codex CLI, Codex on macOS, Claude Code, and Claude Desktop. Use the official MCP connector, a private approved API key, or the free manual browser workflow.
+- Document all seven default providers, setup guides and source tools in the README. Keep Semrush keyword validation optional and preserve its separate market and time scope.
+
 ## [0.12.0] - 2026-11-13
 
 - Add approved Reddit Data API collection for both hunt modes, with private OAuth setup, bounded post and comment sampling, and normalized import support.

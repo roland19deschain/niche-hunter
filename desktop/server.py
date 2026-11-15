@@ -29,6 +29,7 @@ if not getattr(sys, "frozen", False):
 import research
 import meta_ads
 import reddit
+import semrush
 import tiktok
 import youtube
 from public_sources import collect_public
@@ -41,9 +42,10 @@ ENV_KEYS = {
     "serpapi_api_key": "NICHE_HUNTER_SERPAPI_KEY",
     "meta_token": "NICHE_HUNTER_META_TOKEN",
     "reddit_token": "NICHE_HUNTER_REDDIT_TOKEN",
+    "semrush": "NICHE_HUNTER_SEMRUSH_KEY",
 }
 PROVIDER_KEY = re.compile(r"[A-Za-z0-9._~+/-]{8,500}=*")
-TOKEN_FORMATS = {"meta_token": meta_ads.TOKEN, "reddit_token": reddit.TOKEN}
+TOKEN_FORMATS = {"meta_token": meta_ads.TOKEN, "reddit_token": reddit.TOKEN, "semrush": semrush.KEY_PATTERN}
 PROVIDER_QUOTAS = {"tiktok": ("tokconnect_credits",),
                    "youtube": ("serpapi_searches", "youtube_search_calls", "youtube_comment_units")}
 MANIFEST = Path(__file__).resolve().with_name("manifest.json")
@@ -159,19 +161,28 @@ async def collect_tokconnect(key, topic, limit):
 
 
 class DesktopResearch:
-    def __init__(self, keys, root, limits=None, reddit_user_agent=None, reddit_approved=False):
+    def __init__(self, keys, root, limits=None, reddit_user_agent=None, reddit_approved=False, semrush_approved=False):
         self.keys = keys
         self.root = root
         self.extension_version = DESKTOP_MANIFEST["version"]
         self.limits = {name: (limits or {}).get(name, default) for name, default in QUOTA_DEFAULTS.items()}
         self.reddit_user_agent = reddit_user_agent
         self.reddit_approved = reddit_approved
+        self.semrush_approved = semrush_approved
 
     def check_content(self, value):
         data = check_size(value)
         for key in self.keys.values():
             if any(candidate.encode() in data for candidate in {key, quote(key, safe=""), quote_plus(key)}):
                 raise ValueError("Provider credentials are accepted only through the extension settings")
+
+    def semrush_status(self):
+        return semrush.status(self.keys.get("semrush"), self.semrush_approved)
+
+    async def semrush_keyword(self, keyword, country):
+        self.check_content([keyword, country])
+        return await asyncio.to_thread(semrush.lookup, keyword, country, self.keys.get("semrush"),
+                                       self.semrush_approved)
 
     def status(self, providers, imported=(), region=None, google_trends_csv_supplied=False):
         selected = research.selected_providers(providers)
@@ -210,6 +221,7 @@ class DesktopResearch:
             checks.append({"provider": provider, "ready": not missing, "route": route, "missing": missing})
         planned = plan_calls(selected, imported, self.limits, region=region, trends_csv=google_trends_csv_supplied)
         return {"ready": all(item["ready"] for item in checks), "providers": checks,
+                "optional_checks": {"semrush": self.semrush_status()},
                 "extension_version": self.extension_version, "owner_limits": dict(self.limits),
                 "limit_defaults": dict(QUOTA_DEFAULTS),
                 "maximum_planned_attempts": planned,
@@ -458,6 +470,14 @@ def make_server(desktop):
                 message = "Check the dates, time zone, provider inputs and output directory."
             return {"error": message}
 
+    @server.tool(annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWorldHint=True))
+    async def niche_hunter_semrush_keyword(keyword: str, country: str) -> dict[str, Any]:
+        """After confirming scope and units with the caller, check one keyword in one market for the chat addendum."""
+        try:
+            return await desktop.semrush_keyword(keyword, country)
+        except ValueError as error:
+            return {"status": "not_supported", "external_calls": 0, "reason": str(error)}
+
     @server.tool(annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=False, openWorldHint=False))
     def niche_hunter_finalize(run_id: str, analysis: dict,
                               tiktok_evidence_ids: list[str] | None = None) -> dict[str, Any]:
@@ -488,5 +508,6 @@ if __name__ == "__main__":
     os.environ.setdefault("SSL_CERT_FILE", certifi.where())
     desktop = DesktopResearch(injected_keys(), Path.home() / "Niche Hunter Reports", injected_limits(),
                               reddit_user_agent=os.environ.pop("NICHE_HUNTER_REDDIT_USER_AGENT", "").strip(),
-                              reddit_approved=os.environ.pop("NICHE_HUNTER_REDDIT_APPROVED", "").lower() == "true")
+                              reddit_approved=os.environ.pop("NICHE_HUNTER_REDDIT_APPROVED", "").lower() == "true",
+                              semrush_approved=os.environ.pop("NICHE_HUNTER_SEMRUSH_APPROVED", "").lower() == "true")
     anyio.run(run_stdio, make_server(desktop))

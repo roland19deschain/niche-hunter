@@ -37,6 +37,65 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
                 "max_records": 20, "imports": []}
         return await self.desktop.collect(**{**args, **changes})
 
+    async def test_semrush_key_settings_and_local_preflight(self):
+        field = server.DESKTOP_MANIFEST["user_config"]["semrush_api_key"]
+        self.assertTrue(field["sensitive"])
+        self.assertFalse(field.get("required", False))
+        key = "synthetic-semrush-access-key"
+        with patch.dict(os.environ, {"NICHE_HUNTER_SEMRUSH_KEY": key}, clear=True):
+            keys = server.injected_keys()
+            self.assertNotIn("NICHE_HUNTER_SEMRUSH_KEY", os.environ)
+        desktop = server.DesktopResearch(keys, self.root)
+        with patch.object(server.semrush, "fetch", side_effect=AssertionError("unexpected provider call")):
+            status = desktop.status("app_store")
+            self.assertTrue(status["ready"])
+            self.assertTrue(status["optional_checks"]["semrush"]["key_configured"])
+            self.assertFalse(status["optional_checks"]["semrush"]["ready"])
+            self.assertNotIn(key, json.dumps(status))
+            blocked = await desktop.semrush_keyword("synthetic", "US")
+            self.assertEqual((blocked["status"], blocked["external_calls"]), ("not_supported", 0))
+            missing = await self.desktop.semrush_keyword("synthetic", "US")
+            self.assertEqual((missing["status"], missing["external_calls"]), ("unconfigured", 0))
+        tools = await server.make_server(desktop).list_tools()
+        keyword_tool = next(item for item in tools if item.name == "niche_hunter_semrush_keyword")
+        self.assertEqual(set(keyword_tool.inputSchema["properties"]), {"keyword", "country"})
+
+    async def test_semrush_keyword_metrics_and_secret_handling(self):
+        key = "synthetic-semrush-access-key"
+        desktop = server.DesktopResearch({"semrush": key}, self.root, semrush_approved=True)
+        meta = {"success": True, "country": "UK", "keyword": "synthetic notes", "month": "2026-10"}
+        data = {"search_volume": 0, "cpc": 1245, "keyword_difficulty": 74, "competitive_density": 78,
+                "intents": ["COMMERCIAL"], "serp_features": ["PEOPLE_ALSO_ASK"], "trends": [22, 80]}
+        responses = [
+            {"meta": meta, "data": data},
+            {"meta": meta, "data": {"intents": [], "serp_features": [], "trends": []}},
+            HTTPError(server.semrush.ENDPOINT, 401, key, None, None),
+            HTTPError(server.semrush.ENDPOINT, 307, "Redirect", {"Location": "https://example.org/redirect"}, None),
+            {"meta": meta, "data": {**data, "ignored": key}},
+        ]
+        with patch.object(server.semrush, "fetch", side_effect=responses) as fetch:
+            with self.assertRaisesRegex(ValueError, "credentials"):
+                await desktop.semrush_keyword(key, "GB")
+            outputs = [await desktop.semrush_keyword("synthetic notes", "gb") for _ in responses]
+
+        requests = [call.args[0] for call in fetch.call_args_list]
+        self.assertEqual(len(requests), len(responses))
+        self.assertTrue(all(request.get_method() == "GET"
+                            and request.full_url.split("?")[0] == server.semrush.ENDPOINT
+                            and request.get_header("Authorization") == "Apikey " + key
+                            and parse_qs(urlsplit(request.full_url).query) == {
+                                "keyword": ["synthetic notes"], "country": ["UK"]}
+                            for request in requests))
+        self.assertEqual([item["status"] for item in outputs],
+                         ["ok", "no_data", "auth_required", "unavailable", "unavailable"])
+        self.assertEqual(outputs[0]["metrics"]["search_volume"], 0)
+        self.assertEqual(outputs[0]["metrics"]["cpc_usd"], 12.45)
+        self.assertEqual(outputs[0]["snapshot_month"], "2026-10")
+        self.assertEqual(outputs[0]["documented_units_per_lookup"], 20)
+        self.assertTrue(all(item["external_calls"] == 1 for item in outputs))
+        self.assertNotIn(key, json.dumps(outputs))
+        self.assertFalse(self.root.exists())
+
     async def test_preflight_blocks_default_reddit_and_explicit_zero_overrides(self):
         with patch.object(server, "collect_tokconnect", new_callable=AsyncMock) as tiktok:
             result = await self.collect(providers="reddit,tiktok,youtube,chatgpt")

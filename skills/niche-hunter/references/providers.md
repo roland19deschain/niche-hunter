@@ -2,6 +2,10 @@
 
 TikTok public schemas/OAuth/pricing rechecked November 4, 2026; other access findings date to October 31–November 1. Recheck current terms and schemas when using a route. This file is portable with the skill; repository development history lives in `docs/development-plan.md` and is not required at runtime.
 
+## Optional Google Search validation
+
+[Semrush Keyword Overview](semrush.md) supports SEO, Google Search Ads and cross-checks of topics found by selected providers. Its Google Search metrics have a separate market and time scope. Offer the official connector, an approved private API key for the current client, or a manual browser check when relevant.
+
 ## ChatGPT / OpenAI Signals
 
 Implemented helper route: public HTTPS ZIP, no account/key or separate model API, $0 data download. Only `share_of_messages_by_topic_month.csv` is parsed in v0.1. Other release tables are not yet supported. The release is CC BY 4.0: retain OpenAI Signals attribution, source URL, and identify derived calculations.
