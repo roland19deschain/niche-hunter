@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.14.0] - 2026-11-24
+
+- Remove fixed upper bounds from the four Claude Desktop per-run settings and default each to 5. Accept multi-digit whole numbers and preserve saved settings.
+- Plan Desktop collection from the configured provider allowances. Expand YouTube sampling within independent Trends, search and comment budgets, and preserve collections exceeding ten requests in reports.
+
 ## [0.13.0] - 2026-11-15
 
 - Offer the same optional Semrush keyword workflow in Codex CLI, Codex on macOS, Claude Code, and Claude Desktop. Use the official MCP connector, a private approved API key, or the free manual browser workflow.

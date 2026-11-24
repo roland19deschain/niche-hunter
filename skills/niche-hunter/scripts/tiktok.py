@@ -82,7 +82,7 @@ def normalize(capture, now=None, *, desktop_credit_limit=None):
         require(type(balance) is int and balance >= total, "Verify enough free credits before all external attempts")
         output["collection"]["free_credits_before"] = balance
     else:
-        require(type(desktop_credit_limit) is int and total <= desktop_credit_limit <= 10,
+        require(type(desktop_credit_limit) is int and total <= desktop_credit_limit,
                 "TokConnect attempts exceed the Desktop limit")
         output["collection"]["desktop_credit_limit"] = desktop_credit_limit
     # Optional source metadata is not a prerequisite for caller-directed local processing.

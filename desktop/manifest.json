@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "niche-hunter-desktop",
   "display_name": "Niche Hunter",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "Collect research evidence and create Niche Hunter reports in Claude Desktop on Apple silicon Macs.",
   "author": {"name": "Niche Hunter contributors"},
   "homepage": "https://github.com/roland19deschain/niche-hunter",
@@ -96,34 +96,30 @@
     "tokconnect_credits_per_run": {
       "type": "number",
       "title": "TokConnect credits per run",
-      "description": "Optional override. Default: 1 per run. Zero disables live TikTok.",
-      "default": 1,
-      "min": 0,
-      "max": 1
+      "description": "Optional override. Default: 5 per run. Any nonnegative whole number. Zero disables live TikTok.",
+      "default": 5,
+      "min": 0
     },
     "serpapi_searches_per_run": {
       "type": "number",
       "title": "SerpApi searches per run",
-      "description": "Optional override. Default: 1 per run. Zero disables live YouTube.",
-      "default": 1,
-      "min": 0,
-      "max": 1
+      "description": "Optional override. Default: 5 per run. Any nonnegative whole number. Zero disables live YouTube.",
+      "default": 5,
+      "min": 0
     },
     "youtube_search_calls_per_run": {
       "type": "number",
       "title": "YouTube search calls per run",
-      "description": "Optional override. Default: 1 per run. Zero disables live YouTube.",
-      "default": 1,
-      "min": 0,
-      "max": 1
+      "description": "Optional override. Default: 5 per run. Any nonnegative whole number. Zero disables live YouTube.",
+      "default": 5,
+      "min": 0
     },
     "youtube_comment_units_per_run": {
       "type": "number",
       "title": "YouTube comment units per run",
-      "description": "Optional override. Default: up to 6 comment requests per run. Zero disables live YouTube.",
-      "default": 6,
-      "min": 0,
-      "max": 8
+      "description": "Optional override. Default: 5 per run. Any nonnegative whole number. Zero disables live YouTube.",
+      "default": 5,
+      "min": 0
     }
   },
   "tools": [

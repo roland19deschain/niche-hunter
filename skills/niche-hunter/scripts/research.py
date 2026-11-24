@@ -404,7 +404,7 @@ def secure_url(value, provider=None):
         require(not parsed.query, "Evidence URL must not contain query tokens")
 
 
-def collect_import(payload, run, max_records, source=None):
+def collect_import(payload, run, max_records, source=None, *, max_external_calls=10):
     require(payload.get("schema_version") == VERSION, "Unsupported import schema_version")
     provider = payload["provider"]
     require(provider in {"reddit", "tiktok", "youtube", "meta"}, "Unsupported import provider")
@@ -416,8 +416,9 @@ def collect_import(payload, run, max_records, source=None):
     require(status in FAILURES | {"ok", "partial"}, "Invalid provider status")
     require(isinstance(payload.get("observations"), list), "observations must be an array")
     collection = payload["collection"]
-    require(type(collection.get("external_calls")) is int and 0 <= collection["external_calls"] <= 10,
-            "External calls must be 0..10 (total run limit also applies)")
+    require(type(collection.get("external_calls")) is int and collection["external_calls"] >= 0
+            and (max_external_calls is None or collection["external_calls"] <= max_external_calls),
+            "External calls must fit the configured run budget")
     require(collection.get("new_paid_spending_usd") == 0, "Free pilot accepts no new paid spending")
     source["usage"]["external_calls"] = collection["external_calls"]
     source.update(status=status, reason=payload["reason"])

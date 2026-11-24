@@ -28,7 +28,7 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
         folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)
         self.root = Path(folder.name) / "reports"
-        self.desktop = server.DesktopResearch(KEYS, self.root, dict.fromkeys(server.QUOTA_CAPS, 1))
+        self.desktop = server.DesktopResearch(KEYS, self.root, dict.fromkeys(server.QUOTA_DEFAULTS, 1))
 
     async def collect(self, **changes):
         args = {"providers": "tiktok,youtube", "days": 7, "start": None, "end": None, "timezone": None,
@@ -192,14 +192,83 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
                                     "NICHE_HUNTER_SERPAPI_SEARCHES_PER_RUN": "0",
                                     "NICHE_HUNTER_YOUTUBE_COMMENT_UNITS_PER_RUN": "8"}, clear=True):
             limits = server.injected_limits()
-        self.assertEqual(limits, {"tokconnect_credits": 1, "serpapi_searches": 0,
-                                  "youtube_search_calls": 1, "youtube_comment_units": 8})
+        self.assertEqual(limits, {"tokconnect_credits": 5, "serpapi_searches": 0,
+                                  "youtube_search_calls": 5, "youtube_comment_units": 8})
         self.desktop = server.DesktopResearch(KEYS, self.root)
         status = self.desktop.status(",".join(server.research.PROVIDERS), ["reddit", "meta"])
         self.assertTrue(status["ready"])
-        self.assertEqual(status["limit_defaults"]["youtube_comment_units"], 6)
-        self.assertEqual(sum(status["maximum_planned_attempts"].values()), 10)
-        self.assertEqual(status["maximum_planned_attempts"]["youtube_comment_units"], 2)
+        self.assertEqual(status["limit_defaults"]["youtube_comment_units"], 5)
+        self.assertEqual(sum(status["maximum_planned_attempts"].values()), 25)
+        self.assertEqual(status["maximum_planned_attempts"]["youtube_comment_units"], 5)
+
+    def test_configured_limits_accept_large_whole_numbers_without_a_ceiling(self):
+        values = {"NICHE_HUNTER_TOKCONNECT_CREDITS_PER_RUN": "125",
+                  "NICHE_HUNTER_SERPAPI_SEARCHES_PER_RUN": "200",
+                  "NICHE_HUNTER_YOUTUBE_SEARCH_CALLS_PER_RUN": "1000.0",
+                  "NICHE_HUNTER_YOUTUBE_COMMENT_UNITS_PER_RUN": "500"}
+        with patch.dict(os.environ, values, clear=True):
+            limits = server.injected_limits()
+        self.assertEqual(limits, {"tokconnect_credits": 125, "serpapi_searches": 200,
+                                  "youtube_search_calls": 1000, "youtube_comment_units": 500})
+        desktop = server.DesktopResearch(KEYS, self.root, limits)
+        plan = desktop.status("tiktok,youtube")["maximum_planned_attempts"]
+        self.assertEqual(sum(plan.values()), 1825)
+        with patch.dict(os.environ, clear=True):
+            self.assertEqual(set(server.injected_limits().values()), {5})
+        for invalid in ("-1", "1.5", "NaN", "Infinity", "invalid"):
+            with self.subTest(value=invalid), patch.dict(os.environ, {name: invalid for name in values}, clear=True):
+                self.assertEqual(set(server.injected_limits().values()), {0})
+
+    async def test_youtube_uses_each_configured_allowance_and_saves_more_than_ten_attempts(self):
+        self.desktop = server.DesktopResearch(KEYS, self.root)
+        published = server.research.iso(server.now() - timedelta(days=2))
+        requests = []
+
+        def send(request, timeout):
+            url = urlsplit(request.full_url)
+            query = parse_qs(url.query)
+            requests.append((url.hostname, url.path))
+            if url.hostname == "serpapi.com":
+                seed = query["q"][0]
+                data = {"search_parameters": {name: query[name][0] for name in ("q", "gprop", "date", "data_type")},
+                        "related_queries": {"top": [{"query": seed + " fixture", "value": "100"}]}}
+            elif url.path.endswith("/search"):
+                identifier = str(sum(path.endswith("/search") for _, path in requests)).zfill(11)
+                data = {"items": [{"id": {"videoId": identifier}, "snippet": {
+                    "title": "Synthetic tutorial", "publishedAt": published}}]}
+            else:
+                data = {"items": [{"snippet": {"topLevelComment": {
+                    "id": "fixture-" + query["videoId"][0], "snippet": {
+                        "publishedAt": published, "textDisplay": "Synthetic question", "likeCount": 1}}}}]}
+            return io.BytesIO(json.dumps(data).encode())
+
+        network = server.youtube.Network
+        with patch.object(server.youtube, "Network", side_effect=lambda *args, **kwargs: network(
+                *args, **kwargs, transport=send)):
+            result = await self.collect(providers="youtube", topic=None, free_serpapi_searches=None,
+                                        youtube_search_calls=None, youtube_comment_units=None)
+        source, = result["sources"]
+        self.assertEqual(source["status"], "partial")
+        self.assertEqual(source["usage"]["external_calls"], 15)
+        self.assertEqual(len(requests), 15)
+        budget = result["run"]["desktop_budget"]
+        self.assertEqual(budget["actual_attempts"]["serpapi_searches"], 5)
+        self.assertEqual(budget["actual_attempts"]["youtube_search_calls"], 5)
+        self.assertEqual(budget["actual_attempts"]["youtube_comment_units"], 5)
+        self.assertEqual(result["run"]["limits"]["max_external_calls"], 15)
+        stored = json.loads((self.root / result["run"]["id"] / "results.json").read_text())
+        self.assertEqual(stored["sources"][0]["provenance"]["collection"]["external_calls"], 15)
+
+    def test_youtube_search_and_comment_allowances_are_independent(self):
+        network = server.youtube.Network(
+            KEYS, 20, 5, transport=lambda *args, **kwargs: io.BytesIO(b'{"items":[]}'),
+            method_limits={"related_queries": 5, "search": 1, "comment": 2})
+        self.assertIsNotNone(network.request("youtube", "search", {})[0])
+        self.assertIsNone(network.request("youtube", "search", {})[0])
+        self.assertIsNotNone(network.request("youtube", "commentThreads", {})[0])
+        self.assertIsNotNone(network.request("youtube", "comments", {})[0])
+        self.assertIsNone(network.request("youtube", "commentThreads", {})[0])
+        self.assertEqual(network.used, 3)
 
     async def test_reddit_setup_and_collection_in_both_modes(self):
         key = "synthetic-reddit-access-token"
@@ -253,12 +322,12 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
 
     def test_reddit_limits_and_connection_error(self):
         default = server.plan_calls(server.research.PROVIDERS, [], server.QUOTA_DEFAULTS)
-        self.assertEqual(sum(default.values()), 10)
-        self.assertEqual(default["reddit_requests"], 1)
-        self.assertEqual(default["signals_downloads"], 1)
-        self.assertEqual(default["youtube_comment_units"], 1)
+        self.assertEqual(sum(default.values()), 28)
+        self.assertEqual(default["reddit_requests"], 2)
+        self.assertEqual(default["signals_downloads"], 2)
+        self.assertEqual(default["youtube_comment_units"], 5)
         scoped = server.plan_calls(server.research.PROVIDERS, [], server.QUOTA_DEFAULTS, region="US")
-        self.assertEqual(sum(scoped.values()), 10)
+        self.assertEqual(sum(scoped.values()), 27)
         self.assertEqual(scoped["signals_downloads"], 2)
 
         args = server.research.parser().parse_args(["collect", "--providers", "reddit", "--out", str(self.root)])
@@ -399,8 +468,8 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
 
         network = server.youtube.Network
 
-        def fixture_network(*args):
-            return network(*args, transport=send)
+        def fixture_network(*args, **kwargs):
+            return network(*args, **kwargs, transport=send)
 
         with patch.object(server, "collect_tokconnect", new_callable=AsyncMock, return_value=capture) as tiktok:
             with patch.object(server.youtube, "Network", side_effect=fixture_network):
@@ -428,7 +497,7 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([row["id"] for row in json.loads(saved)["sources"][0]["observations"]], [chosen])
         budget = json.loads(saved)["run"]["desktop_budget"]
         self.assertEqual(budget["requested_overrides"], {})
-        self.assertEqual(budget["planned_attempts"]["youtube_comment_units"], 6)
+        self.assertEqual(budget["planned_attempts"]["youtube_comment_units"], 5)
         self.assertEqual(budget["actual_attempts"]["youtube_comment_units"], 2)
         self.assertEqual(budget["actual_attempts"]["serpapi_searches"], 1)
         self.assertEqual(budget["actual_attempts"]["youtube_search_calls"], 1)

@@ -85,8 +85,9 @@ class NoRedirect(HTTPRedirectHandler):
 class Network:
     """Count attempts before I/O; never persist request URLs, keys or raw errors."""
 
-    def __init__(self, keys, maximum, free_trends_calls, existing_calls=0, transport=None, clock=None):
-        require(type(maximum) is int and 1 <= maximum <= 10 and type(existing_calls) is int
+    def __init__(self, keys, maximum, free_trends_calls, existing_calls=0, transport=None, clock=None,
+                 method_limits=None):
+        require(type(maximum) is int and maximum >= 1 and type(existing_calls) is int
                 and 0 <= existing_calls <= maximum and type(free_trends_calls) is int and free_trends_calls >= 0,
                 "Invalid network budget")
         self.keys, self.maximum, self.free_trends_calls = keys, maximum, free_trends_calls
@@ -94,18 +95,28 @@ class Network:
         self.transport = transport or build_opener(NoRedirect()).open
         self.clock = clock or (lambda: datetime.now(UTC))
         self.blocked = set()
+        require(method_limits is None or set(method_limits) == {"related_queries", "search", "comment"}
+                and all(type(value) is int and value >= 0 for value in method_limits.values()),
+                "Invalid per-service network limits")
+        self.method_limits = method_limits
 
     @property
     def used(self):
         return self.existing_calls + len(self.calls)
 
-    def available(self, service):
-        return self.used < self.maximum and service not in self.blocked and (
+    def available(self, service, method=None):
+        within_method_limit = True
+        if self.method_limits is not None and method is not None:
+            bucket = "comment" if method in {"commentThreads", "comments"} else method
+            used = sum((call["method"] in {"commentThreads", "comments"} if bucket == "comment"
+                        else call["method"] == method) for call in self.calls)
+            within_method_limit = used < self.method_limits[bucket]
+        return within_method_limit and self.used < self.maximum and service not in self.blocked and (
             service != "serpapi" or sum(row["service"] == "serpapi" for row in self.calls) < self.free_trends_calls)
 
     def request(self, service, method, arguments):
         require(service in METHODS and method in METHODS[service], "Unsupported network method")
-        if not self.available(service):
+        if not self.available(service, method):
             self.stops.append("Run budget, confirmed free allowance, or an earlier access failure stopped " + service)
             return None, None
         receipt = {"service": service, "method": method, "retrieved_at": iso(self.clock()), "status": "unavailable"}
@@ -228,8 +239,8 @@ def choose_videos(searches, maximum):
 
 def collect_capture(run, args, keys, network=None, now=None):
     now = now or datetime.now(UTC)
-    require(1 <= args.max_calls <= 10 and 1 <= args.max_queries <= 5 and 1 <= args.max_videos <= 5,
-            "Use 1..10 calls, 1..5 queries and 1..5 videos")
+    require(all(type(value) is int and value > 0 for value in (args.max_calls, args.max_queries, args.max_videos)),
+            "Use positive whole numbers for calls, queries and videos")
     require(isinstance(keys.get("youtube_api_key"), str) and keys["youtube_api_key"], "YouTube API key is missing; complete setup")
     imported = load_manifest(Path(args.trends_file)) if args.trends_file else None
     existing = imported.get("external_calls", 0) if imported else 0
@@ -391,10 +402,10 @@ def collect_capture(run, args, keys, network=None, now=None):
             "catalog_seeds_total": len(seeds), "trends_scopes_collected": len(scope_receipts)}}
 
 
-def safe_collection(value, now):
+def safe_collection(value, now, max_external_calls=10):
     require(isinstance(value, dict) and type(value.get("external_calls")) is int
-            and 0 <= value["external_calls"] <= 10 and value.get("new_paid_spending_usd") == 0,
-            "Collection must preserve all attempts within ten calls and zero new paid spending")
+            and 0 <= value["external_calls"] <= max_external_calls and value.get("new_paid_spending_usd") == 0,
+            "Collection must preserve all attempts within the configured budget and zero new paid spending")
     output = {"external_calls": value["external_calls"], "new_paid_spending_usd": 0, "calls": []}
     calls = value.get("calls", [])
     require(isinstance(calls, list) and len(calls) <= value["external_calls"], "Invalid call receipts")
@@ -418,11 +429,11 @@ def safe_collection(value, now):
     return output
 
 
-def normalize(capture, now=None, maximum=100):
+def normalize(capture, now=None, maximum=100, *, max_external_calls=10):
     now = now or datetime.now(UTC)
     require(isinstance(capture, dict) and capture.get("schema_version") == VERSION, "Unsupported YouTube capture")
     require(1 <= maximum <= 100, "YouTube normalization retains at most 100 observations")
-    collection = safe_collection(capture["collection"], now)
+    collection = safe_collection(capture["collection"], now, max_external_calls)
     output = {"schema_version": VERSION, "provider": "youtube", "adapter": "youtube_trends_comments_v1",
         "status": "partial", "reason": "Sampled YouTube Search interest and dated comments ranked by current likes; not complete demand or a platform-wide top.",
         "collection": collection, "observations": []}
@@ -631,6 +642,8 @@ def main(argv=None):
             require(path.stat().st_size <= MAX_BYTES, "Capture exceeds the size cap")
             result = normalize(json.loads(path.read_text(encoding="utf-8")), maximum=args.max_records)
         else:
+            require(1 <= args.max_calls <= 10 and 1 <= args.max_queries <= 5 and 1 <= args.max_videos <= 5,
+                    "Use 1..10 calls, 1..5 queries and 1..5 videos for the direct collector")
             require(1 <= args.pages_per_video <= 3 and 1 <= args.max_trends_calls <= 5 and 1 <= args.max_records <= 100,
                     "Use bounded page, seed and record limits")
             if args.capture_out:

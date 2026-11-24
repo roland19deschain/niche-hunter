@@ -42,7 +42,7 @@ An owner may supply keys privately if their provider agreement permits it; every
 
 ## Automatic collection
 
-Allocate the **entire run's** ten-call allowance before querying any provider: reserve up to two attempts for live Signals and subtract TikTok/other calls. The following example allocates eight to YouTube and two to Signals; for a YouTube-only run up to ten is allowed. `--free-trends-calls 2` is an example of a caller-confirmed allowance, not an account check.
+For the direct helper, allocate the **entire run's** ten-call allowance before querying any provider: reserve up to two attempts for live Signals and subtract TikTok/other calls. The following example allocates eight to YouTube and two to Signals; for a YouTube-only run up to ten is allowed. `--free-trends-calls 2` is an example of a caller-confirmed allowance, not an account check.
 
 ```bash
 python3 skills/niche-hunter/scripts/youtube.py collect \
@@ -122,3 +122,5 @@ YouTube's additional/derived analytics policy requires approval for certain uses
 - [SerpApi Trends parameters](https://serpapi.com/google-trends-api), [related queries](https://serpapi.com/google-trends-related-queries), [pricing](https://serpapi.com/pricing).
 - [YouTube video search](https://developers.google.com/youtube/data/reference/rest/v3/search/list), [comment threads](https://developers.google.com/youtube/data/reference/rest/v3/commentThreads/list), [replies](https://developers.google.com/youtube/data/reference/rest/v3/comments/list), [comment fields](https://developers.google.com/youtube/data/reference/rest/v3/comments).
 - [YouTube policies](https://developers.google.com/youtube/terms/developer-policies), [derived metrics](https://developers.google.com/youtube/terms/derived-metrics-policy).
+
+In Claude Desktop, collection uses the extension's saved per-service allowances. Each field defaults to 5 and accepts any nonnegative whole number. Trends, video searches and comment requests have separate budgets. The extension normalizes and reports the full observed request count even above ten. See [Desktop setup](claude-desktop.md).

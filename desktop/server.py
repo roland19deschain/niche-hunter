@@ -7,6 +7,7 @@ import os
 import re
 import sys
 from datetime import datetime, timedelta
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Literal
@@ -53,7 +54,6 @@ DESKTOP_MANIFEST = json.loads(MANIFEST.read_text(encoding="utf-8"))
 QUOTA_SETTINGS = {name: DESKTOP_MANIFEST["user_config"][f"{name}_per_run"]
                   for names in PROVIDER_QUOTAS.values() for name in names}
 QUOTA_DEFAULTS = {name: config["default"] for name, config in QUOTA_SETTINGS.items()}
-QUOTA_CAPS = {name: config["max"] for name, config in QUOTA_SETTINGS.items()}
 TOKCONNECT_URL = "https://mcp.tokconnect.com/mcp"
 TOKCONNECT_TOOL = "demand_find_topics"
 RUN_ID = re.compile(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}")
@@ -75,37 +75,32 @@ def injected_keys():
 
 def injected_limits():
     limits = {}
-    for name, maximum in QUOTA_CAPS.items():
+    for name in QUOTA_DEFAULTS:
         value = os.environ.pop(f"NICHE_HUNTER_{name.upper()}_PER_RUN", "").strip()
         if not value:
             limits[name] = QUOTA_DEFAULTS[name]
         else:
-            limits[name] = int(value) if re.fullmatch(r"[0-9]", value) and int(value) <= maximum else 0
+            try:
+                number = Decimal(value)
+                limits[name] = int(number) if number.is_finite() and number >= 0 and number == number.to_integral_value() else 0
+            except InvalidOperation:
+                limits[name] = 0
     return limits
 
 
 def plan_calls(providers, imported, limits, imported_attempts=0, trends_csv=False, region=None):
     live = set(providers) - set(imported)
-    plan = dict.fromkeys(QUOTA_CAPS, 0)
+    plan = dict.fromkeys(QUOTA_DEFAULTS, 0)
     plan["imported_attempts"] = imported_attempts
     plan["signals_downloads"] = 2 if "chatgpt" in live else 0
     plan["meta_requests"] = int("meta" in live)
-    plan["reddit_requests"] = int("reddit" in live)
+    plan["reddit_requests"] = 2 if "reddit" in live else 0
     plan.update(research.public_request_plan(live, trends_csv=trends_csv, region=region))
     if "tiktok" in live:
         plan["tokconnect_credits"] = limits["tokconnect_credits"]
     if "youtube" in live:
         for name in PROVIDER_QUOTAS["youtube"]:
             plan[name] = limits[name]
-        plan["youtube_comment_units"] = min(limits["youtube_comment_units"], 1)
-    # Give every live provider one usable collection route before reserving optional calls.
-    if sum(plan.values()) == 11 and "reddit" in live and "chatgpt" in live:
-        plan["signals_downloads"] = 1
-    if "reddit" in live and sum(plan.values()) < 10:
-        plan["reddit_requests"] += 1
-    if "youtube" in live:
-        plan["youtube_comment_units"] += min(max(0, 10 - sum(plan.values())),
-                                             limits["youtube_comment_units"] - plan["youtube_comment_units"])
     return plan
 
 
@@ -166,6 +161,8 @@ class DesktopResearch:
         self.root = root
         self.extension_version = DESKTOP_MANIFEST["version"]
         self.limits = {name: (limits or {}).get(name, default) for name, default in QUOTA_DEFAULTS.items()}
+        research.require(all(type(value) is int and value >= 0 for value in self.limits.values()),
+                         "Use nonnegative whole numbers for per-run limits")
         self.reddit_user_agent = reddit_user_agent
         self.reddit_approved = reddit_approved
         self.semrush_approved = semrush_approved
@@ -253,7 +250,7 @@ class DesktopResearch:
             provider = payload.get("provider")
             research.require(provider in run["providers"] and provider not in sources,
                              "Supply at most one import per selected provider")
-            source = research.collect_import(payload, run, max_records)
+            source = research.collect_import(payload, run, max_records, max_external_calls=None)
             research.require(source["status"] in {"ok", "partial"},
                              "Supply a usable import matching the requested topic")
             sources[provider] = source
@@ -281,8 +278,7 @@ class DesktopResearch:
                              "Use a YouTube import or exclude YouTube when one of its limits is zero")
         planned = plan_calls(run["providers"], sources, available, imported_attempts,
                              trends_csv=google_trends_csv is not None, region=app_store_region or region)
-        research.require(sum(planned.values()) <= 10,
-                         "The selected routes exceed 10 attempts. Use a narrower storefront scope, an offline import, or fewer providers.")
+        run["limits"]["max_external_calls"] = sum(planned.values())
         if youtube_seed is not None:
             research.require(live_youtube and not run["topic"], "Use youtube_seed only with live YouTube and no topic")
             youtube_seed = youtube_seed.strip()
@@ -291,7 +287,7 @@ class DesktopResearch:
         if live_youtube:
             research.require(planned["youtube_comment_units"] >= 1,
                              "Leave at least three attempts for YouTube Trends, videos and comments")
-            youtube_calls = 2 + planned["youtube_comment_units"]
+            youtube_calls = sum(planned[name] for name in PROVIDER_QUOTAS["youtube"])
             research.require(not run["topic"] or "," not in run["topic"], "Use a single YouTube Trends term")
             youtube.trends_window(run["requested_window"], now())
 
@@ -319,7 +315,7 @@ class DesktopResearch:
                     actual["reddit_requests"] = source["usage"]["external_calls"] = payload["collection"]["external_calls"]
                     self.check_content(payload)
                     run["generated_at"] = research.iso(now())
-                    source = research.collect_import(payload, run, max_records, source)
+                    source = research.collect_import(payload, run, max_records, source, max_external_calls=None)
                     source["provenance"]["mode"] = "live_desktop_collection"
                 elif provider == "meta":
                     payload = await asyncio.to_thread(meta_ads.collect, run, self.keys["meta_token"],
@@ -327,7 +323,7 @@ class DesktopResearch:
                     actual["meta_requests"] = source["usage"]["external_calls"] = payload["collection"]["external_calls"]
                     self.check_content(payload)
                     run["generated_at"] = research.iso(now())
-                    source = research.collect_import(payload, run, max_records, source)
+                    source = research.collect_import(payload, run, max_records, source, max_external_calls=None)
                     source["provenance"]["mode"] = "live_desktop_collection"
                 elif provider == "tiktok":
                     capture = await collect_tokconnect(self.keys["tokconnect"], run["topic"], max_records)
@@ -336,18 +332,24 @@ class DesktopResearch:
                     self.check_content(capture)
                     payload = tiktok.normalize(capture, desktop_credit_limit=planned["tokconnect_credits"])
                     run["generated_at"] = research.iso(now())
-                    source = research.collect_import(payload, {**run, "topic": None}, max_records, source)
+                    source = research.collect_import(payload, {**run, "topic": None}, max_records, source,
+                                                     max_external_calls=None)
                     source["provenance"]["mode"] = "live_desktop_collection"
                     if run["topic"] and source["observations"]:
                         source["topic_review_pending"] = True
                     if source["status"] == "auth_required":
                         source["reason"] = "TokConnect rejected the extension key. Check it in Claude Desktop settings."
                 elif provider == "youtube":
-                    options = SimpleNamespace(max_calls=youtube_calls, max_queries=1, max_videos=2,
-                                              free_trends_calls=planned["serpapi_searches"], max_trends_calls=1,
+                    options = SimpleNamespace(max_calls=youtube_calls, max_queries=planned["youtube_search_calls"],
+                                              max_videos=min(max_records, planned["youtube_comment_units"]),
+                                              free_trends_calls=planned["serpapi_searches"],
+                                              max_trends_calls=planned["serpapi_searches"],
                                               trends_file=None, seed=[youtube_seed] if youtube_seed else None,
-                                              select_query=None, pages_per_video=1)
-                    network = youtube.Network(self.keys, youtube_calls, planned["serpapi_searches"])
+                                              select_query=None, pages_per_video=planned["youtube_comment_units"])
+                    network = youtube.Network(self.keys, youtube_calls, planned["serpapi_searches"],
+                                              method_limits={"related_queries": planned["serpapi_searches"],
+                                                             "search": planned["youtube_search_calls"],
+                                                             "comment": planned["youtube_comment_units"]})
                     try:
                         capture = await asyncio.to_thread(youtube.collect_capture, run, options, self.keys, network)
                     finally:
@@ -357,9 +359,9 @@ class DesktopResearch:
                         actual["youtube_comment_units"] = network.used - actual["serpapi_searches"] - actual["youtube_search_calls"]
                     self.check_content(capture)
                     capture["collection"].pop("free_trends_calls_confirmed", None)
-                    payload = youtube.normalize(capture, maximum=max_records)
+                    payload = youtube.normalize(capture, maximum=max_records, max_external_calls=youtube_calls)
                     run["generated_at"] = research.iso(now())
-                    source = research.collect_import(payload, run, max_records, source)
+                    source = research.collect_import(payload, run, max_records, source, max_external_calls=None)
                     source["provenance"]["mode"] = "live_desktop_collection"
                 self.check_content(source)
             except Exception:

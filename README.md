@@ -9,7 +9,7 @@
 
 Niche Hunter is a research skill for discovering niches for new digital products and refining existing products. Its decision chain is **distribution channel → reachable market and need → product or product change → validation experiment**. It collects available signals, analyzes needs and alternatives, and explains which combinations deserve testing and where evidence is still missing.
 
-> **Release 0.13.0.** Check Google Search keywords with Semrush in Codex and Claude, using the official MCP connector, an approved API key, or a manual browser check.
+> **Release 0.14.0.** Claude Desktop per-run limits accept any nonnegative whole number. The four defaults are 5 TokConnect credits, 5 SerpApi searches, 5 YouTube searches and 5 YouTube comment requests.
 
 [Providers](#providers) · [Install for Codex](#install-for-codex) · [Install for Claude Code](#install-for-claude-code) · [Install for Claude Desktop](#claude-desktop-pilot) · [Update](#update) · [Rollback](#rollback) · [Releases](https://github.com/roland19deschain/niche-hunter/releases) · [Changelog](./CHANGELOG.md)
 
@@ -72,11 +72,13 @@ python3 skills/niche-hunter/scripts/youtube.py setup
 python3 skills/niche-hunter/scripts/youtube.py status
 ```
 
-Keys stay in private local settings outside Git/plugin files. Saving them makes no network calls and does not prove authentication or quotas. The calling agent allocates the shared ten-call budget, invokes the collector, imports evidence and finalizes the report. Trends indices are relative; likes are current snapshots. The result is not a platform-wide search census or a global comment ranking. Source-specific retention and intended analytics require separate live acceptance; see [the full YouTube reference](./skills/niche-hunter/references/youtube.md).
+Keys stay in private local settings outside Git/plugin files. Saving them makes no network calls and does not prove authentication or quotas. For the direct helper, the calling agent allocates the shared ten-call budget, invokes the collector, imports evidence and finalizes the report. Trends indices are relative; likes are current snapshots. The result is not a platform-wide search census or a global comment ranking. Source-specific retention and intended analytics require separate live acceptance; see [the full YouTube reference](./skills/niche-hunter/references/youtube.md).
 
 ## Claude Desktop pilot
 
-On an Apple silicon Mac, download both Desktop assets from the [0.13.0 release](https://github.com/roland19deschain/niche-hunter/releases/tag/0.13.0). Install the `.mcpb` extension and upload `niche-hunter-skill-0.13.0.zip` in Claude Desktop. Set the keys for your selected providers in the extension settings. The pilot uses the Mac for collection and report export and needs no terminal setup. See the [Claude Desktop installation and workflow](./skills/niche-hunter/references/claude-desktop.md).
+On an Apple silicon Mac, download both Desktop assets from the [0.14.0 release](https://github.com/roland19deschain/niche-hunter/releases/tag/0.14.0). Install the `.mcpb` extension and upload `niche-hunter-skill-0.14.0.zip` in Claude Desktop. Set the keys for your selected providers in the extension settings. The pilot uses the Mac for collection and report export and needs no terminal setup. See the [Claude Desktop installation and workflow](./skills/niche-hunter/references/claude-desktop.md).
+
+The four numeric limits default to `5 / 5 / 5 / 5` and have no fixed upper bound. Saved settings take precedence after an update. Clear a field to use its default, or enter any nonnegative whole number. Zero disables its live route. The extension uses these allowances to plan the run and records actual usage.
 
 ## Install for Codex
 
